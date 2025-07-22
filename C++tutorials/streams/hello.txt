@@ -1,0 +1,2 @@
+Hello World!CS106L
+this will get written to the file!It is open again

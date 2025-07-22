@@ -1,15 +1,14 @@
 {
   "configurations": [
     {
-      "name": "Linux", // for Remote WSL, Ubuntu
+      "name": "WSL",
       "includePath": [
         // "\\\\wsl$\\Ubuntu-22.04\\usr\\include",
         "/usr/include", // Standard system includes
         "/usr/local/include", // Local includes
-        "${workspaceFolder}/code_examples/code/include",
-        "${workspaceFolder}/labs/proxy_lab/proxylab-handout/" // lab-specific includes
+        "${workspaceFolder}/lib/include"
       ],
-      "compilerPath": "/usr/bin/gcc", // Path to the compiler
+      "compilerPath": "/usr/bin/g++", // Path to the compiler
       "defines": ["_DEBUG", "UNICODE", "_UNICODE"],
       "intelliSenseMode": "linux-gcc-x64",
       "cStandard": "c17",

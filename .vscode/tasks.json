@@ -5,6 +5,8 @@
       "label": "C/C++: g++ build active file",
       "command": "/usr/bin/g++",
       "args": [
+        "${workspaceFolder}/lib/include/printUtils.cpp",
+        "-I${workspaceFolder}/lib/include",
         "-g",
         "${file}",
         "-o",
