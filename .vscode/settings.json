@@ -113,7 +113,13 @@
     "cinttypes": "cpp",
     "typeinfo": "cpp",
     "sstream": "cpp",
-    "fstream": "cpp"
+    "fstream": "cpp",
+    "map": "c",
+    "set": "c",
+    "unordered_set": "c",
+    "optional": "c",
+    "iomanip": "c",
+    "ranges": "c"
   },
   "C_Cpp.default.compilerPath": "/usr/bin/gcc"
 }
