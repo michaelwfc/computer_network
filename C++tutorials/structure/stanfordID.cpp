@@ -1,4 +1,8 @@
 /**
+ * # Structs
+[Types and Structs](https://cs106l.github.io/textbook/cpp-fundamentals/types-and-structs)
+Structs bundle data together into a single object
+
  * $ g++ main.cpp –o main 	    # g++ is the compiler, outputs binary to main
  * $ ./main						# This actually runs our program
  * 

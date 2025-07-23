@@ -7,5 +7,6 @@
 
 void printVector(std::vector<int> v);
 void printDeque(std::deque<int> v);
+void printArray(double *arr, int size);
 
 #endif // PRINT_UTILS_H

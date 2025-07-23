@@ -3,10 +3,12 @@
 - [cs106l.github.io/textbook](https://cs106l.github.io/textbook/)
 - [cs106l-lecture-code/](https://github.com/cs106l/cs106l-lecture-code/tree/main/lecture02)
 - [C++ Core Guidelines](https://isocpp.github.io/CppCoreGuidelines/CppCoreGuidelines)
-- [C++ standard library](https://en.cppreference.com/w/cpp/standard_library)]
+- [C++ standard library](https://en.cppreference.com/w/cpp/standard_library)
+- [Vedio-course-2019+2020](https://www.bilibili.com/video/BV1Fz421q7oh?spm_id_from=333.788.videopod.sections&vd_source=b3d4057adb36b9b243dc8d7a6fc41295)
 - [CS自学指南](https://csdiy.wiki/%E7%BC%96%E7%A8%8B%E5%85%A5%E9%97%A8/cpp/CS106L/)
 
 # C++ Design Philosophy
+
 [C++ Design Philosophy](https://isocpp.github.io/CppCoreGuidelines/CppCoreGuidelines#S-philosophy)
 
 In 1983, the beginnings of C++ were created by Danish computer scientist Bjarne Stroustrup
@@ -33,6 +35,7 @@ C++ comes with built-in types:
 - size_t: unsigned integer type used for sizes
 
 ## C++ is a statically typed language
+
 Why static typing?
 
 - Better performance
@@ -41,9 +44,11 @@ Why static typing?
 
 
 ## Aside: Function Overloading
+
 Defining two functions with the same name but different parameters
 
 # std : The C++ Standard Library
+
 - [the official standard](https://en.cppreference.com/w/)
 
 #include from the C++ Standard Library to use built-in types
@@ -66,23 +71,21 @@ If we write using namespace std; we don’t have to, but this is considered bad 
 
 - using creates type aliases
 - auto infers the type of a variable
-- 
-
-# Structs
-[Types and Structs](https://cs106l.github.io/textbook/cpp-fundamentals/types-and-structs)
-Structs bundle data together into a single object
-
-## pair
-A pair is a struct with two fields
-
-```C++
-std::pair<bool, Student> query_result;
-query_result.first = true;
-query_result.second = {“Ethan”, “CA”, 30};
-```
-
-# stream
 
 
-# template
+# C++ files
 
+|        | Header File (.h) | Source File (.cpp)|
+| ------ | --------------- | ------------------|
+| Purpose | Defines the interface Implements class functions |
+| Contains | Function prototypes, class  declarations, type definitions,  macros,constants | Function implementations, executable code|
+| Access  | This is shared across source files | Is compiled into an object file|
+| Example  | void someFunction();  |void someFunction(){...};|
+
+## Types of inheritance
+| Type  | public  | protected | private |
+| ----- | ------- | --------- | ------- |
+|Example | class B： public A{...} | class B: protected A{...} |  class B: private A{...} | 
+|Public Members | Are public in the derived class | Protected in the derived class | Privated in the derived class |
+|Protected Members | Protected in the derived class | Protected in the derived class | Privated in the derived class |
+|Private Members |  Not accessible in derived class |Not accessible in derived class | Not accessible in derived class |
