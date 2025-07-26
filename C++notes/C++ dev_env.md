@@ -29,6 +29,7 @@ C/C++ extension does not include a C++ compiler. So, you will need to install on
 - WSL(Linux): gcc + GDB
 
 ## C++ IDE 
+
 - IDE : [vscode](https://code.visualstudio.com/docs/languages/cpp)
 - vscode extension: Install recommended C/C++ extension in VSCode and reload
 - https://code.visualstudio.com/docs/cpp/cpp-debug
@@ -69,4 +70,5 @@ It allows us to generate more efficient machine code!
 - Interpreters only see one small part of code at a time
 - Compilers see everything
 However, compilation takes time!
+
 
