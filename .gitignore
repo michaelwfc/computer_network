@@ -1,4 +1,7 @@
 backup/
+textbooks/
+
+build/
 # Prerequisites
 *.d
 
