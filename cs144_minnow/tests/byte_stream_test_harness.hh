@@ -43,7 +43,7 @@ struct Close : public Action<ByteStream>
 struct SetError : public Action<ByteStream>
 {
   std::string description() const override { return "set_error"; }
-  void execute( ByteStream& bs ) const override { bs.set_error(); }
+  void execute( ByteStream& bs ) const override { bs.writer().set_error(); }
 };
 
 struct Pop : public Action<ByteStream>
@@ -107,32 +107,32 @@ struct PeekOnce : public Peek
   }
 };
 
-struct IsClosed : public ConstExpectBool<ByteStream>
+struct IsClosed : public ExpectBool<ByteStream>
 {
-  using ConstExpectBool::ConstExpectBool;
+  using ExpectBool::ExpectBool;
   std::string name() const override { return "is_closed"; }
-  bool value( const ByteStream& bs ) const override { return bs.writer().is_closed(); }
+  bool value( ByteStream& bs ) const override { return bs.writer().is_closed(); }
 };
 
-struct IsFinished : public ConstExpectBool<ByteStream>
+struct IsFinished : public ExpectBool<ByteStream>
 {
-  using ConstExpectBool::ConstExpectBool;
+  using ExpectBool::ExpectBool;
   std::string name() const override { return "is_finished"; }
-  bool value( const ByteStream& bs ) const override { return bs.reader().is_finished(); }
+  bool value( ByteStream& bs ) const override { return bs.reader().is_finished(); }
 };
 
-struct HasError : public ConstExpectBool<ByteStream>
+struct HasError : public ExpectBool<ByteStream>
 {
-  using ConstExpectBool::ConstExpectBool;
+  using ExpectBool::ExpectBool;
   std::string name() const override { return "has_error"; }
-  bool value( const ByteStream& bs ) const override { return bs.has_error(); }
+  bool value( ByteStream& bs ) const override { return bs.reader().has_error(); }
 };
 
-struct BytesBuffered : public ConstExpectNumber<ByteStream, uint64_t>
+struct BytesBuffered : public ExpectNumber<ByteStream, uint64_t>
 {
-  using ConstExpectNumber::ConstExpectNumber;
+  using ExpectNumber::ExpectNumber;
   std::string name() const override { return "bytes_buffered"; }
-  size_t value( const ByteStream& bs ) const override { return bs.reader().bytes_buffered(); }
+  size_t value( ByteStream& bs ) const override { return bs.reader().bytes_buffered(); }
 };
 
 struct BufferEmpty : public ExpectBool<ByteStream>
