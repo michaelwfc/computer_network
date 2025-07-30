@@ -14,6 +14,8 @@
  *
  */
 
+
+
 #include <iostream>
 #include <string>
 #include "StanfordID.h"
@@ -38,15 +40,13 @@ public: // constructor
     }
 };
 
-
-
 int main()
 {
-    Person p1("Tom", 18);
-    p1.printInfo();
+    // Person p1("Tom", 18);
+    // p1.printInfo();
 
-    StanfordID id = StanfordID("Tom", "tom", 18);
-    std::cout << "id: " << id.getID() << " name: " << id.getName() << " sunet: " << id.getSunet() << std::endl;
+    // StanfordID id = StanfordID("Tom", "tom", 18);
+    // std::cout << "id: " << id.getID() << " name: " << id.getName() << " sunet: " << id.getSunet() << std::endl;
 
     return 0;
 }

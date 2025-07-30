@@ -1,4 +1,7 @@
+
+
 # C++ dev env on windows
+
 ## C++ on WSL
 
 - https://code.visualstudio.com/docs/cpp/config-wsl
@@ -104,6 +107,7 @@ In C++20, std::string is allowed in constexpr — but only if the standard libra
 Because Ubuntu 22.04 only comes with GCC 11 by default, and the ubuntu-toolchain-r/test PPA allows you to install and use newer compilers.
 
 Install a newer GCC version:
+
 ```bash
 # This adds a PPA (Personal Package Archive) to your system's APT sources.
 # The ppa:ubuntu-toolchain-r/test is a well-known official PPA that provides newer versions of GCC, G++, etc. for Ubuntu.

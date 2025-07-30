@@ -15,6 +15,10 @@ void loop_vector()
     std::vector<int> v = {1, 2, 3, 4, 5};
     for (size_t i = 0; i < v.size(); i++)
     {
+        // In C++, the auto keyword tells the compiler to automatically deduce the type of a variable from its initializer. 
+        // It helps make code cleaner and less error-prone, especially when dealing with long or complex types.
+        // Avoids mistakes when types are complex or templated.
+        // Useful in ranged-for loops and lambdas.
         const auto &elem = v[i];
         std::cout << elem << " ";
     }

@@ -30,22 +30,30 @@
  * A change to x is a change to myValue.
  */
 
-int doubleValue(int &x)
+int doubleValueByReference(int &x)
 {
     x *= 2;
     return x;
 }
 
-// int doubleValue(int x) {
-//   x *= 2;
-//   return x;
-// }
+int doubleValue(int x) {
+  x *= 2;
+  return x;
+}
 
 int run_func_argument_reference()
 {
     int value = 5;
-    // The variable value is passed by reference into doubleValue.
+    std::cout << "*****Pass value by Copy " << std::endl;
+    std::cout << "original value  = " << value << std::endl;  
     int result = doubleValue(value);
+    std::cout << "value  = " << value << std::endl;
+    std::cout << "result = " << result << std::endl;
+
+    // The variable value is passed by reference into doubleValue.
+    std::cout << "****Pass value by Reference "  << std::endl;
+    std::cout << "original value  = " << value << std::endl;
+    result = doubleValueByReference(value);
     std::cout << "value  = " << value << std::endl;
     std::cout << "result = " << result << std::endl;
     return 0;
@@ -103,9 +111,9 @@ void run_constant_reference()
 
 int main()
 {
-    //   run_func_argument_reference();
+      run_func_argument_reference();
     // run_reference_for_vector();
-    run_update_front_element();
+    // run_update_front_element();
 
     return 0;
 }
