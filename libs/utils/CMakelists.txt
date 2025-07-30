@@ -1,0 +1,15 @@
+# 头文件路径
+include_directories(${CMAKE_CURRENT_SOURCE_DIR}/include/utils)
+
+# 收集源文件
+file(GLOB_RECURSE UTILS_SOURCES src/*.cpp)
+
+add_library(utils STATIC ${UTILS_SOURCES})
+
+
+#[[
+给 utils 库目标添加 include 目录，PUBLIC 使这个 include 目录能被外部使用者看到。
+
+当链接 utils 库时，这里指定的 include 目录会被自动添加到使用此库的 target 的 include 路径中。
+#]]
+target_include_directories(utils PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/include/utils)
