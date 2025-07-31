@@ -124,7 +124,8 @@
     "span": "cpp",
     "charconv": "cpp",
     "variant": "cpp",
-    "format": "cpp"
+    "format": "cpp",
+    "*.tpp": "cpp"
   },
   "C_Cpp.default.compilerPath": "/usr/bin/gcc"
 }

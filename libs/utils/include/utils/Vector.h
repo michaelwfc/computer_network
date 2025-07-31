@@ -22,12 +22,19 @@ public:
     using iterator = T *;
 
     Vector();
+
+    // Add Copy constructor declaration
+    Vector(const Vector& other);  
+
     ~Vector();
 
     void push_back(const T &value);
 
     T &at(size_t index);
     T &operator[](size_t index);
+
+    // operator overload Assignment operator
+    Vector &operator=(const Vector &other);
 
     size_t size();
     bool empty();
@@ -42,6 +49,15 @@ private:
 
     void resize();
 };
+
+/**
+ * Use .tpp file for template definitions: 
+ * rename Vector.cpp → Vector.tpp, and at the end of Vector.h add:
+ * This is commonly used in the STL and Boost to separate template definitions into a dedicated header-like implementation file.
+ * 
+ */
+#include "Vector.tpp"
+
 
 /* Notice that the .h file for template #includes the .cpp file!
  * This is because, when instantiating templates, the compiler
@@ -62,10 +78,3 @@ private:
 // #include "Vector.cpp"
 
 
-/**
- * Use .tpp file for template definitions: 
- * rename Vector.cpp → Vector.tpp, and at the end of Vector.h add:
- * This is commonly used in the STL and Boost to separate template definitions into a dedicated header-like implementation file.
- * 
- */
-#include "Vector.tpp"

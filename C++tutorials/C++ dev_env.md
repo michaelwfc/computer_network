@@ -117,8 +117,6 @@ sudo add-apt-repository ppa:ubuntu-toolchain-r/test
 sudo apt update
 sudo apt install g++-13
 
-
-
 # Then switch to it:
 # It registers a new version of g++ (version 13) with the update-alternatives system, so you can easily switch between multiple installed versions of g++ on your system.
 # /usr/bin/g++	The symbolic link to manage (the "master link").
@@ -135,4 +133,11 @@ ll /usr/bin/ |grep g++
 # -rwxr-xr-x  1 root root      932680 May 13  2023 x86_64-linux-gnu-g++-11*
 # -rwxr-xr-x  1 root root     1018800 Jul 11  2023 x86_64-linux-gnu-g++-13*
 
+
+
+# get back
+
+sudo update-alternatives --install /usr/bin/g++ g++ /usr/bin/g++-11 50
+sudo update-alternatives --config g++
 ```
+
