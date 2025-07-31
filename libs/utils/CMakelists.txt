@@ -4,6 +4,9 @@ include_directories(${CMAKE_CURRENT_SOURCE_DIR}/include/utils)
 # 收集源文件
 file(GLOB_RECURSE UTILS_SOURCES src/*.cpp)
 
+# file(GLOB SRC_FILES "*.cpp")
+# This GLOB command is telling the CMAKE program to do a wildcard search for all files that have the pattern "*.cpp"
+
 add_library(utils STATIC ${UTILS_SOURCES})
 
 

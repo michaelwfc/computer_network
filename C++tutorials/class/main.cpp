@@ -21,26 +21,6 @@
 #include "StanfordID.h"
 #include "Vector.h"
 
-class Person
-{
-private: // private member variables
-    std::string name;
-    int age;
-
-public: // constructor
-    Person(std::string name, int age)
-    {
-        this->name = name;
-        this->age = age;
-    }
-
-    // public method
-    void printInfo()
-    {
-        std::cout << "name: " << name << " age: " << age << std::endl;
-    }
-};
-
 
 StanfordID min(const StanfordID &a, const StanfordID &b){
     // Compiler: “Hey, now I know what to do here!

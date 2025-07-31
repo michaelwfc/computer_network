@@ -5,10 +5,10 @@ using String = std::string;
 
 /**
  * 6 special member functions
-● Default constructor: T() :  Takes no parameters and creates a new object
-● Destructor: ~T()
-● Copy constructor: T(const T&)
-● Copy assignment operator: T& operator=(const T&)
+● Default constructor: T() : Object created with no parameters, no member variables instantiated
+● Destructor: ~T() ：Object destroyed when it is out of scope.
+● Copy constructor: T(const T&) ： Object created as a copy of existing object (member variable-wise)
+● Copy assignment operator: T& operator=(const T&) ：  Existing object replaced as a copy of another existing object
 ● Move constructor: T(T&&)
 ● Move assignment operator: T& operator=(T&&)
  */
@@ -30,6 +30,8 @@ public:
     // Copy Assignment Operator Invocation: Assigns an already existing object to another
     // Note that here both objects are constructed before the use of the = operator
     StanfordID& operator=(const StanfordID &other);
+
+    
 
 
     // method to get name, sunet, and idNumber, respectively

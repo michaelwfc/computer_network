@@ -98,8 +98,9 @@ void Vector<T>::push_back(const T &value)
  *
  */
 template <typename T>
-T &Vector<T>::at(size_t index)
+T& Vector<T>::at(size_t index)
 {
+    // Dereferencing a pointer without verifying it points to real memory is undefined behavior!
     if (index >= _size)
     {
         throw std::out_of_range("Index out of range");

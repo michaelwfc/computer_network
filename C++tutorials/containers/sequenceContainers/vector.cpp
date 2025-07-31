@@ -11,12 +11,32 @@
 int run_vector(){
     // A static array in C++ is declared using the traditional C-style syntax:
     int arr[5] = {1,2,3,4,5};
-    // Uniform initialization 
+
+    /** Uniform initialization 
+     * Uniform initialization is a C++11 feature that provides a consistent syntax for initializing objects using brace-initialization ({}).
+     - Consistent Syntax: Uses curly braces {} for all types of initialization
+     - Prevents Narrowing: Helps prevent implicit conversions that might lose data
+     - Works Everywhere: Can be used for built-in types, user-defined types, arrays, and containers
+     */ 
+
     std::vector <int> vec {1,2,3};
     printVector(vec);
 
     std::vector <int> vec2(5,3);
     printVector(vec2);
+
+    // custom constructor with size
+    std::vector<int> vec3(8);
+    printVector(vec3);
+
+    // Copy Constructor
+    vector<int> vec5(vec2);
+
+    //Initializer list is empty – empty vector via list initialization
+    std::vector<int> vec6{};
+
+    //List initialization
+    std::vector<int> vec7{static_cast<int>(vec2.size() + vec6.size())};
 
     vec.push_back(4);
     printVector(vec);
@@ -59,7 +79,7 @@ void run_find(){
 }
 
 int main() {
-    // run_vector();
-    run_find();
+    run_vector();
+    // run_find();
     return 0;
 }
