@@ -83,9 +83,43 @@ If we write using namespace std; we don’t have to, but this is considered bad 
 | Example  | void someFunction();  |void someFunction(){...};|
 
 ## Types of inheritance
+
 | Type  | public  | protected | private |
 | ----- | ------- | --------- | ------- |
 |Example | class B： public A{...} | class B: protected A{...} |  class B: private A{...} | 
 |Public Members | Are public in the derived class | Protected in the derived class | Privated in the derived class |
 |Protected Members | Protected in the derived class | Protected in the derived class | Privated in the derived class |
 |Private Members |  Not accessible in derived class |Not accessible in derived class | Not accessible in derived class |
+
+
+# Special Member Functions
+
+6 special member functions
+
+- Default constructor: T() : Object created with no parameters, no member variables instantiated
+- Destructor: ~T() ：Object destroyed when it is out of scope.
+- Copy constructor: T(const T&) ： Object created as a copy of existing object (member variable-wise)
+- Copy assignment operator: T& operator=(const T&) ：  Existing object replaced as a copy of another existing object
+- Move constructor: T(T&&)
+- Move assignment operator: T& operator=(T&&)
+
+SMFs are automatically generated for you，
+-  But if you’re managing pointers to allocated to memory, do it yourself
+
+
+
+# Type Safety
+
+The extent to which a function signature guarantees the behavior of a function.
+
+## std::optional
+
+std::optional is a template class which will either contain a value of type T or contain nothing (expressed as nullopt)
+
+nullptr: an object that can be converted to a value of any pointer type
+nullopt: an object that can be converted to a value of any optional type
+
+
+# RAII (Resource Acquisition Is Initialization)
+
+## Smart Pointers

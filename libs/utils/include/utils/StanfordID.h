@@ -3,15 +3,7 @@
 // An example of type aliasing
 using String = std::string;
 
-/**
- * 6 special member functions
-● Default constructor: T() : Object created with no parameters, no member variables instantiated
-● Destructor: ~T() ：Object destroyed when it is out of scope.
-● Copy constructor: T(const T&) ： Object created as a copy of existing object (member variable-wise)
-● Copy assignment operator: T& operator=(const T&) ：  Existing object replaced as a copy of another existing object
-● Move constructor: T(T&&)
-● Move assignment operator: T& operator=(T&&)
- */
+
 class StanfordID
 {
 private:

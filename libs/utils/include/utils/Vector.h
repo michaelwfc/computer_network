@@ -33,7 +33,7 @@ public:
     T &at(size_t index);
     T &operator[](size_t index);
 
-    // operator overload Assignment operator
+    // copy Assignment operator
     Vector &operator=(const Vector &other);
 
     size_t size();

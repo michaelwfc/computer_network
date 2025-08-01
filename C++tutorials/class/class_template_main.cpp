@@ -38,10 +38,11 @@ int main()
     std::cout << std::endl;
 
 
+
     // deep copy constructor
-    Vector<int> vector2;
-    vector2 =vector;
-    vector2.at(0) = 1000;
+    Vector<int> vector2=vector;
+    vector2.at(0) = 2000;
+    std::cout << "copy constructor "<< std::endl;
     std::cout << "Contents of Vector: ";
     for (int i = 0; i < vector.size(); i++)
     {
@@ -49,10 +50,31 @@ int main()
     }
     std::cout << std::endl;
 
-    std::cout << "Contents of Vector2: ";
+    std::cout << "Contents of vector2: "<< std::endl;
     for (int i = 0; i < vector2.size(); i++)
     {
         std::cout << vector2.at(i) << " ";
+    }
+    std::cout << std::endl;
+
+
+
+    // deep copy assignment operator
+    Vector<int> vector3;
+    vector3 = vector;
+    vector3.at(0) = 3000;
+    std::cout << "copy assignment operator";
+    std::cout << "Contents of Vector: ";
+    for (int i = 0; i < vector.size(); i++)
+    {
+        std::cout << vector.at(i) << " ";
+    }
+    std::cout << std::endl;
+
+    std::cout << "Contents of vector3: ";
+    for (int i = 0; i < vector3.size(); i++)
+    {
+        std::cout << vector3.at(i) << " ";
     }
     std::cout << std::endl;
 

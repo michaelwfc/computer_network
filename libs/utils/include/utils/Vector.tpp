@@ -45,15 +45,7 @@ Vector<T>::Vector() : _size(0), _capacity(4), _data(new T[_capacity]) {}
 // template <typename T>
 // Vector<T>::Vector<T>(const Vector::Vector<T> &other) : _size(other._size), _capacity(other._capacity),  _data(other._data){}
 
-template <typename T>
-Vector<T>::Vector(const Vector &other) : _size(other._size), _capacity(other._capacity),  _data(new T[_capacity])
-{
-    // Now we have a “deep” copy of the data in our Vector.
-    for (size_t i = 0; i < _size; i++)
-    {
-        _data[i] = other._data[i];
-    }
-}
+
 
 
 
@@ -114,12 +106,27 @@ T &Vector<T>::operator[](size_t index)
     return _data[index];
 }
 
+
 /**
- * assignment operator overload
+ * copy constructor(custom)
+ */
+template <typename T>
+Vector<T>::Vector(const Vector &other) : _size(other._size), _capacity(other._capacity),  _data(new T[_capacity])
+{
+    //  Correct use of member initializer list for _size, _capacity, and _data.
+    // Now we have a “deep” copy of the data in our Vector.
+    //  std::copy(other._data, other._data + _size, _data);
+    for (size_t i = 0; i < _size; i++)
+    {
+        _data[i] = other._data[i];
+    }
+}
+
+/**
+ * copy assignment operator overload
  * Deep copy: Both copy constructor and assignment operator must create a deep copy of the data
  * 
  */
-
 template <typename T>
 Vector<T> &Vector<T>::operator=(const Vector<T> &other)
 {
