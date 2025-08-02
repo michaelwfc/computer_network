@@ -19,6 +19,29 @@ void get_URL(const string &host, const string &path) {
 
     cerr << "Function called: get_URL(" << host << ", " << path << ").\n";
     cerr << "Warning: get_URL() has not been implemented yet.\n";
+    // create a TCP socket
+    TCPSocket socket;
+    
+    // get the address
+    Address address = Address(host,"http");
+
+    // connect to the host and port
+    socket.connect(address);
+
+    // send http request
+    string request = "GET " + path + " HTTP/1.1\r\n";
+    request += "Host: " + host + "\r\n";
+    request += "Connection: close\r\n\r\n";
+    
+    socket.write(request);
+
+    // read and print response util EOF
+    while (!socket.eof()) {
+        std::cout << socket.read();
+    }
+
+    // close
+    socket.close();
 }
 
 int main(int argc, char *argv[]) {
@@ -30,15 +53,19 @@ int main(int argc, char *argv[]) {
         // The program takes two command-line arguments: the hostname and "path" part of the URL.
         // Print the usage message unless there are these two arguments (plus the program name
         // itself, so arg count = 3 in total).
-        if (argc != 3) {
-            cerr << "Usage: " << argv[0] << " HOST PATH\n";
-            cerr << "\tExample: " << argv[0] << " stanford.edu /class/cs144\n";
-            return EXIT_FAILURE;
-        }
+        // if (argc != 3) {
+        //     cerr << "Usage: " << argv[0] << " HOST PATH\n";
+        //     cerr << "\tExample: " << argv[0] << " stanford.edu /class/cs144\n";
+        //     return EXIT_FAILURE;
+        // }
 
-        // Get the command-line arguments.
-        const string host = argv[1];
-        const string path = argv[2];
+        // // Get the command-line arguments.
+        // const string host = argv[1];
+        // const string path = argv[2];
+
+        const string host ="cs144.keithw.org";
+        const string path ="/hello";
+
 
         // Call the student-written function.
         get_URL(host, path);

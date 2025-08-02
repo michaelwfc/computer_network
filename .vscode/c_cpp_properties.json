@@ -5,7 +5,7 @@
             "includePath": [
                 "/usr/include",
                 "/usr/local/include",
-                "${workspaceFolder}/cs144_minnow/util",
+                "${workspaceFolder}/cs144_sponge/libsponge/util",
                 "${workspaceFolder}/libs/utils/include/utils"
             ],
             "compilerPath": "/usr/bin/g++",
