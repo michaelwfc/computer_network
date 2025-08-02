@@ -70,6 +70,27 @@ StanfordID::~StanfordID()
     // delete [] my_array; // for illustration
 }
 
+
+StanfordID::StanfordID(const StanfordID &other){
+    this->name= other.name;
+    this->sunet= other.sunet;
+    this->idNumber= other.idNumber;
+
+}
+
+StanfordID& StanfordID::operator=(const StanfordID &other) {
+    // Check for self-assignment
+    if (this != &other) {
+        // Copy each member variable from the other object
+        this->name = other.name;
+        this->sunet = other.sunet;
+        this->idNumber = other.idNumber;
+    }
+    
+    // Return reference to the current object
+    return *this;
+}
+
 /**
  * Member overloading
  * a. Declares the overloaded operator within the scope of your class
@@ -87,7 +108,6 @@ bool StanfordID::operator<(const StanfordID &other) const
  * b. Define both the left and right hand objects as parameters
  *
  * The friend keyword allows non-member functions or classes to access private information in another class!
-
  */
 bool operator==(const StanfordID &lhs, const StanfordID &rhs)
 {

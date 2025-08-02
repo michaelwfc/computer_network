@@ -30,9 +30,12 @@ StanfordID min(const StanfordID &a, const StanfordID &b){
 
 int run_starfordid()
 {
-    // Person p1("Tom", 18);
-    // p1.printInfo();
 
+    // uniform init 
+    StanfordID id0{"Alice","alice123",15};
+    std::cout << id0.getName() << " " << id0.getID() << " " << id0.getSunet() << std::endl;
+
+    
     StanfordID id1 = StanfordID("Tom", "tom", 18);
     std::cout << "id1 id: " << id1.getID() << " name: " << id1.getName() << " sunet: " << id1.getSunet() << std::endl;
 

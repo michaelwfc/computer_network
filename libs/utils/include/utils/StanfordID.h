@@ -23,8 +23,6 @@ public:
     // Note that here both objects are constructed before the use of the = operator
     StanfordID& operator=(const StanfordID &other);
 
-    
-
 
     // method to get name, sunet, and idNumber, respectively
     std::string getName();
