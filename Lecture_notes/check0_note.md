@@ -243,5 +243,8 @@ To your program and to the Web server, the socket looks like an ordinary file de
 Each datagram contains some metadata (headers) that specifies things like the source and destination addresses|what computer it came from, and what computer it's headed towards|as well as some payload data (up to about 1,500 bytes) to be delivered to the destination computer.
 
 ```bash
-
+# build
+make
+# test
+make check_lab0
 ```
