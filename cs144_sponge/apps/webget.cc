@@ -53,18 +53,18 @@ int main(int argc, char *argv[]) {
         // The program takes two command-line arguments: the hostname and "path" part of the URL.
         // Print the usage message unless there are these two arguments (plus the program name
         // itself, so arg count = 3 in total).
-        // if (argc != 3) {
-        //     cerr << "Usage: " << argv[0] << " HOST PATH\n";
-        //     cerr << "\tExample: " << argv[0] << " stanford.edu /class/cs144\n";
-        //     return EXIT_FAILURE;
-        // }
+        if (argc != 3) {
+            cerr << "Usage: " << argv[0] << " HOST PATH\n";
+            cerr << "\tExample: " << argv[0] << " stanford.edu /class/cs144\n";
+            return EXIT_FAILURE;
+        }
 
-        // // Get the command-line arguments.
-        // const string host = argv[1];
-        // const string path = argv[2];
+        // Get the command-line arguments.
+        const string host = argv[1];
+        const string path = argv[2];
 
-        const string host ="cs144.keithw.org";
-        const string path ="/hello";
+        // const string host ="cs144.keithw.org";
+        // const string path ="/hello";
 
 
         // Call the student-written function.

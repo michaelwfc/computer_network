@@ -89,6 +89,22 @@ class TCPSocket : public Socket {
   private:
     //! \brief Construct from FileDescriptor (used by accept())
     //! \param[in] fd is the FileDescriptor from which to construct
+    
+    /**
+     * explicit prevents implicit conversions — you must explicitly call this constructor.
+     * 
+     * TCPSocket(FileDescriptor &&fd):  
+     * This is a constructor that takes a FileDescriptor by rvalue reference (&&).
+     * It is used when you want to move the ownership of a FileDescriptor into the new TCPSocket object.
+     * 
+     * FileDescriptor &&fd — uses an rvalue reference, so it can take ownership (move semantics).
+     * 
+     * : Socket(std::move(fd), AF_INET, SOCK_STREAM)
+     * This is an initializer list that forwards arguments to the constructor of the base class Socket.
+     * Socket(...) is the constructor of the base class.
+     * std::move(fd) — moves the FileDescriptor into the base class. This avoids copying and transfers ownership.
+     * AF_INET and SOCK_STREAM specify: AF_INET = IPv4, SOCK_STREAM = TCP (stream-based socket)
+     */
     explicit TCPSocket(FileDescriptor &&fd) : Socket(std::move(fd), AF_INET, SOCK_STREAM) {}
 
   public:
