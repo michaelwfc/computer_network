@@ -12,13 +12,7 @@ void printVector(std::vector<int> v)
 }
 
 
-void printDeque(std::deque<int> v){
-    for (auto i : v)
-    {
-        std::cout << i << " ";
-    }
-    std::cout << std::endl;
-}
+
 
 void printArray(double *arr, int size)
 {
