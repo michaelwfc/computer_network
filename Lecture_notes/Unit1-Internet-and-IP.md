@@ -16,7 +16,7 @@
   - Skype
   - BitTorrent
 
-# The structure of the Internet: 4 Layer Internet Model
+# 1.2 The structure of the Internet: 4 Layer Internet Model
 
 - The Application layer: steam of data
   a stream of data from the application layer. this stream into segments of data that it reliably delivers to an application running on another computer.
@@ -89,7 +89,7 @@ UDP just bundles up application data and hands it to the Network Layer for deliv
 - The network layer puts the transport segement inside a new IP datagram. IP datagrams consist of a header and some data. IP’s job is to deliver the datagram to the other end.
 - But first, the IP datagram has to make it over the first link to the first router， to put IP datagram inside Link frame， such as an Ethernet packet and ships it off to the first router.
 
-# The IP service model
+# 1.3 The IP service model
 
 ### Properties
 
@@ -133,7 +133,7 @@ It starts out at a number like 128 and then is decremented by every router it pa
 - The Checksum field
   is calculated over the whole header so just in case the header is corrupted, we are not likely to deliver a packet to the wrong desination by mistake.
 
-# Life of a Packet
+# 1.4 Life of a Packet
 
 ## Three way handshake
 
@@ -239,7 +239,7 @@ curl http://nginx.org/
 
 ```
 
-# Basic architectural ideas and principles
+# 1.6 Basic architectural ideas and principles
 
 1. packet switching
    which is the simple way in which data is broken down into self-contained packets of information that are forwarded hop-by-hop based on the information in the packet header.
@@ -253,7 +253,7 @@ curl http://nginx.org/
 
 This helps a clear separation of concerns between how data is processed at each layer in the hierarchy.
 
-## Packet Switching
+# 1.5 Packet Switching
 
 Packet:  
 A self-contained unit of data that carries
@@ -367,7 +367,7 @@ uint16_t packet_port = ntohs(packet->port);
 - Algorithm: use forwarding entry with the longest matching prefix
   Longest prefix match will chose link 5 for 171.33.0.1
 
-# Address Resolution Protocol(ARP)
+# 1.11 Address Resolution Protocol(ARP)
 
 the mechanism by which the network layer can discover the link address associated with a network address it’s directly connected to.
 Put another way, it’s how a device gets an answer to the question:
