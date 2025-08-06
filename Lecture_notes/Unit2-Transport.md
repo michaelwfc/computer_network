@@ -501,6 +501,11 @@ It tells the receiver:
 
 # 2.6 Finite State Machines
 
+A Finite State Machine is a model of computation made up of:
+
+- A finite number of states
+- Transitions between those states triggered by events
+
 ## FSM Example: HTTP Request
 
 So let’s walk through an example, an HTTP request. In practice HTTP requests are a bit more complex than this, there all kinds of options, so for this example we’ll just use a very simple form.
@@ -548,11 +553,61 @@ Or receive response while in the idle state?
 
 ## FSM Example: TCP Connection
 
+For TCP, this FSM helps describe how a connection behaves when:
+
+- Connecting (3-way handshake)
+- Transferring data
+- Closing the connection (4-way handshake)
+  
 [TCP State Diagram](https://en.wikipedia.org/wiki/Transmission_Control_Protocol#Protocol_operation)
 
 ![iamge](../images/fsm-example-tcp-connection.png)
 
+#### Common TCP Lifecycle
+
+```text
+Client                                  Server
+------                                  ------
+CLOSED                                 CLOSED
+   |                                      |
+   |                                   passive open (listen)
+   |                                      |
+   |                                      | -> LISTEN
+   |                                      |
+active open (connect)                     |
+   |→ SYN_SENT                            |
+   |                                  receiving a SYN message
+   |                                      |
+   |                                      |-> SYN_RECEIVED
+   |                                      |
+   |                                  sending SYN + ACK message
+receiving SYN+ACK message                 |
+   |                                      |
+sending ACK message                       |   
+   |                                      |
+   |                                      |
+   |-> ESTABLISHED                        |-> ESTABLISHED
+   |                                      |
+send/receive data                         |
+   |                                      |
+close()                                   |
+   |→ FIN_WAIT_1                          |
+                                    send ACK message
+   |→ FIN_WAIT_2                          |
+                                    send FIN message
+   |                                      |
+   |                                      |
+   |-> TIME_WAIT                        CLOSED
+   |
+after 2MSL timeout
+   |
+CLOSED
+```
+
+
 ### TCP Connection State
+
+
 
 [TCP Connection state](https://maxnilz.com/docs/004-network/003-tcp-connection-state/)
 
@@ -594,7 +649,7 @@ describe how you open a TCP connection.
   Note that the top state is also the closed state -- before we open the connection.
 
 
-### TCP three-way handshake
+### TCP Connection(three-way handshake)
 
 Recall that you start a TCP connection with a three way handshake -- SYN, SYN/ACK, ACK. The client, or
 active opener, sends a SYN, synchronization, message to a program listening for connection requests.
@@ -602,19 +657,21 @@ When it receives a SYN, it responds with a SYN/ACK, synchronizing and acknowledg
 
 The state diagram here describes how TCP behaves on both sides of the TCP three-way handshake. 
 
-- Server： Listen state  
+- Server： Listen state 
+   
 A passive opener is a server. It listens for requests for connections from active openers, clients. So when a program calls listen(), the socket transitions from the orange closed state to the yellow listen state. 
 
 The protocol takes no actions when this happens -- it doesn’t send any messages. If the server calls close on the socket when it’s in the listen state, it transitions immediately to the closed state.
 
 - Client: Close State -> SYN SENT state  
+  
 Let’s walk through the three way handshake starting with the first step, when a client tries to open a connection and sends a SYN packet to the server.
 We can see this first transition for the client side of the connection as this orange arrow from closed to the SYN SENT state. This happens when the client program calls connect -- the event -- and the client sends a SYN message.
 So once the first SYN is sent, the client is in the SYN SENT state and the server is in the LISTEN state. 
 
 - Server : Listen state -> SYN RECEIVED state  
-When the SYN arrives at the server, this leads to this
-blue transition. You can see the event is receiving a SYN message. The action is to send a SYN/ACK message in response. Now the server is in the SYN RECEIVED state.
+  
+When the SYN arrives at the server, this leads to this blue transition. You can see the event is receiving a SYN message. The action is to send a SYN/ACK message in response. Now the server is in the SYN RECEIVED state.
 
 - Client : SYN SENT -> ESTABLISHED  
 Let’s jump back to the client. Remember, it was in the SYN SENT stage. Now, when it receives the SYN/ACK from the server, it transitions to the ESTABLISHED state. 
@@ -625,6 +682,101 @@ Finally, let’s go back to the server, which is in the SYN RECEIVED state. When
 There are a couple more transitions during connection opening
 
 
+
 # 2.7  Flow Control
 
+- Don’t send more packets than receiver can process
+- Receiver gives sender feedback
+- Two basic approaches
+    - Stop and wait (this video)
+    - Sliding window (next video)
+
+
+Reliable delivery is usually accomplished using a combination of two fundamental mechanisms - acknowledgments and timeouts. 
+
+- **acknowledgments**
+
+An acknowledgment (ACK for short) is a small control frame that a protocol sends back to its peer saying that it has received an earlier frame. By control frame we mean a header without any data, although a protocol can piggyback an ACK on a data frame it just happens to be sending in the opposite direction. The receipt of an acknowledgment indicates to the sender of the original frame that its frame was successfully delivered. If the sender does not receive an acknowledgment after a reasonable amount of time, then it retransmits the original frame. 
+
+- **timeouts**
+  
+This action of waiting a reasonable amount of time is called a timeout.
+
 ## Stop-and-Wait
+
+The idea of stop-and-wait is straightforward: After transmitting one frame, the sender waits for an acknowledgment before transmitting the next frame. If the acknowledgment does not arrive after a certain period of time, the sender times out and retransmits the original frame.
+
+### Exception Examples
+![image](../images/Stop-and-Wait-exception-examples.png)
+
+
+### Duplicates
+
+In both C and D cases, the sender times out and retransmits the original frame, but the receiver will think that it is the next frame, since it correctly received and acknowledged the first frame. This has the potential to cause duplicate copies of a frame to be delivered.
+
+To address this problem, the header for a stop-and-wait protocol usually includes a 1-bit sequence number—that is, the sequence number can take on the values 0 and 1 and the sequence numbers used for each frame alternate
+
+![image](../images/Timeline%20for%20stop-and-wait%20with%201-bit%20sequence%20number.png)
+
+- Use 1-bit counter in data and acknowledgments
+    - Receiver can tell if new data or duplicate
+- Some simplifying assumptions
+    - Network does not duplicate packets
+    - Packets not delayed multiple timeouts
+
+
+## Sliding Window
+
+It’s a flow control mechanism that allows multiple packets (segments) to be sent before waiting for an acknowledgment (ACK)—as long as they fall within a window size.
+
+Imagine a window that "slides" over a stream of packets to allow:
+
+- Efficient transmission (avoids waiting after every packet)
+- Reliable delivery (enables retransmission on loss)
+- Flow control (adapts to receiver's capacity)
+
+### Sender-Side Behavior
+
+![image](../images/Sliding%20window%20on%20sender.png)
+- Maintain 3 variables
+  - Send window size (SWS) :  gives the upper bound on the number of outstanding (unacknowledged) frames that the sender can transmit;
+  - Last acknowledgment received (LAR):  the sequence number of the last acknowledgment received
+  - Last segment sent (LSS): the sequence number of the last segment sent
+- Maintain invariant: (LSS - LAR) ≤ SWS
+
+
+
+- The sender keeps a window of packets it is allowed to send.
+- When an ACK is received, the window slides forward, allowing new data to be sent.
+- Every segment has a sequence number (SeqNo)
+
+
+- Advance LAR on new acknowledgment,  thereby allowing the sender to transmit another frame. 
+- Buffer up to SWS segments
+
+
+### Receiver-Side Behavior
+
+![image](../images/Sliding%20window%20on%20receiver.png)
+- Maintain 3 variables
+  - Receive window size (RWS): The receiver advertises a window size (called receive window), which tells the sender how much buffer space is available.
+  - Last acceptable segment (LAS)
+  - Last segment received (LSR)
+- Maintain invariant: (LAS - LSR) ≤ RWS
+
+
+
+When a frame with sequence number SeqNum arrives, the receiver takes the following action. 
+
+- If SeqNum <= LFR or SeqNum > LAF, then the frame is outside the receiver’s window and it is discarded. 
+- If LFR < SeqNum <= LAF, then the frame is within the receiver’s window and it is accepted. 
+  
+  Now the receiver needs to decide whether or not to send an ACK. Let SeqNumToAck denote the largest sequence number not yet acknowledged, such that all frames with sequence numbers less than or equal to SeqNumToAck have been received. 
+  The receiver acknowledges the receipt of SeqNumToAck, even if higher numbered packets have been received. 
+  This acknowledgment is said to be cumulative. It then sets LFR = SeqNumToAck and adjusts LAF = LFR + RWS.
+
+- If received packet is < LAS, send acknowledgment
+  - Send cumulative acks: if received 1, 2, 3, 5, acknowledge 3
+  - NOTE: TCP acks are next expected data (e.g., ack 4 in above example)
+
+# 2.8 Retransmission Strategies
