@@ -1,8 +1,12 @@
+
+- [CS144's documentation to the starter code](https://web.archive.org/web/20220827011711/https://cs144.github.io/doc/lab0)
+
 # 2 Networking by hand
 
 1. In a Web browser, visit http://cs144.keithw.org/hello and observe the result.
 
 2. Now, you’ll do the same thing the browser does, by hand.
+   
 ## 2.1 Fetch a Web page
 
 ```bash

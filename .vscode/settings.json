@@ -1,8 +1,7 @@
 {
   "workbench.colorTheme": "Default Dark+",
   "files.autoSave": "onFocusChange",
-  "terminal.integrated.defaultProfile.windows": "Ubuntu",
-  // "terminal.integrated.defaultProfile.windows": "Ubuntu-22.04 (WSL)", //"UCRT64"
+  "terminal.integrated.defaultProfile.windows": "Ubuntu-22.04 (WSL)", //"UCRT64"
   // "terminal.integrated.profiles.windows": {
   //   "UCRT64": {
   //     "path": "C:\\msys64\\usr\\bin\\bash.exe",
@@ -127,5 +126,6 @@
     "format": "cpp",
     "*.tpp": "cpp"
   },
-  "C_Cpp.default.compilerPath": "/usr/bin/gcc"
+  "C_Cpp.default.compilerPath": "/usr/bin/gcc",
+  "cmake.sourceDirectory": "/mnt/e/projects/computer_network/cmake_project"
 }
