@@ -92,3 +92,82 @@ cs144@cs144vm:~$ pwd
 /home/cs144
 cs144@cs144vm:~$ 
 ```
+
+##  How to Work with the existed local code  
+Best workflow:
+
+1. On local: Use Git to sync between VM and Windows when needed
+   - Initialize git in your local project
+   - Push to a Git hosting service 
+ 
+
+2. On VM:
+   - Connect VS Code via Remote-SSH to the VM
+   - Clone on the VM: 
+      - `cd ~`
+      - `git clone https://github.com/michaelwfc/computer_network.git`
+   - Edit, compile, and debug entirely on the VM through VS Code 
+   - Commit and push from VM
+ 
+3. On local:  Pull on Windows when needed
+
+## Set proxy on VM
+
+The VM can't access GitHub because it needs to use your Windows proxy. Here are several solutions:
+
+1. Configure Clash to Allow LAN Connections
+Your Clash might be blocking connections from the VM. Fix this:
+
+- Open Clash on Windows
+- Go to Settings/General
+- Enable "Allow LAN" or "Allow connections from LAN"
+- Note the port (7897 in your case)
+- Restart Clash if needed
+
+
+2. VM set proxy for git
+```bash
+# option 1: Configure Git to Use Proxy (Quickest)
+# In the VM terminal
+# Use the host IP that the VM can reach (VirtualBox default gateway)
+# Note: 10.0.2.2 is the default IP address that VirtualBox VMs use to reach the host machine.
+git config --global http.proxy http://10.0.2.2:7897
+git config --global https.proxy http://10.0.2.2:7897
+
+# If you need to remove proxy later:
+git config --global --unset http.proxy
+git config --global --unset https.proxy
+
+
+# Check your default gateway
+cs144@cs144vm:~$ ip route | grep default
+default via 10.0.2.2 dev enp0s3 proto dhcp src 10.0.2.15 metric 100
+# Should show something like: default via 10.0.2.2 dev enp0s3
+
+cs144@cs144vm:~$ netstat -rn | grep "^0.0.0.0"
+0.0.0.0         10.0.2.2        0.0.0.0         UG        0 0          0 enp0s3
+
+# Now try cloning
+git clone https://github.com/michaelwfc/computer_network.git
+
+```
+
+
+3. VM Set System-Wide Proxy (More Permanent)
+
+```bash
+# Edit your bash profile
+nano ~/.bashrc
+
+# Add these lines at the end:
+export http_proxy="http://10.0.2.2:7897"
+export https_proxy="http://10.0.2.2:7897"
+
+# Save (Ctrl+O, Enter, Ctrl+X)
+
+# Reload the configuration
+source ~/.bashrc
+
+# Test connectivity to proxy:
+curl -x http://10.0.2.2:7897 https://www.google.com
+```
