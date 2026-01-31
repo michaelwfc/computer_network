@@ -4,8 +4,8 @@
 - [CS144 github IO](https://cs144.github.io/)
 - [CS144 git repo](https://github.com/CS144/minnow)
 
-## 2024 version github IO
-
+## backup github IO
+- [CS144 gitbhu IO-2021](https://coderhxjin.github.io/cs144-2021-backup.github.io/)
 - [CS144 github IO-2024](https://web.archive.org/web/20241209004804/https://cs144.github.io/)
 
 ## Vedio
@@ -19,6 +19,7 @@
 - [CS自学指南](https://csdiy.wiki/%E8%AE%A1%E7%AE%97%E6%9C%BA%E7%BD%91%E7%BB%9C/CS144/)
 - [Standford CS144 (24 Winter) Computer Network - 可能是年轻人最好的现代 C++ 入门课](https://zhuanlan.zhihu.com/p/20551290958)
 - [HackWay技术学习路线](https://hackway.org/docs/cs/junior/network/cs144)
+- [计算机网络学习笔记（CS144、15-441）](https://my.feishu.cn/docx/doxcnpBEN4SG3vA9pVyCoANigBh)
 
 
 ## Textbook
@@ -28,10 +29,3 @@
 - [Peterson & Davie, “Computer Networks: A Systems Approach”](https://book.systemsapproach.org/)
 - THE network programming bible. W. Richard Stevens et. al. “Unix Network Programming: The Sockets Networking API”, Volume 1, Third Edition, Prentice Hall, 2003
 
-# Labs
-
-- [FAQ-Answers to common questions about lab assignment](https://cs144.github.io/lab_faq.html)
-- [CS144's lab0](https://web.archive.org/web/20220827011711/https://cs144.github.io/doc/lab0)
-- [slides](https://github.com/khanhnamle1994/computer-networking)
-- [lab-repo](https://github.com/PKUFlyingPig/CS144-Computer-Network)
-- [lab-repo2](https://github.com/top-mind/cs144-minnow-nju/tree/main)
