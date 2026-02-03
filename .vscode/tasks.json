@@ -28,17 +28,17 @@
     {
       "type": "cppbuild",
       "label": "build cs144 active file",
-      "command": "/usr/bin/g++",
-      "args": [
-        "-std=c++17",
-        "${workspaceFolder}/cs144_sponge/libsponge/util/*.cc",
-        "-I${workspaceFolder}/cs144_sponge/libsponge/util",
-        // "-I${workspaceFolder}/libs/utils/src",
-        "-g",
-        "${file}",
-        "-o",
-        "${fileDirname}/${fileBasenameNoExtension}",
-      ],
+      // "command": "/usr/bin/g++",
+      // "args": [
+      //   "-std=c++17",
+      //   "${workspaceFolder}/sponge/libsponge/util/*.cc",
+      //   "-I${workspaceFolder}/sponge/libsponge/util",
+      //   "-g",
+      //   "${file}",
+      //   "-o",
+      //   "${fileDirname}/${fileBasenameNoExtension}",
+      // ],
+      "command": "cd ${workspaceFolder}/build && make -j$(nproc)",
       "options": {
         "cwd": "${fileDirname}"
       },

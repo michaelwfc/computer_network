@@ -388,8 +388,7 @@ in CS144.)
 • Make every variable `const` unless it needs to be mutated.
 • Make every method `const` unless it needs to mutate the object.
 • Avoid `global variables`, and give every variable the smallest scope possible.
-• Before handing in an assignment, please run `make format` to normalize the coding
-style.
+• Before handing in an assignment, please run `make format` to normalize the coding style.
 
 • Before handing in an assignment, 
 run `cmake--build build--target tidy` suggestions on how to improve the code related to C++ programming practices,
@@ -405,18 +404,12 @@ Finally,you are welcome to store your code in a private repository on GitHub, Gi
 ## 3.3  Reading the Sponge documentation
 CS144's user-space TCP library
 
-
-
-
 ![image](../../images/CS144's%20user-space%20TCP%20library-class-hierarchy.png)
 
-To support this style of programming, Sponge's classes wrap operating-system functions
-(which can be called from C) in modern" C++.
-1. Using a Web browser, read over the documentation to the starter code at
-https://cs144.github.io/doc/lab0.
-1. Pay particular attention to the documentation for the `FileDescriptor`, `Socket`, `TCPSocket`, and `Address` classes. (Note that a Socket is a type of FileDescriptor, and a TCPSocket is a type of Socket.)
-2. Now, find and read over the header files that describe the interface to these classes in
-the `libsponge/util` directory: file descriptor.hh, socket.hh, and address.hh.
+To support this style of programming, Sponge's classes wrap operating-system functions(which can be called from C) in modern" C++.
+1. Using a Web browser, read over the documentation to the starter code at https://cs144.github.io/doc/lab0.
+2. Pay particular attention to the documentation for the `FileDescriptor`, `Socket`, `TCPSocket`, and `Address` classes. (Note that a Socket is a type of FileDescriptor, and a TCPSocket is a type of Socket.)
+3. Now, find and read over the header files that describe the interface to these classes in the `libsponge/util` directory: `file_descriptor.hh`, `socket.hh`, and `address.hh`.
 
 
 ## 3.4 Writing webget
@@ -427,9 +420,8 @@ It's time to implement `webget`, a program to fetch Web pages over the Internet 
 3. Implement the simple Web client as described in this file, using the format of an HTTP (Web) request that you used earlier. Use the `TCPSocket` and `Address` classes.
 4. Hints:
 • Please note that in HTTP, each line must be ended with "`\r\n`" (it's not sufficient to use just "`\n`" or `endl`).
-• Don't forget to include the "`Connection: close`" line in your client's request. This tells the server that it shouldn't wait around for your client to send any more requests after this one. Instead, the server will send one reply and then will
-immediately end its outgoing bytestream (the one from the server's socket to your socket). You'll discover that your incoming byte stream has ended because your socket will reach "`EOF`" (end of file) when you have read the entire byte stream coming from the server. That's how your client will know that the server has finished its reply.
-• Make sure to read and print all the output from the server until the socket reaches "EOF" (end of file)---a single call to read is not enough.
+• Don't forget to include the "`Connection: close`" line in your client's request. This tells the server that it shouldn't wait around for your client to send any more requests after this one. Instead, the server will send one reply and then will immediately end its outgoing bytestream (the one from the server's socket to your socket). You'll discover that your incoming byte stream has ended because your socket will reach "`EOF`" (end of file) when you have read the entire byte stream coming from the server. That's how your client will know that the server has finished its reply.
+• Make sure to read and print all the output from the server until the socket reaches "`EOF`" (end of file)---a single call to read is not enough.
 • We expect you'll need to write about ten lines of code.
 
 5. Compile your program by running `make .` If you see an error message, you will need to fixx it before continuing.
@@ -440,13 +432,12 @@ immediately end its outgoing bytestream (the one from the server's socket to you
 
 
 7. When it seems to be working properly, run `make check webget` to run the automated test. Before implementing the get URL function, you should expect to see the
-following:`
+following:
 ```bash
 1/1 Test #25: lab0_webget ......................***Failed 0.00 sec
 Function called: get_URL(cs144.keithw.org, /hasher/xyzzy).
 Warning: get_URL() has not been implemented yet.
-ERROR: webget returned output that did not match the test
-s expectations
+ERROR: webget returned output that did not match the tests expectations
 ```
 
 After completing the assignment, you will see:

@@ -21,6 +21,7 @@ sudo apt install -y \
     clang \
     clang-tidy \
     clang-format \
+    cppcheck \
     gcc-doc \
     pkg-config \
     glibc-doc \
@@ -38,7 +39,8 @@ sudo apt install -y \
     coreutils \
     bash \
     doxygen \
-    graphviz
+    graphviz \
+    python3-pip
 
 # Verify installations
 echo "=== Verification ==="

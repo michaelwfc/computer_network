@@ -284,6 +284,7 @@ sudo apt install -y \
     clang \
     clang-tidy \
     clang-format \
+    cppcheck \
     gcc-doc \
     pkg-config \
     glibc-doc \
@@ -301,10 +302,124 @@ sudo apt install -y \
     coreutils \
     bash \
     doxygen \
-    graphviz
+    graphviz \
+    python3-pip
 ```
 
 
+
+
+### GCC（GNU Compiler Collection）
+- 出自 GNU 项目，最早是自由软件运动的核心工具之一，历史悠久（1987 年就有）。
+- 是一个“整体式”编译器，前端、中间表示、后端耦合紧密。 优化做得很深，但代码基复杂，扩展不容易。
+- 历史悠久，性能稳健，交叉编译/嵌入式成熟
+  
+
+### Clang（C Language Family Frontend for LLVM）
+- 基于 LLVM 框架，2007 年由苹果主导开发。
+- clang 是前端，负责编译 C/C++/Objective-C → LLVM IR。
+- LLVM 后端做优化、生成目标代码。
+- 模块化、错误信息清晰、IDE/工具链友好、研究和教学利器
+
+
+#### Clang/LLVM 工具生态
+- clangd: 提供 C/C++ 语言服务器（VSCode、Vim、IDEA 都依赖它）。
+- clang-tidy: 自动代码检查和重构工具。
+- asan/tsan/msan 等运行时检测工具。
+- 更适合做“IDE 友好的智能分析”。
+
+#### 在 WSL Ubuntu 用 Clang
+```bash
+sudo apt update
+sudo apt install clang clangd lldb
+
+
+clang main.c -o main
+./main
+```
+
+
+
+
+### clangd
+**clangd** is a **language server** for C/C++ that provides intelligent code completion, navigation, and diagnostics:
+
+#### Features:
+- **Code completion** - Suggests function names, variables, and members as you type
+- **Go-to-definition** - Navigate to symbol definitions quickly
+- **Find references** - Locate all uses of a function, variable, or class
+- **Hover tooltips** - Show function signatures, documentation, and type information
+- **Real-time diagnostics** - Highlight syntax errors and warnings as you type
+- **Rename refactoring** - Safely rename symbols across the entire project
+
+#### Integration:
+- Works with editors like **VSCode**, Vim, Emacs, Neovim
+- Implements the **Language Server Protocol (LSP)** 
+- Uses the same parsing engine as Clang/LLVM
+
+### bear
+**bear** (Build EAR) is a **compilation database generator** that intercepts build commands:
+
+#### Purpose:
+- **Generates compile_commands.json** - A standardized JSON file listing all compilation commands
+- **Intercepts build processes** - Records the exact compiler invocations during a build
+- **Supports multiple build systems** - Works with make, ninja, cmake, and others
+
+#### Usage:
+```bash
+# Generate compilation database for your project
+bear -- make
+
+# Or with specific build system
+bear -- cmake --build .
+```
+
+#### Benefits:
+- Enables **clangd** and other tools to understand complex compilation flags
+- Allows **IDE features** to work properly with complex build setups
+- Supports **static analysis tools** that need exact compilation commands
+- Needed for advanced **refactoring and navigation**
+
+#### In the context of Sponge project:
+After running `bear -- make` in your build directory, you'd get a [compile_commands.json](file:///home/cs144/computer_network/sponge/build/compile_commands.json) file that clangd can use to provide accurate code intelligence for the Sponge networking library with all its specific compiler flags and include paths.
+
+Both tools work together to provide a rich development experience for C++ projects like Sponge.
+
+
+### clang-tidy
+**clang-tidy** is a **static analysis tool** for C++ code that:
+- Performs **comprehensive code analysis** to find bugs, style violations, and potential issues
+- Provides **diagnostic warnings** with suggestions for improvements
+- Enforces **coding standards** and best practices
+- Can automatically **fix some issues** with the `-fix` flag
+- In the Sponge project: run with `$ make -j$(nproc) tidy`
+
+**Example uses:**
+- Detects unused variables
+- Finds potential memory leaks
+- Checks for modern C++ best practices
+- Validates code style compliance
+
+### cppcheck
+**cppcheck** is another **static analysis tool** that:
+- Analyzes C/C++ code **without compiling** it
+- Focuses on finding **defects and bugs** like buffer overruns, memory leaks, and null pointer dereferences
+- Provides **portable analysis** across different platforms
+- In the Sponge project: run with `$ make cppcheck`
+- Often catches different types of issues than clang-tidy
+
+### clang-format
+**clang-format** is a **code formatting tool** that:
+- Automatically **formats C/C++ code** according to predefined style rules
+- Ensures **consistent code style** across the project
+- Supports various formatting styles (Google, LLVM, Mozilla, etc.)
+- In the Sponge project: run with `$ make format`
+- Helps maintain clean, readable code without manual formatting
+
+
+
+
+--------------------------------------------------------------------
 
 # C++ dev env on windows
 
@@ -391,16 +506,21 @@ g++ C++tutorials/STL/vector.cpp lib/include/printUtils.cpp -Ilib/include -o vect
 - Also (optionally) run `cmake --build build --target tidy` to receive suggestions for improvements related to C++ programming practices.
 
 
-## WSL Vscode settings
+# Vscode settings
 
-### C++ IDE ：WSL Vscode settings Reference
+## C++ IDE ：WSL Vscode settings Reference
 - IDE : [vscode](https://code.visualstudio.com/docs/languages/cpp)
 - vscode extension: Install recommended C/C++ extension in VSCode and reload
 - https://code.visualstudio.com/docs/cpp/cpp-debug
 - https://code.visualstudio.com/docs/cpp/launch-json-reference
 
-### Vscode setting files
-- c_cpp_properties.json (compiler path and IntelliSense settings)
-- tasks.json (build instructions)
-- launch.json (debugger settings)
+## Vscode setting files
+### 1. build launch configuration(debugger settings) in launch.json 
+
+### 2. Set up build task in tasks.json
+
+### 3. build C/C++ properties file  in c_cpp_properties.json
+ c_cpp_properties.json (compiler path and IntelliSense settings)
+
+
 

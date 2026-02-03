@@ -93,33 +93,5 @@ Here is a table listing the most common `gcc` flags along with their description
 This table includes some of the most commonly used flags with `gcc`, but there are many other specialized flags for various use cases. You can always refer to the `gcc` documentation (`man gcc` or `gcc --help`) for a comprehensive list of available flags.
 
 
-# gcc vs clang
 
-## GCC（GNU Compiler Collection）
-- 出自 GNU 项目，最早是自由软件运动的核心工具之一，历史悠久（1987 年就有）。
-- 是一个“整体式”编译器，前端、中间表示、后端耦合紧密。 优化做得很深，但代码基复杂，扩展不容易。
-- 历史悠久，性能稳健，交叉编译/嵌入式成熟
-  
-
-## Clang（C Language Family Frontend for LLVM）
-- 基于 LLVM 框架，2007 年由苹果主导开发。
-- clang 是前端，负责编译 C/C++/Objective-C → LLVM IR。
-- LLVM 后端做优化、生成目标代码。
-- 模块化、错误信息清晰、IDE/工具链友好、研究和教学利器
-
-### Clang/LLVM 工具生态
-- clangd: 提供 C/C++ 语言服务器（VSCode、Vim、IDEA 都依赖它）。
-- clang-tidy: 自动代码检查和重构工具。
-- asan/tsan/msan 等运行时检测工具。
-- 更适合做“IDE 友好的智能分析”。
-
-### 在 WSL Ubuntu 用 Clang
-```bash
-sudo apt update
-sudo apt install clang clangd lldb
-
-
-clang main.c -o main
-./main
-```
 

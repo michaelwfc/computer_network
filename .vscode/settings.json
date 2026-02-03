@@ -1,17 +1,22 @@
 {
+
+  "C_Cpp.default.compilerPath": "/usr/bin/gcc",
+  // "C_Cpp.default.compilerPath": "/usr/bin/clang",
+  // "clangd.path": "/usr/bin/clangd",
+  // "clangd.arguments": [
+  //   "--compile-commands-dir=${workspaceFolder}/sponge/build/compile_commands.json"
+  // ],
+
+  "cmake.sourceDirectory": "${workspaceFolder}/sponge/",
+  "C_Cpp.intelliSenseEngine": "disabled",
+  "C_Cpp.formatting": "disabled",
+  "C_Cpp.errorSquiggles": "disabled",
+  "C_Cpp.default.configurationProvider": "ms-vscode.cpptools",
+
+  // "terminal.integrated.defaultProfile.windows": "Ubuntu-22.04 (WSL)", 
   "workbench.colorTheme": "Default Dark+",
   "files.autoSave": "onFocusChange",
-  "terminal.integrated.defaultProfile.windows": "Ubuntu-22.04 (WSL)", //"UCRT64"
-  // "terminal.integrated.profiles.windows": {
-  //   "UCRT64": {
-  //     "path": "C:\\msys64\\usr\\bin\\bash.exe",
-  //     "args": ["--login", "-i"],
-  //     "env": {
-  //       "MSYSTEM": "UCRT64",
-  //       "CHERE_INVOKING": "1"
-  //     }
-  //   }
-  // },
+  
   // "markdown.styles": [".github-markdown-body"],
   // "markdown-preview-github-styles.colorTheme":"Single theme: Light",
   // "http.proxy": "http://10.255.255.254 :7897",
@@ -22,7 +27,7 @@
   // "http.proxy": "http://192.168.1.17:7897",
   // "https.proxy": "http://192.168.1.17:7897",
   // "no.proxy":"localhost,127.0.0.1,::1",
-  "http.proxyStrictSSL": false,
+  // "http.proxyStrictSSL": false,
 
 
   "window.zoomLevel": 1,
@@ -126,6 +131,5 @@
     "format": "cpp",
     "*.tpp": "cpp"
   },
-  "C_Cpp.default.compilerPath": "/usr/bin/gcc",
-  "cmake.sourceDirectory": "/mnt/e/projects/computer_network/cmake_project"
+
 }
