@@ -6,25 +6,25 @@
 
 //! \brief Ethernet frame
 class EthernetFrame {
-  private:
-    EthernetHeader _header{};
-    BufferList _payload{};
+private:
+  EthernetHeader _header{};
+  BufferList _payload{};
 
-  public:
-    //! \brief Parse the frame from a string
-    ParseResult parse(const Buffer buffer);
+public:
+  //! \brief Parse the frame from a string
+  ParseResult parse(const Buffer buffer);
 
-    //! \brief Serialize the frame to a string
-    BufferList serialize() const;
+  //! \brief Serialize the frame to a string
+  BufferList serialize() const;
 
-    //! \name Accessors
-    //!@{
-    const EthernetHeader &header() const { return _header; }
-    EthernetHeader &header() { return _header; }
+  //! \name Accessors
+  //!@{
+  const EthernetHeader &header() const { return _header; }
+  EthernetHeader &header() { return _header; }
 
-    const BufferList &payload() const { return _payload; }
-    BufferList &payload() { return _payload; }
-    //!@}
+  const BufferList &payload() const { return _payload; }
+  BufferList &payload() { return _payload; }
+  //!@}
 };
 
-#endif  // SPONGE_LIBSPONGE_ETHERNET_FRAME_HH
+#endif // SPONGE_LIBSPONGE_ETHERNET_FRAME_HH

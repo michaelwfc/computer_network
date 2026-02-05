@@ -12,17 +12,22 @@
 #include <string>
 #include <vector>
 
-static void check_segment(TCPTestHarness &test, const std::string &data, const bool multiple, const int lineno) {
-    try {
-        std::cerr << "  check_segment" << std::endl;
-        test.execute(ExpectSegment{}.with_ack(true).with_payload_size(data.size()).with_data(data));
-        if (!multiple) {
-            test.execute(ExpectNoSegment{}, "test failed: multiple re-tx?");
-        }
-    } catch (const std::exception &e) {
-        throw std::runtime_error(std::string(e.what()) + " (in check_segment called from line " +
-                                 std::to_string(lineno) + ")");
+static void check_segment(TCPTestHarness &test, const std::string &data,
+                          const bool multiple, const int lineno) {
+  try {
+    std::cerr << "  check_segment" << std::endl;
+    test.execute(ExpectSegment{}
+                     .with_ack(true)
+                     .with_payload_size(data.size())
+                     .with_data(data));
+    if (!multiple) {
+      test.execute(ExpectNoSegment{}, "test failed: multiple re-tx?");
     }
+  } catch (const std::exception &e) {
+    throw std::runtime_error(std::string(e.what()) +
+                             " (in check_segment called from line " +
+                             std::to_string(lineno) + ")");
+  }
 }
 
-#endif  // SPONGE_TESTS_FSM_RETX_HH
+#endif // SPONGE_TESTS_FSM_RETX_HH
