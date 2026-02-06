@@ -24,29 +24,27 @@
       "targetArchitecture": "x86_64",
       "logging": { "engineLogging": true },
     },
-    
-     {
-      "name": "Debug cs144 file",
-      "type": "cppdbg",
-      "request": "launch",
-      "program": "${fileDirname}/${fileBasenameNoExtension}",
-      "args": [],
-      "stopAtEntry": false,
-      "cwd": "${fileDirname}",
-      "environment": [],
-      "externalConsole": false,
-      "MIMode": "gdb",
-      "miDebuggerPath": "/usr/bin/gdb",
-      "setupCommands": [
-        {
-          "description": "Enable pretty-printing for gdb",
-          "text": "-enable-pretty-printing",
-          "ignoreFailures": true
-        }
-      ],
-      "preLaunchTask": "build cs144 active file",
-      "targetArchitecture": "x86_64",
-      "logging": { "engineLogging": true },
-    },
+
+    {
+        "name": "Debug byte_stream_one_write",
+        "type": "cppdbg",
+        "request": "launch",
+        "program": "${workspaceFolder}/sponge/build/tests/byte_stream_one_write",
+        "args": [],
+        "stopAtEntry": false,
+        "cwd": "${workspaceFolder}/sponge/build",
+        "environment": [],
+        "externalConsole": false,
+        "MIMode": "gdb",
+        "setupCommands": [
+            {
+                "description": "Enable pretty-printing for gdb",
+                "text": "-enable-pretty-printing",
+                "ignoreFailures": true
+            }
+        ],
+        "preLaunchTask": "cs144 build",
+        "miDebuggerPath": "/usr/bin/gdb"
+    }
   ]
 }

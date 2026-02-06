@@ -250,7 +250,7 @@ curl -x http://10.0.2.2:7897 https://www.google.com
 
 ## Packages for Lab
 
-(21 年的 sponge 版本)
+
 - [BYO Linux installation](https://stanford.edu/class/cs144/vm_howto/vm-howto-byo.html)
 
 
@@ -275,6 +275,8 @@ GNU coreutils
 bash
 doxygen
 graphviz
+
+
 
 ### install the required packages
 ```bash
@@ -306,6 +308,69 @@ sudo apt install -y \
     python3-pip
 ```
 
+### sponge (21年的版本)
+
+The CS144 Sponge code was likely written/tested with:
+
+Older GCC (GCC 10 or earlier)
+Looser header dependencies (headers included other headers implicitly)
+
+Your CS144 VM probably has:
+
+Newer GCC (GCC 11, 12, or 13)
+Stricter standards compliance
+Explicit includes required
+
+
+#### The Error Explained
+
+The error occurs because the file `address.cc` is missing the `#include <array>` header. The compiler even tells you this:
+
+```
+'std::array' is defined in header '<array>'; this is probably fixable by adding '#include <array>'
+```
+
+This is a common issue with newer C++ compilers (GCC 11+) that are stricter about requiring explicit includes for standard library features.
+
+#### Why This Happens
+
+##### C++ Standard Library Headers
+
+In older GCC versions (GCC 10 and earlier), some headers would implicitly include other headers. For example:
+- `<memory>` might have indirectly included `<array>`
+- `<string>` might have included other headers
+
+##### Modern GCC (11+)
+
+Newer compilers are **stricter** and require **explicit includes**:
+- If you use `std::array`, you **must** include `<array>`
+- If you use `std::string`, you **must** include `<string>`
+- etc.
+
+This improves:
+- ✅ **Compilation speed** (fewer unnecessary includes)
+- ✅ **Portability** (code works across different compilers)
+- ✅ **Standards compliance** (follows C++ standard requirements)
+
+
+
+---
+
+If You Encounter More Similar Errors
+
+You might see similar errors for other missing headers. Here's a quick reference:
+
+| If you use... | You need... |
+|---------------|-------------|
+| `std::array` | `#include <array>` |
+| `std::vector` | `#include <vector>` |
+| `std::string` | `#include <string>` |
+| `std::optional` | `#include <optional>` |
+| `std::variant` | `#include <variant>` |
+| `std::tuple` | `#include <tuple>` |
+
+---
+
 
 
 
@@ -316,11 +381,18 @@ sudo apt install -y \
   
 
 ### Clang（C Language Family Frontend for LLVM）
+The Compiler
+
 - 基于 LLVM 框架，2007 年由苹果主导开发。
 - clang 是前端，负责编译 C/C++/Objective-C → LLVM IR。
 - LLVM 后端做优化、生成目标代码。
 - 模块化、错误信息清晰、IDE/工具链友好、研究和教学利器
 
+What it does:
+- Compiles C/C++ code into executable programs
+- Alternative to g++ (GCC's C++ compiler)
+- Generally produces faster compile times
+- Part of the LLVM project
 
 #### Clang/LLVM 工具生态
 - clangd: 提供 C/C++ 语言服务器（VSCode、Vim、IDEA 都依赖它）。
@@ -344,7 +416,15 @@ clang main.c -o main
 ### clangd
 **clangd** is a **language server** for C/C++ that provides intelligent code completion, navigation, and diagnostics:
 
-#### Features:
+What it does:
+
+- Provides IDE features (code completion, go-to-definition, etc.)
+- Analyzes your code without compiling it
+- Works with VS Code, Vim, Emacs, etc.
+- Reads compile_commands.json to understand your project
+- Does NOT compile your code
+
+Features:
 - **Code completion** - Suggests function names, variables, and members as you type
 - **Go-to-definition** - Navigate to symbol definitions quickly
 - **Find references** - Locate all uses of a function, variable, or class
@@ -352,10 +432,25 @@ clang main.c -o main
 - **Real-time diagnostics** - Highlight syntax errors and warnings as you type
 - **Rename refactoring** - Safely rename symbols across the entire project
 
-#### Integration:
+Integration:
 - Works with editors like **VSCode**, Vim, Emacs, Neovim
 - Implements the **Language Server Protocol (LSP)** 
 - Uses the same parsing engine as Clang/LLVM
+
+
+#### compile_commands.json
+Why Use compile_commands.json?
+compile_commands.json is a compilation database that tells tools like clangd (C++ language server) exactly how your project is compiled. This enables:
+✅ Accurate code completion (IntelliSense)
+✅ Go to definition (jump to function/class definitions)
+✅ Error highlighting in real-time
+✅ Find references
+✅ Code navigation
+✅ Proper include path resolution
+
+Without it, VS Code doesn't know how to parse your C++ code correctly.
+
+
 
 ### bear
 **bear** (Build EAR) is a **compilation database generator** that intercepts build commands:
@@ -506,21 +601,327 @@ g++ C++tutorials/STL/vector.cpp lib/include/printUtils.cpp -Ilib/include -o vect
 - Also (optionally) run `cmake --build build --target tidy` to receive suggestions for improvements related to C++ programming practices.
 
 
-# Vscode settings
 
-## C++ IDE ：WSL Vscode settings Reference
+# Compiler & IDE Features
+
+## Which Compiler Should You Use for CS144?
+For Building/Compiling Code:
+Use g++ (GCC) ← Recommended for CS144
+```bash
+# Your CMakeLists.txt already uses g++ by default
+cd ~/computer_network/sponge/build
+cmake ..
+make -j$(nproc)
+```
+Why g++?
+
+✅ CS144 labs are designed and tested with GCC
+✅ Most compatible with course requirements
+✅ Default on Ubuntu/Linux
+✅ What the autograder uses
+
+
+## For IDE Features (IntelliSense):
+Use clangd ← Recommended
+
+Why clangd?
+
+✅ Faster and more accurate than Microsoft C/C++
+✅ Better code completion
+✅ More reliable go-to-definition
+✅ Industry standard for C++ development
+
+
+
+## Vscode settings
+
+### C++ IDE ：WSL Vscode settings Reference
 - IDE : [vscode](https://code.visualstudio.com/docs/languages/cpp)
 - vscode extension: Install recommended C/C++ extension in VSCode and reload
 - https://code.visualstudio.com/docs/cpp/cpp-debug
 - https://code.visualstudio.com/docs/cpp/launch-json-reference
 
-## Vscode setting files
-### 1. build launch configuration(debugger settings) in launch.json 
 
-### 2. Set up build task in tasks.json
+### Vscode setting files
 
-### 3. build C/C++ properties file  in c_cpp_properties.json
+#### 1. settings.json: Set up VS Code settings
+```json
+{
+  "C_Cpp.default.compilerPath": "/usr/bin/g++",
+  //  Disable Microsoft C/C++ IntelliSense when using clangd
+  "C_Cpp.intelliSenseEngine": "Disabled",
+
+  // === clangd for IntelliSense  === 
+  "clangd.path": "/usr/bin/clangd",
+  "clangd.arguments": [
+        "--compile-commands-dir=${workspaceFolder}/sponge/build",
+        "--background-index",
+        "--clang-tidy",
+        "--completion-style=detailed",
+        "--header-insertion=iwyu"
+    ],
+
+  // ===  CMake configuration === 
+   "cmake.configureOnOpen": false, // Don't auto-configure
+   //CMake Tools extension is looking for a CMake project at workspace root
+  // This tells CMake Tools to look for a CMake project in your workspace
+  "cmake.buildDirectory": "${workspaceFolder}/sponge/build",
+  "cmake.sourceDirectory": "${workspaceFolder}/sponge/",
+
+```
+
+#### 2. install the extensions
+
+```bash
+{
+    "recommendations": [
+        "ms-vscode.cpptools",
+        "llvm-vs-code-extensions.vscode-clangd",
+        "ms-vscode.cpptools-extension-pack",
+    ]
+}
+
+```
+
+### Vscode Debug setting files
+#### 1. launch.json: build launch configuration(debugger settings)
+#### 2. tasks.json: Set up build task in 
+#### 3. c_cpp_properties.json: build C/C++ properties file  in 
  c_cpp_properties.json (compiler path and IntelliSense settings)
 
+### How to Set Up clangd in VS Code
+
+#### Set Up clangd in VS Code
+- Step 1: Generate compile_commands.json
+compile_commands.json can be generated by bear or cmake command
+```bash
+bear -- make
+# or
+cmake -DCMAKE_EXPORT_COMPILE_COMMANDS=ON ..
+# CMake usually does this by default, but this forces it
+```
+Note: CMake automatically generates compile_commands.json in the build directory.
+
+- Step 2: Create Symlink to Project Root (Recommended)
+clangd looks for compile_commands.json in the project root, but CMake creates it in the build directory. Create a symlink:
+```bash
+cd ~/computer_network/sponge
+
+# Create symbolic link from root to build directory
+ln -s build/compile_commands.json compile_commands.json
+
+# Verify the symlink
+ls -la compile_commands.json
+# lrwxrwxrwx 1 cs144 cs144 27 Feb  3 23:34 compile_commands.json -> build/compile_commands.json
+
+# Should show:
+# lrwxrwxrwx ... compile_commands.json -> build/compile_commands.json
+```
+
+- Step 4: Install clangd on the VM
+```bash
+# Install clangd
+sudo apt update
+sudo apt install clangd
+
+# Or install a specific version (if needed)
+sudo apt install clangd-14
+
+# Verify installation
+clangd --version
+```
+
+- Step 3: Install clangd Extension in VS Code
+1. In VS Code (connected to VM via Remote-SSH)
+2. Press Ctrl + Shift + X to open Extensions
+3. Search for "clangd"
+4. Install "clangd" by LLVM
+5. Disable or uninstall the Microsoft C/C++ extension (it conflicts with clangd)
 
 
+
+
+- Step 5: Configure VS Code Settings
+Press Ctrl + Shift + P and type "Preferences: Open Settings (JSON)"
+Add these settings:
+```json
+{
+    "clangd.arguments": [
+        "--compile-commands-dir=${workspaceFolder}/sponge/build",
+        "--background-index",
+        "--clang-tidy",
+        "--completion-style=detailed",
+        "--header-insertion=iwyu"
+    ],
+    "clangd.path": "clangd",
+    "C_Cpp.intelliSenseEngine": "Disabled",
+    //  "cmake.configureOnOpen": true,
+    "cmake.buildDirectory": "${workspaceFolder}/sponge/build",
+    "files.associations": {
+        "*.cc": "cpp",
+        "*.hh": "cpp"
+    }
+}
+```
+
+#### Verify It's Working
+Check 1: clangd Status
+Look at the bottom-right corner of VS Code. You should see:
+"clangd" indicator (may show "indexing..." at first)
+
+
+Check 2: Test Code Completion
+Open a C++ file (e.g., apps/webget.cc) and try:
+
+
+
+## How to debug in VS Code
+
+
+Example lab0: how can I debug t_byte_stream_one_write in vscode? 
+
+
+### Step 1: Find the Test Executable
+
+```bash
+cd ~/computer_network/sponge/build
+find . -name "*byte_stream_one_write*" -type f
+# Should show something like: ./tests/byte_stream_one_write
+
+
+# ./tests/CMakeFiles/byte_stream_one_write.dir/byte_stream_one_write.cc.o.d
+# ./tests/CMakeFiles/byte_stream_one_write.dir/byte_stream_one_write.cc.o
+# ./tests/byte_stream_one_write
+# ./.cache/clangd/index/byte_stream_one_write.cc.2E9F1558D0F41316.idx
+
+```
+
+### Step 2: Create VS Code Debug Configuration
+
+Create/edit `.vscode/launch.json` in your project root:
+
+```json
+{
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "Debug byte_stream_one_write",
+            "type": "cppdbg",
+            "request": "launch",
+            "program": "${workspaceFolder}/build/tests/byte_stream_one_write",
+            "args": [],
+            "stopAtEntry": false,
+            "cwd": "${workspaceFolder}/build",
+            "environment": [],
+            "externalConsole": false,
+            "MIMode": "gdb",
+            "setupCommands": [
+                {
+                    "description": "Enable pretty-printing for gdb",
+                    "text": "-enable-pretty-printing",
+                    "ignoreFailures": true
+                }
+            ],
+            "preLaunchTask": "build",
+            "miDebuggerPath": "/usr/bin/gdb"
+        }
+    ]
+}
+```
+
+### Step 3: Create Build Task (Optional)
+
+Create `.vscode/tasks.json`:
+
+```json
+{
+    "version": "2.0.0",
+    "tasks": [
+        {
+            "label": "build",
+            "type": "shell",
+            "command": "make",
+            "args": ["-j8"],
+            "options": {
+                "cwd": "${workspaceFolder}/build"
+            },
+            "group": {
+                "kind": "build",
+                "isDefault": true
+            }
+        }
+    ]
+}
+```
+
+### Step 4: Set Breakpoints and Debug
+
+1. Open `libsponge/byte_stream.cc`
+2. Click left margin next to line numbers to set breakpoints:
+   - Set breakpoint in `write()` function
+   - Set breakpoint in `bytes_written()` function
+
+3. Press **F5** or click "Run and Debug" → "Debug byte_stream_one_write"
+
+4. Use debug controls:
+   - **F10** - Step Over
+   - **F11** - Step Into
+   - **Shift+F11** - Step Out
+   - **F5** - Continue
+
+5. Inspect variables:
+   - Hover over variables
+   - Check "Variables" panel
+   - Check "Watch" panel
+
+---
+
+
+#### step 5: Build object to Debug mode
+
+```bash
+cd ~/computer_network/sponge/build
+rm -rf *
+
+cmake .. -DCMAKE_BUILD_TYPE=Debug
+# cs144@cs144vm:~/computer_network/sponge/build$ cmake .. -DCMAKE_BUILD_TYPE=Debug
+# CMake Deprecation Warning at CMakeLists.txt:1 (cmake_minimum_required):
+#   Compatibility with CMake < 3.10 will be removed from a future version of
+#   CMake.
+
+#   Update the VERSION argument <min> value.  Or, use the <min>...<max> syntax
+#   to tell CMake that the project requires at least <min> but has been updated
+#   to work with policies introduced by <max> or earlier.
+
+
+# -- The C compiler identification is GNU 14.2.0
+# -- The CXX compiler identification is GNU 14.2.0
+# -- Detecting C compiler ABI info
+# -- Detecting C compiler ABI info - done
+# -- Check for working C compiler: /usr/bin/cc - skipped
+# -- Detecting C compile features
+# -- Detecting C compile features - done
+# -- Detecting CXX compiler ABI info
+# -- Detecting CXX compiler ABI info - done
+# -- Check for working CXX compiler: /usr/bin/c++ - skipped
+# -- Detecting CXX compile features
+# -- Detecting CXX compile features - done
+# -- Building in Debug mode as requested.
+# --   NOTE: You can choose a build type by calling cmake with one of:
+# --     -DCMAKE_BUILD_TYPE=Release   -- full optimizations
+# --     -DCMAKE_BUILD_TYPE=Debug     -- better debugging experience in gdb
+# --     -DCMAKE_BUILD_TYPE=RelASan   -- full optimizations plus address and undefined-behavior sanitizers
+# --     -DCMAKE_BUILD_TYPE=DebugASan -- debug plus sanitizers
+# -- Found Doxygen: /usr/bin/doxygen (found version "1.9.8") found components: doxygen dot
+# -- Found clang-format version 2
+# -- Found clang-tidy version 2
+# -- Found cppcheck
+# -- Configuring done (1.2s)
+# -- Generating done (0.2s)
+# -- Build files have been written to: /home/cs144/computer_network/sponge/build
+
+
+make -j8
+```
+
+#### step 6: Debug in VS Code

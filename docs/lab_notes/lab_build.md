@@ -195,3 +195,50 @@ Different languages have their own linters:
 
 ### Usage in Development Workflow
 Linting is typically integrated into the build process (as shown in the README) to ensure code quality standards are maintained throughout development. Running `make tidy` in the Sponge project will analyze all source files and report any issues that need to be addressed.
+
+
+### To format
+
+```bash
+cs144@cs144vm:~/computer_network/sponge/build$ make format
+Could not find clang-format. Please install and re-run cmake
+Built target format
+```
+
+The CS144 project likely requires a specific version (often clang-format-6.0 or similar).
+
+```bash
+# Check your clang-format version
+clang-format --version
+# Ubuntu clang-format version 20.1.2 (0ubuntu1)
+
+# Check what CMake is looking for
+cd ~/computer_network/sponge
+grep -r "clang-format" CMakeLists.txt etc/
+# etc/clang_format.cmake:        set (CLANG_FORMAT_TMP clang-format-6.0)
+# etc/clang_format.cmake:    # figure out which version of clang-format we're using
+# etc/clang_format.cmake:        message (STATUS "Found clang-format " ${CLANG_FORMAT_VERSION})
+# etc/clang_format.cmake:        set(CLANG_FORMAT ${CLANG_FORMAT_TMP} CACHE STRING "clang-format executable name")
+# etc/clang_format.cmake:    add_custom_target (format echo "Could not find clang-format. Please install and re-run cmake")****
+
+
+# Usually it's clang-format-6.0, install it:
+sudo apt-get update
+sudo apt-get install clang-format-6.0
+
+# Create a symlink if needed
+sudo ln -s /usr/bin/clang-format-6.0 /usr/bin/clang-format
+
+
+# dd the environment variable to your shell configuration:
+# Add to your .bashrc
+echo 'export CLANG_FORMAT=clang-format' >> ~/.bashrc
+source ~/.bashrc
+
+# Reconfigure CMake
+cd ~/computer_network/sponge/build
+rm -rf *
+cmake ..
+make format
+
+```

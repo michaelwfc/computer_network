@@ -1,35 +1,33 @@
 {
+  "C_Cpp.default.compilerPath": "/usr/bin/g++",
+  //  Disable Microsoft C/C++ IntelliSense when using clangd
+  "C_Cpp.intelliSenseEngine": "Disabled",
 
-  "C_Cpp.default.compilerPath": "/usr/bin/gcc",
-  // "C_Cpp.default.compilerPath": "/usr/bin/clang",
-  // "clangd.path": "/usr/bin/clangd",
-  // "clangd.arguments": [
-  //   "--compile-commands-dir=${workspaceFolder}/sponge/build/compile_commands.json"
-  // ],
+  // === clangd for IntelliSense  === 
+  "clangd.path": "/usr/bin/clangd",
+  "clangd.arguments": [
+        "--compile-commands-dir=${workspaceFolder}/sponge/build",
+        "--background-index",
+        "--clang-tidy",
+        "--completion-style=detailed",
+        "--header-insertion=iwyu"
+    ],
 
+  // ===  CMake configuration === 
+   "cmake.configureOnOpen": false, // Don't auto-configure
+   //CMake Tools extension is looking for a CMake project at workspace root
+  // This tells CMake Tools to look for a CMake project in your workspace
+  "cmake.buildDirectory": "${workspaceFolder}/sponge/build",
   "cmake.sourceDirectory": "${workspaceFolder}/sponge/",
-  "C_Cpp.intelliSenseEngine": "disabled",
-  "C_Cpp.formatting": "disabled",
-  "C_Cpp.errorSquiggles": "disabled",
-  "C_Cpp.default.configurationProvider": "ms-vscode.cpptools",
+ 
+  // "cmake.buildBeforeRun": true,
+  // "C_Cpp.formatting": "disabled",
+  // "C_Cpp.errorSquiggles": "disabled",
+  // "C_Cpp.default.configurationProvider": "ms-vscode.cpptools",
 
   // "terminal.integrated.defaultProfile.windows": "Ubuntu-22.04 (WSL)", 
   "workbench.colorTheme": "Default Dark+",
   "files.autoSave": "onFocusChange",
-  
-  // "markdown.styles": [".github-markdown-body"],
-  // "markdown-preview-github-styles.colorTheme":"Single theme: Light",
-  // "http.proxy": "http://10.255.255.254 :7897",
-  // "https.proxy": "http://10.255.255.254 :7897",
-  // "no.proxy":"localhost,127.0.0.1,::1",
-  // "http.proxyStrictSSL": false,
-
-  // "http.proxy": "http://192.168.1.17:7897",
-  // "https.proxy": "http://192.168.1.17:7897",
-  // "no.proxy":"localhost,127.0.0.1,::1",
-  // "http.proxyStrictSSL": false,
-
-
   "window.zoomLevel": 1,
   "autoDocstring.docstringFormat": "google-notypes",
   "workbench.settings.editor": "json",

@@ -3,6 +3,5 @@
         "ms-vscode.cpptools",
         "llvm-vs-code-extensions.vscode-clangd",
         "ms-vscode.cpptools-extension-pack",
-        "webfreak.debug"
     ]
 }

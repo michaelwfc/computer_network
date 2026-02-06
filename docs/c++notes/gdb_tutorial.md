@@ -13,25 +13,15 @@ set memory watch points, and write scripts.
 ## Resources:
 
 
-- The CS:APP web site
-http://csapp.cs.cmu.edu/public/students.html
-- Beej's Quick Guide to GDB (based on the very handy gdb -tui mode)
-  https://beej.us/guide/bggdb/
-- Two-page x86-64 GDB cheat sheet
-
-– To keep the bomb from blowing up every time you type in a wrong input, you’ll want to learn how to set breakpoints.
-– For online documentation, type “help” at the gdb command prompt, or type “man gdb”,
-or “info gdb” at a Unix prompt. Some people also like to run gdb under gdb-mode in
-emacs.
-
-
-You’ve got a few good options, depending on how deep you want to go:
-
----
+- [The CS:APP web site](http://csapp.cs.cmu.edu/public/students.html)
+- [Beej's Quick Guide to GDB](https://beej.us/guide/bggdb)
+   based on the very handy gdb -tui mode, 
+- [CS107 GDB and Debugging](https://web.stanford.edu/class/archive/cs/cs107/cs107.1202/resources/gdb)
+  
 
 ## Official GNU GDB Documentation
 
-* **GNU Project Manual (most complete)**
+- **GNU Project Manual (most complete)**
   👉 [https://sourceware.org/gdb/current/onlinedocs/](https://sourceware.org/gdb/current/onlinedocs/)
   This is the *current* manual for GDB. It’s pretty thorough (sometimes overwhelming).
 
@@ -39,13 +29,15 @@ You’ve got a few good options, depending on how deep you want to go:
   * Chapter 15: working with remote targets (useful for xv6 + QEMU).
   * Chapter 17: gdbinit files and scripting.
 
-* **PDF / HTML versions** are downloadable too:
+- **PDF / HTML versions** are downloadable too:
   [https://sourceware.org/gdb/documentation/](https://sourceware.org/gdb/documentation/)
 
 ---
 
 ## Local man/info pages 
 <!-- (already on your system) -->
+For online documentation, type “help” at the gdb command prompt, or type “man gdb”,
+or “info gdb” at a Unix prompt. Some people also like to run gdb under gdb-mode in emacs.
 
 If you have GDB installed, you can check:
 

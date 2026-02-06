@@ -346,8 +346,6 @@ git clone https://github.com/cs144/sponge # not exists, replace with
 - [cs144-minnow-nju-2024](https://github.com/top-mind/cs144-minnow-nju)
 ```
 
-
-
 to fetch the source code for the lab.
 
 2. Optional: Feel free to backup your repository to a private GitHub/GitLab/Bitbucket repository 
@@ -448,55 +446,328 @@ After completing the assignment, you will see:
 
 8. The graders will run your webget program with a different hostname and path than `make check` runs---so make sure it doesn't only work with the hostname and path used by `make check`.
 
-### Steps
+## Solution
 
 - finish the webget.cc
 - debug the webget.cc with vscode
 - test with ./tests/webget_t.sh
-  
+
+### Debug & Test
 ```bash
-cd cs144_sponge
+cd sponge
 
-cmake S . -B build
-cmake --build build
-
+make -p build
 cd build
 
-#  run ./apps/webget excute under build directory
-../tests/webget_t.sh 
+cs144@cs144vm:~/computer_network/sponge/build$ cmake ..
+# CMake Deprecation Warning at CMakeLists.txt:1 (cmake_minimum_required):
+#   Compatibility with CMake < 3.10 will be removed from a future version of
+#   CMake.
+
+#   Update the VERSION argument <min> value.  Or, use the <min>...<max> syntax
+#   to tell CMake that the project requires at least <min> but has been updated
+#   to work with policies introduced by <max> or earlier.
+
+
+# -- The C compiler identification is GNU 14.2.0
+# -- The CXX compiler identification is GNU 14.2.0
+# -- Detecting C compiler ABI info
+# -- Detecting C compiler ABI info - done
+# -- Check for working C compiler: /usr/bin/cc - skipped
+# -- Detecting C compile features
+# -- Detecting C compile features - done
+# -- Detecting CXX compiler ABI info
+# -- Detecting CXX compiler ABI info - done
+# -- Check for working CXX compiler: /usr/bin/c++ - skipped
+# -- Detecting CXX compile features
+# -- Detecting CXX compile features - done
+# -- Setting build type to 'Release'
+# --   NOTE: You can choose a build type by calling cmake with one of:
+# --     -DCMAKE_BUILD_TYPE=Release   -- full optimizations
+# --     -DCMAKE_BUILD_TYPE=Debug     -- better debugging experience in gdb
+# --     -DCMAKE_BUILD_TYPE=RelASan   -- full optimizations plus address and undefined-behavior sanitizers
+# --     -DCMAKE_BUILD_TYPE=DebugASan -- debug plus sanitizers
+# -- Found Doxygen: /usr/bin/doxygen (found version "1.9.8") found components: doxygen dot
+# -- Found clang-tidy version 2
+# -- Found cppcheck
+# -- Configuring done (1.0s)
+# -- Generating done (0.2s)
+# -- Build files have been written to: /home/cs144/computer_network/sponge/build
+
+
+make -j$(nproc)
+
+# fix all test scripts at once (recommended)
+chmod +x ../tests/*.sh
+
+
+# before implementing the get_URL function
+cs144@cs144vm:~/computer_network/sponge/build$ make check_webget
+# Testing webget...
+# Test project /home/cs144/computer_network/sponge/build
+#     Start 31: t_webget
+# 1/1 Test #31: t_webget .........................***Failed    0.03 sec
 # Function called: get_URL(cs144.keithw.org, /nph-hasher/xyzzy).
 # Warning: get_URL() has not been implemented yet.
+# ERROR: webget returned output that did not match the test's expectations
+
+
+# 0% tests passed, 1 tests failed out of 1
+
+# Total Test time (real) =   0.04 sec
+
+# The following tests FAILED:
+#          31 - t_webget (Failed)
+# Errors while running CTest
+# make[3]: *** [CMakeFiles/check_webget.dir/build.make:71: CMakeFiles/check_webget] Error 8
+# make[2]: *** [CMakeFiles/Makefile2:7376: CMakeFiles/check_webget.dir/all] Error 2
+# make[1]: *** [CMakeFiles/Makefile2:7383: CMakeFiles/check_webget.dir/rule] Error 2
+# make: *** [Makefile:2747: check_webget] Error 2
+
+
+
+#  manuly run ./apps/webget excutable application under build directory
+cs144@cs144vm:~/computer_network/sponge/build$ ./apps/webget cs144.keithw.org /nph-hasher/xyzzy
 # HTTP/1.1 200 OK
 # Content-type: text/plain
 
 # 7SmXqWkrLKzVBCEalbSPqBcvs11Pw263K7x4Wv3JckI
 
-make check_webget
-# [100%] Testing webget...
-# Test project /mnt/e/projects/computer_network/cs144_sponge/build
-#     Start 28: t_webget
-# 1/1 Test #28: t_webget .........................   Passed    1.10 sec
+# manuly run ./tests/webget_t.sh
+cs144@cs144vm:~/computer_network/sponge/build$ ../tests/webget_t.sh 
+# HTTP/1.1 200 OK
+# Content-type: text/plain
+
+# 7SmXqWkrLKzVBCEalbSPqBcvs11Pw263K7x4Wv3JckI
+
+
+
+cs144@cs144vm:~/computer_network/sponge/build$ make check_webget
+# Testing webget...
+# Test project /home/cs144/computer_network/sponge/build
+#     Start 31: t_webget
+# 1/1 Test #31: t_webget .........................   Passed    1.41 sec
+
+# 100% tests passed, 0 tests failed out of 1
+
+# Total Test time (real) =   1.42 sec
+# Built target check_webget
 
 ```
 
 # 4 An in-memory reliable byte stream
 
-### A reliable bidirectional byte stream
+By now, you've seen how the abstraction of a reliable byte stream can be useful in communicating across the Internet, even though the Internet itself only provides the service of "best-effort" (unreliable) datagrams.
+To finish off this week's lab, you will implement, in memory on a single computer, an object that provides this abstraction. (You may have done something similar in CS 110.) 
 
-the ability to create a reliable bidirectional byte stream between two programs, one running on your computer, and the other on a different computer across the Internet (e.g., a Web server such as Apache or nginx, or the netcat program).
+Bytes are written on the "input" side and can be read, in the same sequence, from the "output" side. 
+- The byte stream is finite: the writer can end the input, and then no more bytes can be written. 
+- When the reader has read to the end of the stream, it will reach "`EOF`" (end of file) and no more bytes can be read.
 
-### Stream Socket
+Your byte stream will also be `flow-controlled` to limit its memory consumption at any given time. 
+- The object is initialized with a particular "capacity": the maximum number of bytes it's willing to store in its own memory at any given point. 
+- The byte stream will limit the writer in how much it can write at any given moment, to make sure that the stream doesn't exceed its storage capacity. As the reader reads bytes and drains them from the stream, the writer is allowed to write more. 
+- Your byte stream is for use in a single thread you don't have to worry about concurrent writers/readers, locking, or race conditions.
 
-To your program and to the Web server, the socket looks like an ordinary file descriptor (similar to a file on disk, or to the stdin or stdout I/O streams). When two stream sockets are connected, any bytes written to one socket will eventually come out in the same order from the other socket on the other computer.
+To be clear: 
+the byte stream is finite, but it can be almost arbitrarily long before the writer ends the input and finishes the stream. Your implementation must be able to handle streams that are much longer than the capacity. The capacity limits the number of bytes that are held in memory (written but not yet read) at a given point, but does not limit the length of the stream. An object with a capacity of only one byte could still carry a stream that is terabytes and terabytes long, as long as the writer keeps writing one byte at a time and the reader reads each byte before the writer is allowed to write the next byte.
+
+## Interface
+Here's what the interface looks like for the writer:
+
+### Writer
+```cpp
+// Write a string of bytes into the stream. Write as many as will fit, and return the number of bytes written.
+size_t write(const std::string &data);
+
+// Returns the number of additional bytes that the stream has space for
+size_t remaining_capacity() const;
+
+// Signal that the byte stream has reached its ending
+void end_input();
+// Indicate that the stream suffered an error
+void set_error();
+```
+
+### Reader
+And here is the interface for the reader:
+```cpp
+// Peek at next "len" bytes of the stream
+std::string peek_output(const size_t len) const;
+
+// Remove len  bytes from the buffer
+void pop_output(const size_t len);
+
+// Read (i.e., copy and then pop) the next "len" bytes of the stream
+std::string read(const size_t len);
+
+bool input_ended() const; // `true` if the stream input has ended
+
+bool eof() const; // `true` if the output has reached the ending
+
+bool error() const; // `true` if the stream has suffered an error
+
+size_t buffer_size() const; // the maximum amount that can currently be peeked/read
+
+bool buffer_empty() const; // `true` if the buffer is empty
+
+size_t bytes_written() const; // Total number of bytes written
+
+size_t bytes_read() const; // Total number of bytes popped
+```
 
 
-### Internet datagrams
+Please open the `libsponge/byte_stream.hh` and `libsponge/byte_stream.cc` files, and implement an object that provides this interface. As you develop your byte stream implementation, you can run the automated tests with `make check lab0` .
 
-Each datagram contains some metadata (headers) that specifies things like the source and destination addresses|what computer it came from, and what computer it's headed towards|as well as some payload data (up to about 1,500 bytes) to be delivered to the destination computer.
+What's next? 
+Over the next four weeks, you'll implement a system to provide the same interface, no longer in memory, but instead over an unreliable network. This is the **Transmission Control Protocol**.
 
+## Solution
+
+### test check_lab0
 ```bash
 # build
-make
+rm -rf *
+cmake ..
+make -j8
+
 # test
-make check_lab0
+cs144@cs144vm:~/computer_network/sponge/build$ make check_lab0
+[100%] Testing Lab 0...
+Test project /home/cs144/computer_network/sponge/build
+    Start 26: t_byte_stream_construction
+1/9 Test #26: t_byte_stream_construction .......   Passed    0.00 sec
+    Start 27: t_byte_stream_one_write
+2/9 Test #27: t_byte_stream_one_write ..........***Failed    0.00 sec
+Test Failure on expectation:
+        Expectation: bytes_written: 3
+
+Failure message:
+        The ByteStream should have had bytes_written equal to 3 but instead it was 0
+
+List of steps that executed successfully:
+        Initialized with (capacity=15)
+             Action: write "cat" to the stream
+        Expectation: input_ended: 0
+        Expectation: buffer_empty: 0
+        Expectation: eof: 0
+        Expectation: bytes_read: 0
+
+Exception: The test "write-end-pop" failed
+
+    Start 28: t_byte_stream_two_writes
+3/9 Test #28: t_byte_stream_two_writes .........***Failed    0.00 sec
+Test Failure on expectation:
+        Expectation: bytes_written: 3
+
+Failure message:
+        The ByteStream should have had bytes_written equal to 3 but instead it was 0
+
+List of steps that executed successfully:
+        Initialized with (capacity=15)
+             Action: write "cat" to the stream
+        Expectation: input_ended: 0
+        Expectation: buffer_empty: 0
+        Expectation: eof: 0
+        Expectation: bytes_read: 0
+
+Exception: The test "write-write-end-pop-pop" failed
+
+    Start 29: t_byte_stream_capacity
+4/9 Test #29: t_byte_stream_capacity ...........***Failed    0.00 sec
+Test Failure on expectation:
+        Expectation: bytes_written: 2
+
+Failure message:
+        The ByteStream should have had bytes_written equal to 2 but instead it was 0
+
+List of steps that executed successfully:
+        Initialized with (capacity=2)
+             Action: write "cat" to the stream
+        Expectation: input_ended: 0
+        Expectation: buffer_empty: 0
+        Expectation: eof: 0
+        Expectation: bytes_read: 0
+
+Exception: The test "overwrite" failed
+
+    Start 30: t_byte_stream_many_writes
+5/9 Test #30: t_byte_stream_many_writes ........***Failed    0.00 sec
+Test Failure on expectation:
+        Expectation: bytes_written: 24
+
+Failure message:
+        The ByteStream should have had bytes_written equal to 24 but instead it was 0
+
+List of steps that executed successfully:
+        Initialized with (capacity=200000)
+             Action: write "sllnelfdoadarsovchjdjzqp" to the stream
+        Expectation: input_ended: 0
+        Expectation: buffer_empty: 0
+        Expectation: eof: 0
+        Expectation: bytes_read: 0
+
+Exception: The test "many writes" failed
+
+    Start 31: t_webget
+6/9 Test #31: t_webget .........................   Passed    2.88 sec
+    Start 48: t_address_dt
+7/9 Test #48: t_address_dt .....................   Passed    0.04 sec
+    Start 49: t_parser_dt
+8/9 Test #49: t_parser_dt ......................   Passed    0.00 sec
+    Start 50: t_socket_dt
+9/9 Test #50: t_socket_dt ......................   Passed    0.00 sec
+
+56% tests passed, 4 tests failed out of 9
+
+Total Test time (real) =   2.96 sec
+
+The following tests FAILED:
+         27 - t_byte_stream_one_write (Failed)
+         28 - t_byte_stream_two_writes (Failed)
+         29 - t_byte_stream_capacity (Failed)
+         30 - t_byte_stream_many_writes (Failed)
+Errors while running CTest
+make[3]: *** [CMakeFiles/check_lab0.dir/build.make:71: CMakeFiles/check_lab0] Error 8
+make[2]: *** [CMakeFiles/Makefile2:7408: CMakeFiles/check_lab0.dir/all] Error 2
+make[1]: *** [CMakeFiles/Makefile2:7415: CMakeFiles/check_lab0.dir/rule] Error 2
+make: *** [Makefile:2760: check_lab0] Error 2
+
 ```
+
+
+### Debug t_byte_stream_one_write
+
+
+```bash
+cs144@cs144vm:~/computer_network/sponge/build$ make check_lab0
+[100%] Testing Lab 0...
+Test project /home/cs144/computer_network/sponge/build
+    Start 26: t_byte_stream_construction
+1/9 Test #26: t_byte_stream_construction .......   Passed    0.01 sec
+    Start 27: t_byte_stream_one_write
+2/9 Test #27: t_byte_stream_one_write ..........   Passed    0.01 sec
+    Start 28: t_byte_stream_two_writes
+3/9 Test #28: t_byte_stream_two_writes .........   Passed    0.01 sec
+    Start 29: t_byte_stream_capacity
+4/9 Test #29: t_byte_stream_capacity ...........   Passed    0.46 sec
+    Start 30: t_byte_stream_many_writes
+5/9 Test #30: t_byte_stream_many_writes ........   Passed    0.01 sec
+    Start 31: t_webget
+6/9 Test #31: t_webget .........................   Passed    4.49 sec
+    Start 48: t_address_dt
+7/9 Test #48: t_address_dt .....................   Passed    0.02 sec
+    Start 49: t_parser_dt
+8/9 Test #49: t_parser_dt ......................   Passed    0.01 sec
+    Start 50: t_socket_dt
+9/9 Test #50: t_socket_dt ......................   Passed    0.01 sec
+
+100% tests passed, 0 tests failed out of 9
+
+Total Test time (real) =   5.05 sec
+[100%] Built target check_lab0
+
+```
+
+
+

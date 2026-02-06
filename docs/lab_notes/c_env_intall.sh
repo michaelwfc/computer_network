@@ -18,6 +18,7 @@ sudo apt update
 # Install all required packages
 sudo apt install -y \
     build-essential \
+    gdb \
     clang \
     clang-tidy \
     clang-format \
