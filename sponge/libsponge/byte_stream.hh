@@ -1,7 +1,10 @@
 #ifndef SPONGE_LIBSPONGE_BYTE_STREAM_HH
 #define SPONGE_LIBSPONGE_BYTE_STREAM_HH
 
+#include <deque>
 #include <string>
+
+
 
 //! \brief An in-order byte stream.
 
@@ -17,7 +20,14 @@ private:
   // that's a sign that you probably want to keep exploring
   // different approaches.
 
-  bool _error{}; //!< Flag indicating that the stream suffered an error.
+  
+  std::deque<char> _buffer{};    // The actual byte storage  as **FIFO queue** (First In, First Out)
+  // In-Class Initialization (C++11+)
+  size_t _capacity;            // Capacity limits how many bytes can be in the queue at once
+  size_t _bytes_written{0};       // Total number of bytes written
+  size_t _bytes_read{0};
+  bool _input_ended{false};          // Has writer called end_input()?
+  bool _error{false}; //!< Flag indicating that the stream suffered an error.
 
 public:
   //! Construct a stream with room for `capacity` bytes.
