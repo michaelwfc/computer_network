@@ -27,7 +27,7 @@
 - The Network layer: packets of data
   The Network layer sends these packets to the next hop router, which forwards them to the destination computer.
 
-![4 Layer Internet Model](../images/4-layer-internet-model.png)
+![4 Layer Internet Model](../../images/4-layer-internet-model.png)
 
 - The Internet is made up of end-hosts, links and routers.
 - Data is delivered hop-by-hop over each link in turn.
@@ -35,9 +35,9 @@
 - A packet consists of the data we want to be delivered, along with a header that tells the network where the packet is to be delivered, where it came from and so on.
 
 ## Link Layer
+deliver data over a single link between an end-host and router, or between routers.
 
 The Link Layer’s job is to carry the data over one link at a time.
-
 - Ethernet and
 - WiFi
 
@@ -45,19 +45,22 @@ The Link Layer’s job is to carry the data over one link at a time.
 
 The network layer’s job is to deliver packets end-to-end across the Internet from the source to the destination.
 
-A packet is an important basic building block in networks.
+A `packet` is an important basic building block in networks.
 
-- a self-contained collection of data
-- a header that describes what the data is, where it is going and where it came from.
+- data: a self-contained collection of data
+- header: a header that describes what the data is, where it is going and where it came from.
 
 ### Network Layer Process
 
-![Network Layer Process](../images/network-layer.png)
+- deliever datagram end-to-end, Best-effort delivery-no guarantees.
+- must use the Internet Protocol (IP)
 
-- The Network hands the datagram to the Link Layer below , telling it to send the datagram over the first link.
+![Network Layer Process](../../images/network-layer.png)
+
+- The Network hands the `datagram` to the Link Layer below , telling it to send the datagram over the first link.
 - the Link Layer says: “if you give me a datagram to send, I will transmit it over one link for you”
 - The Link Layer of the router
-  - accepts the datagram from the link, and hands it up to the Network Layer in the router.
+  - accepts the `datagram` from the link, and hands it up to the Network Layer in the router.
   - The Network Layer on the router examines the destination address of the datagram, and is responsible for routing the datagram one hop at a time towards its eventual destination
   - It does this by sending to the Link Layer again, to carry it over the next link.
   - And so on until it reaches the Network Layer at the destination.
@@ -69,7 +72,12 @@ The Internet Protocol (IP) is a protocol that is used to route packets from one 
 - IP makes a best-effort attempt to deliver our packets to the other end. But it makes no promises.
 - IP packets can get lost, can be delivered out of order, and can be corrupted.There are no guarantees
 
+
+
 ## Transport Layer
+
+- gurantees correct in-order delivery of data end-to-end.
+- control congestion
 
 ### Transmission Control Protocol (TCP)
 
@@ -81,9 +89,16 @@ UDP just bundles up application data and hands it to the Network Layer for deliv
 
 ## Application Layer
 
-## The 7 lyaers of the OSI model
+bi-directional reliable byte stream between two applications, using application-specific protocols.(e.g. http, bit-torrent)
 
-![The 7 lyaers of the OSI model](../images/7-layer-OSI-model.png)
+
+## Summary
+## IP is the "thin waist"
+
+
+### The 7 lyaers of the OSI model
+
+![The 7 lyaers of the OSI model](../../images/7-layer-OSI-model.png)
 
 - When the transport layer has data to send, it hands a Transport Segment to the Network layer below. to drop transport segment into IP datagram
 - The network layer puts the transport segement inside a new IP datagram. IP datagrams consist of a header and some data. IP’s job is to deliver the datagram to the other end.

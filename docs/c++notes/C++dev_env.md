@@ -512,9 +512,218 @@ Both tools work together to provide a rich development experience for C++ projec
 - Helps maintain clean, readable code without manual formatting
 
 
+## Increase VM Disk Space
+
+### Step 1: Shutdown the VM
+
+```bash
+# From inside the VM
+sudo shutdown -h now
+```
+
+Or from VirtualBox: Right-click VM → Close → Power Off
+
+---
+
+### Step 2: Resize Virtual Disk (On Windows Host)
+
+#### Open PowerShell as Administrator
+
+**Press Windows Key**, type `PowerShell`, right-click **Windows PowerShell**, select **Run as administrator**
+
+#### Find Your VDI File Location
+
+```powershell
+# Navigate to VirtualBox
+cd "C:\Program Files\Oracle\VirtualBox"
+
+# List all VMs to find yours
+.\VBoxManage list vms
+#PS C:\Program Files\Oracle\VirtualBox> .\VBoxManage.exe list vms
+#"CS144 Fall 2025" {086f1a3d-3423-4083-b6e0-04f95b23923c}
+
+# Show disk info (replace with your VM name)
+.\VBoxManage showvminfo "cs144" | findstr "SATA"
+#PS C:\Program Files\Oracle\VirtualBox> .\VBoxManage showvminfo "CS144 Fall 2025" | findstr "SATA"
+#1: 'SATA', Type: IntelAhci, Instance: 0, Ports: 1 (max 30), Bootable
+
+
+```
+
+**Common VDI locations:**
+- `C:\Users\YourUsername\VirtualBox VMs\cs144\cs144.vdi`
+- `C:\Users\YourUsername\VirtualBox VMs\cs144vm\cs144vm.vdi`
+ <!-- C:\Users\michael\VirtualBox VMs\CS144 Fall 2025\cs144-fall-2025-x86-disk001.vdi -->
+
+Or find it in VirtualBox GUI:
+1. Open VirtualBox
+2. Select your CS144 VM
+3. Click **Settings** → **Storage**
+4. Click on the disk under "Controller: SATA"
+5. Note the file path shown
+
+#### Resize the Disk
+
+```powershell
+# Increase to 12GB (12288 MB)
+
+.\VBoxManage modifyhd "C:\Users\YourUsername\VirtualBox VMs\cs144\cs144.vdi" --resize 12288
+```
+
+.\VBoxManage modifyhd "C:\Users\michael\VirtualBox VMs\CS144 Fall 2025\cs144-fall-2025-x86-disk001.vdi" --resize 12288
+
+**Replace the path** with your actual VDI file location!
+
+**Expected output:**
+```
+0%...10%...20%...30%...40%...50%...60%...70%...80%...90%...100%
+```
+
+---
+
+### Step 3: Start VM and Expand Partition
+
+Start your VM from VirtualBox, then SSH in:
+
+```bash
+ssh -p 2222 cs144@localhost
+```
+
+#### Check Current Partition Layout
+
+```bash
+# View partitions
+lsblk
+
+# Should show something like:
+# NAME   MAJ:MIN RM  SIZE RO TYPE MOUNTPOINT
+# sda      8:0    0   30G  0 disk          ← New size (e.g., 30G)
+# ├─sda1   8:1    0    1M  0 part
+# └─sda2   8:2    0  7.8G  0 part /        ← Old size (7.8G)
+
+cs144@cs144vm:~$ lsblk
+NAME   MAJ:MIN RM  SIZE RO TYPE MOUNTPOINTS
+sda      8:0    0   12G  0 disk
+├─sda1   8:1    0    1M  0 part
+└─sda2   8:2    0    8G  0 part /
+sr0     11:0    1 1024M  0 rom
+
+```
+
+#### Expand the Partition
+
+Ubuntu 24+ typically uses a simple partition scheme. Here's how to expand:
+
+##### Option A: Using growpart (Simplest)
+
+```bash
+# Install cloud-guest-utils
+sudo apt update
+sudo apt install cloud-guest-utils
+
+# Grow partition 2 on /dev/sda
+sudo growpart /dev/sda 2
+#cs144@cs144vm:~$ sudo growpart /dev/sda 2
+#CHANGED: partition=2 start=4096 old: size=16771072 end=16775167 new: size=25161695 end=25165790
+
+# Resize the filesystem
+sudo resize2fs /dev/sda2
+
+cs144@cs144vm:~$ sudo resize2fs /dev/sda2
+resize2fs 1.47.2 (1-Jan-2025)
+Filesystem at /dev/sda2 is mounted on /; on-line resizing required
+old_desc_blocks = 1, new_desc_blocks = 2
+The filesystem on /dev/sda2 is now 3145211 (4k) blocks long.
+
+
+# Verify new size
+df -h
+
+cs144@cs144vm:~$ df -h
+Filesystem      Size  Used Avail Use% Mounted on
+tmpfs           341M  1.1M  340M   1% /run
+/dev/sda2        12G  7.1G  4.2G  63% /
+tmpfs           1.7G     0  1.7G   0% /dev/shm
+tmpfs           5.0M     0  5.0M   0% /run/lock
+tmpfs           1.7G  4.0K  1.7G   1% /tmp
+tmpfs           1.0M     0  1.0M   0% /run/credentials/systemd-journald.service
+tmpfs           1.0M     0  1.0M   0% /run/credentials/systemd-resolved.service
+tmpfs           1.0M     0  1.0M   0% /run/credentials/systemd-networkd.service
+tmpfs           1.0M     0  1.0M   0% /run/credentials/getty@tty1.service
+tmpfs           341M   16K  341M   1% /run/user/100
+```
+
+##### Option B: Using parted (If growpart doesn't work)
+
+```bash
+# Install parted
+sudo apt install parted
+
+# Start parted
+sudo parted /dev/sda
+
+# In parted prompt:
+(parted) print
+# Note the partition number (usually 2)
+
+(parted) resizepart 2
+# When prompted for "End?", type: 100%
+
+(parted) quit
+
+# Resize the filesystem
+sudo resize2fs /dev/sda2
+
+# Verify
+df -h
+```
+
+##### Option C: Using fdisk (Advanced)
+
+```bash
+# Backup partition table first
+sudo sfdisk -d /dev/sda > ~/partition-backup.txt
+
+# Delete and recreate partition (data will be preserved if done correctly)
+sudo fdisk /dev/sda
+
+# In fdisk:
+# Press 'p' to print partitions (note start sector of sda2)
+# Press 'd' then '2' to delete partition 2
+# Press 'n' then 'p' then '2' to create new partition
+# Use the SAME start sector as before
+# Use default for end sector (max size)
+# Press 'N' when asked to remove signature
+# Press 'w' to write changes
+
+# Resize the filesystem
+sudo resize2fs /dev/sda2
+
+# Verify
+df -h
+```
+
+---
+
+### Step 4: Verify New Space
+
+```bash
+# Check disk space
+df -h
+
+# Should now show something like:
+# Filesystem      Size  Used Avail Use% Mounted on
+# /dev/sda2        28G  7.1G   20G  27% /
+#                 ^^^^       ^^^^
+#               (bigger)  (more available)
+```
+
+---
 
 
 --------------------------------------------------------------------
+
+
 
 # C++ dev env on windows
 

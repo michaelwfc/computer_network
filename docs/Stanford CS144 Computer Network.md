@@ -10,7 +10,7 @@
 
 ## Vedio
 - [CS144 Vedio Youtube](https://www.youtube.com/watch?v=r2WZNaFyrbQ&list=PL6RdenZrxrw9inR-IJv-erlOKRHjymxMN)
-- [CS144 Vedio 2018 Bilibili](https://www.bilibili.com/video/BV1e5411c7aY/?vd_source=b3d4057adb36b9b243dc8d7a6fc41295)
+- [CS144 Vedio 2018 Bilibili](https://www.bilibili.com/video/BV137411Z7LR/?spm_id_from=333.337.search-card.all.click&vd_source=b3d4057adb36b9b243dc8d7a6fc41295)
 - [《计算机网络，自顶向下方法》配套课程，作者亲授](https://www.bilibili.com/video/BV1mb4y1d7K7/?vd_source=b3d4057adb36b9b243dc8d7a6fc41295)
 
 
