@@ -106,41 +106,120 @@ bi-directional reliable byte stream between two applications, using application-
 
 # 1.3 The IP service model
 
-### Properties
+## Properties
 
 1. IP is a datagram service
-   The datagram is a packet that is routed individually through 3
-   the network based on the information in its header. In other words, the datagram is self-contained.
+   The datagram is a packet that is routed individually through the network based on the information in its header. In other words, the datagram is self-contained.
+   - Individually routed packets
+   - hop-by-hop routing
 
-2. Unreliable
-3. Best effort
+2. Unreliable: Packets might be dropped
+
+3. Best effort: iut only if nessesary
 4. IP is a connectionless service
+   No per-flow state
+   Packets might be mis-sequenced
 
-### The IP service
 
-1. IP tries to prevent packets from looping forever.
+### Why the IP Service is So Simple?
 
-TTL field(Time To Live):  
-It starts out at a number like 128 and then is decremented by every router it passes through. If it reaches zero, IP concludes that it must be stuck in a loop and the router drops the datagram
+The IP service model was designed with simplicity as a core principle for several interconnected reasons:
+
+1. Network Simplicity and Cost Efficiency
+- **Keep network infrastructure "dumb" and minimal** - This approach enables faster development, streamlined operations, and lower maintenance costs
+- **Hardware optimization** - Simple network components can be implemented using dedicated hardware for high-speed operation
+- **Reliability through simplicity** - Fewer complex components in distributed routers lead to more reliable and affordable systems that require less frequent upgrades
+
+2. End-to-End Principle Implementation
+- **Feature placement at endpoints** - The design philosophy emphasizes implementing intelligence at source and destination computers rather than in the network itself
+- **Application-specific optimization** - Features like reliable communication and congestion control are handled by end hosts, allowing for correct implementation tailored to specific applications
+- **Evolution flexibility** - Software-based implementations on end computers are easier to update and improve compared to network-hardcoded features
+- **Radical departure from traditional models** - This contrasts with telephone systems that relied on simple endpoints and complex network switches
+
+3. Flexibility for Diverse Application Needs
+- **Application-controlled reliability** - Different applications can implement their own reliability mechanisms based on specific requirements
+- **Real-time application support** - Services like video chat benefit from this approach since retransmitted packets might arrive too late to be useful
+- **Custom service selection** - Applications can choose whether they need reliable or unreliable transmission based on their operational needs
+
+4. Universal Link Layer Compatibility
+- **Minimal assumptions about underlying technology** - IP works with both wired and wireless connections without requiring specific link-layer capabilities
+- **Network agnostic design** - The protocol makes few demands on the link layer regarding retransmission or congestion control
+- **Interconnection focus** - Designed specifically to interconnect existing diverse networks, reflecting its origin as the "Internet" (inter-networking)
+
+This simple design philosophy has enabled IP to become the robust foundation for the modern internet while maintaining compatibility across diverse networking technologies and application requirements.
+
+## The IP service Features 
+
+1. Loop Prevention with TTL Field(Time To Live)
+- Purpose: Prevents packets from looping infinitely in the network
+- Mechanism: Uses a Time To Live (TTL) field in the datagram header that starts at a value like 128 and then is decremented by every router it passes through. If it reaches zero, IP concludes that it must be stuck in a loop and the router drops the datagram
+
+- Operation: Each router decrements the TTL by 1; if it reaches zero, the packet is dropped as it's considered stuck in a loop
+- Design philosophy: Simple mechanism that limits damage from looping packets without preventing loops entirely
+
+
 
 2. IP will fragment packets if they are too long.
+
+- Purpose: Handles packets that exceed link-specific size limitations
+- Problem addressed: Different network links have varying maximum packet sizes (e.g., Ethernet: 1500 bytes)
+- Solution: Routers can fragment oversized datagrams into smaller ones with appropriate header fields
+- Reassembly: Destination hosts receive information needed to properly reassemble the original data
+
+
 3. IP uses a header checksum to reduce chances of delivering a datagram to the wrong destination.
-4. two versions of IP in use today:
-   - IPv4, It uses the 32bit addresses you are probably familiar with.
-   - IPv6, which uses 128 bit addresses instead
-5. IP allows new fields to be added to the
-   datagram header
+- Purpose: Reduces chances of delivering datagrams to incorrect destinations due to header corruption
+- Implementation: Includes a checksum field calculated over the entire header
+- Security aspect: Helps prevent accidental misdelivery that could cause security problems
 
-### IPv4-Datagram
 
-![IPv4-Datagram](../images/IPv4-Datagram.png)
 
-- The Protocol ID
-  that tells us what is inside the data field. Essentially, it allows the destination end host to demultiplex arriving packets, sending them to the correct code to process the packet.
-  If the Protocol ID has the value “6” then it tells us the data contains a TCP Segment, and so we can safely pass the datagram to the TCP code and it will be able to parse the segment correctly.
+4. Allow for new IP versions 
+- IPv4: Current dominant version using 32-bit addresses (~90% of end hosts)
+- IPv6: Transition version using 128-bit addresses to address IPv4 address exhaustion
+- Flexibility: Supports gradual migration between versions as the Internet evolves
 
-  The Internet Assigned Numbers Authority (IANA) defines over 140
-  different values of Protocol ID, representing different transport protocols.
+
+5. Extensible Header Options
+- Capability: Allows new fields to be added to the datagram header beyond the standard format
+- Advantages: Enables new features that weren't included in the original specification
+- Disadvantages: May add processing overhead to routers, potentially conflicting with the goal of simplicity
+- Usage: Very few options are commonly used or processed by routers in practice
+
+## IPv4-Datagram
+
+![IPv4-Datagram](../../images/IPv4-Datagram.png)
+
+Here's a summary of the IPv4 header fields and their purposes:
+
+**Essential Fields (the "big three"):**
+1. **Destination IP Address** - Where the packet is going
+2. **Source IP Address** - Where the packet came from
+3. **Protocol ID** - What's inside the data field (e.g., "6" = TCP segment);  
+   Essentially, it allows the destination end host to demultiplex arriving packets, sending them to the correct code to process the packet.
+  Ex: If the Protocol ID has the value “6” then it tells us the data contains a TCP Segment, and so we can safely pass the datagram to the TCP code and it will be able to parse the segment correctly.
+  **The Internet Assigned Numbers Authority (IANA)** defines over 140 different values of Protocol ID, representing different transport protocols.
+
+
+**Version and Size Fields:**
+1. **Version** - Identifies IP version (IPv4 or IPv6)
+2. **Total Packet Length** - Up to 64k Bytes (header + data)
+3. **Header Length** - Size of the header (varies due to optional fields)
+
+**Reliability and Control Fields:**
+7. **Time to Live (TTL)** - Decremented by each router; packet dropped when it reaches zero, preventing infinite loops
+8. **Checksum** - Validates header integrity to avoid misdelivery due to corruption
+
+**Fragmentation Fields:**
+9. **Packet ID, Flags, and Fragment Offset** - Allow routers to break packets into smaller pieces when needed for links with smaller maximum sizes
+
+**Quality of Service:**
+10. **Type of Service** - Hints to routers about packet importance/priority
+
+The key takeaway: IP is deliberately simple. It provides best-effort delivery with minimal guarantees—just basic addressing, demultiplexing, and some mechanisms to prevent disasters like infinite loops.
+
+
+
 
 - The Type of Service field
   gives a hint to routers about how important this packet is.
@@ -150,36 +229,40 @@ It starts out at a number like 128 and then is decremented by every router it pa
 
 # 1.4 Life of a Packet
 
-## Three way handshake
-
-the three way handshake is described as “synchronize,
-synchronize and acknowledge, acknowledge”, or “SYN, SYN-ACK, ACK”.
-
-1. SYN
-   when the client sends a “synchronize” message to the server, often
-   called a SYN.
-
-2. SYN-ACK
-   when the server responds with a “synchronize” message that also acknowledges the clients “synchronize”, or a “synchronize and acknowledge message”, often called a SYN-ACK.
-
-3. ACK
-   when the client responds by acknowledging the server’s synchronize, often called an ACK.
 
 ## TCP Byte Stream
 
-![TCP Byte Stream](../images/TCP-Byte-Stream.png)
+![TCP Byte Stream](../../images/TCP-Byte-Stream.png)
 
-1. an Internet Protocol address
-   is the address the network layer uses to deliver packets to the computer.
+**Two-Level Addressing:**
+To deliver data to applications (not just computers), two addresses are needed:
+1. **Internet Protocol(IP) Address** - Network layer uses this to deliver packets to the destination computer
+2. **TCP Port** - Transport layer uses this to deliver data to the correct application on that computer
 
-2. the TCP port
-   tells the computer’s software which application to deliver data to
+Example: Web servers typically run on **TCP port 80**, 
+So when we open a connection to a web server, we send IP packets to the computer running the web server whose destination address is that computer’s IP address. Those IP packets have TCP segments whose destination port is 80.
+so connections to web servers use the server's IP address plus destination port 80.
 
-Web servers usually run on TCP port 80. So when we open a connection to a web server, we send IP packets to the computer running the web server whose destination address is that computer’s IP address. Those IP packets have TCP segments whose destination port is 80.
+**TCP Connection Establishment - Three-Way Handshake:**
+1. **SYN** - Client sends a "synchronize" message to the server
+2. **SYN-ACK** - when the server responds with a “synchronize” message that also acknowledges the clients “synchronize”, or a “synchronize and acknowledge message”
+3. **ACK** - Client acknowledges the server's synchronize
+
+This three-message exchange opens a connection between client and server.
+
+**Packet Routing:**
+- Clients and servers aren't directly connected; packets travel through intermediate routers
+- Each link between routers is called a **hop**
+- Routers forward packets along their links, deciding which link to use for each arriving packet
+- Routers can also deliver packets to their own software (e.g., when you log into the router itself)
+
+**Key Insight:** The network layer (IP) delivers to computers, while the transport layer (TCP) delivers to applications within those computers.
+
+
 
 ### Inside each hop in router
 
-![Inside each hop in router](../images/Inside-router-hop.png)
+![Inside each hop in router](../../images/Inside-router-hop.png)
 
 How does a router make this decision?
 
@@ -190,6 +273,9 @@ A forwarding table consists of a set of IP address patterns and the link to send
 When a packet arrives, the router checks which forwarding table entry’s pattern best matches the packet. It forwards the packet along that entry’s link.
 
 Generally, “best” means the most specific match. I’ll describe how this matching works in more detail in the video on longest prefix match.
+
+
+
 
 ## Under the Hood
 
