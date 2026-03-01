@@ -27,7 +27,7 @@
 - The Network layer: packets of data
   The Network layer sends these packets to the next hop router, which forwards them to the destination computer.
 
-![4 Layer Internet Model](../../images/4-layer-internet-model.png)
+![4 Layer Internet Model](../../images/internet_model/4-layer-internet-model.png)
 
 - The Internet is made up of end-hosts, links and routers.
 - Data is delivered hop-by-hop over each link in turn.
@@ -55,7 +55,7 @@ A `packet` is an important basic building block in networks.
 - deliever datagram end-to-end, Best-effort delivery-no guarantees.
 - must use the Internet Protocol (IP)
 
-![Network Layer Process](../../images/network-layer.png)
+![Network Layer Process](../../images/internet_model/network-layer.png)
 
 - The Network hands the `datagram` to the Link Layer below , telling it to send the datagram over the first link.
 - the Link Layer says: “if you give me a datagram to send, I will transmit it over one link for you”
@@ -98,25 +98,29 @@ bi-directional reliable byte stream between two applications, using application-
 
 ### The 7 lyaers of the OSI model
 
-![The 7 lyaers of the OSI model](../../images/7-layer-OSI-model.png)
+![The 7 lyaers of the OSI model](../../images/internet_model/7-layer-OSI-model.png)
 
 - When the transport layer has data to send, it hands a Transport Segment to the Network layer below. to drop transport segment into IP datagram
 - The network layer puts the transport segement inside a new IP datagram. IP datagrams consist of a header and some data. IP’s job is to deliver the datagram to the other end.
 - But first, the IP datagram has to make it over the first link to the first router， to put IP datagram inside Link frame， such as an Ethernet packet and ships it off to the first router.
 
-# 1.3 The IP service model
+# 1.3 Network Layer & IP
+![Network Layer Process](../../images/internet_model/network-layer.png)
 
-## Properties
+## The IP service model
+![the-internet-protocol](../../images/network_layer/the-internet-protocol.png)
 
-1. IP is a datagram service
+### Properties
+
+1. **IP is a datagram service**
    The datagram is a packet that is routed individually through the network based on the information in its header. In other words, the datagram is self-contained.
    - Individually routed packets
    - hop-by-hop routing
 
-2. Unreliable: Packets might be dropped
+2. **Unreliable**: Packets might be dropped
 
-3. Best effort: iut only if nessesary
-4. IP is a connectionless service
+3. **Best effort**: iut only if nessesary
+4. **IP is a connectionless service**
    No per-flow state
    Packets might be mis-sequenced
 
@@ -148,9 +152,9 @@ The IP service model was designed with simplicity as a core principle for severa
 
 This simple design philosophy has enabled IP to become the robust foundation for the modern internet while maintaining compatibility across diverse networking technologies and application requirements.
 
-## The IP service Features 
+### The IP service Features 
 
-1. Loop Prevention with TTL Field(Time To Live)
+1. Loop Prevention with **TTL Field**(Time To Live)
 - Purpose: Prevents packets from looping infinitely in the network
 - Mechanism: Uses a Time To Live (TTL) field in the datagram header that starts at a value like 128 and then is decremented by every router it passes through. If it reaches zero, IP concludes that it must be stuck in a loop and the router drops the datagram
 
@@ -167,7 +171,7 @@ This simple design philosophy has enabled IP to become the robust foundation for
 - Reassembly: Destination hosts receive information needed to properly reassemble the original data
 
 
-3. IP uses a header checksum to reduce chances of delivering a datagram to the wrong destination.
+3. IP uses a header **checksum** to reduce chances of delivering a datagram to the wrong destination.
 - Purpose: Reduces chances of delivering datagrams to incorrect destinations due to header corruption
 - Implementation: Includes a checksum field calculated over the entire header
 - Security aspect: Helps prevent accidental misdelivery that could cause security problems
@@ -188,7 +192,7 @@ This simple design philosophy has enabled IP to become the robust foundation for
 
 ## IPv4-Datagram
 
-![IPv4-Datagram](../../images/IPv4-Datagram.png)
+![IPv4-Datagram](../../images/network_layer/IPv4-Datagram.png)
 
 Here's a summary of the IPv4 header fields and their purposes:
 
@@ -232,7 +236,7 @@ The key takeaway: IP is deliberately simple. It provides best-effort delivery wi
 
 ## TCP Byte Stream
 
-![TCP Byte Stream](../../images/TCP-Byte-Stream.png)
+![TCP Byte Stream](../../images/transport_layer/TCP-Byte-Stream.png)
 
 **Two-Level Addressing:**
 To deliver data to applications (not just computers), two addresses are needed:
@@ -262,7 +266,7 @@ This three-message exchange opens a connection between client and server.
 
 ### Inside each hop in router
 
-![Inside each hop in router](../../images/Inside-router-hop.png)
+![Inside each hop in router](../../images/transport_layer/Inside-router-hop.png)
 
 How does a router make this decision?
 
@@ -279,8 +283,20 @@ Generally, “best” means the most specific match. I’ll describe how this ma
 
 ## Under the Hood
 
-1. Request web page from www.cs.brown.edu
-   checke IP address with F12
+1. Request web page from `www.cs.brown.edu`
+- method1: checke IP address with F12
+- method2: use `nslookup`
+```bash
+$ nslookup www.cs.brown.edu
+服务器:  UnKnown
+Address:  192.168.2.1
+
+非权威应答:
+DNS request timed out.
+    timeout was 2 seconds.
+名称:    www.cs.brown.edu
+Address:  128.148.32.12
+```
 2. Use wireshark to see TCP byte stream establishment and data exchange
 3. Use traceroute to see route packets take through Internet
 
@@ -297,7 +313,12 @@ Generally, “best” means the most specific match. I’ll describe how this ma
    2. filter:
       tcp.port == 80 && ip.addr == 128.148.32.12
 
-![TCP-handshakes](../images/TCP-handshakes.png)
+      tcp.port == 7897 && ip.addr == 128.148.32.12
+
+3. open browser and request `www.cs.brown.edu` or `curl www.cs.brown.edu `
+
+![TCP-handshakes](../../images/transport_layer/TCP-handshakes.png)
+![TCP-handshakes-wireshark](../../images/transport_layer/TCP-handshakes-wireshark.png)
 
 [ssl-handshakes](https://www.ruanyifeng.com/blog/2014/09/illustration-ssl.html)
 
@@ -340,69 +361,448 @@ curl http://nginx.org/
 
 ```
 
-# 1.6 Basic architectural ideas and principles
 
-1. packet switching
-   which is the simple way in which data is broken down into self-contained packets of information that are forwarded hop-by-hop based on the information in the packet header.
+# 1.5 Principle: Packet Switching
+![image](../../images/network_layer/Packet_Switching.png)
 
-2. Layering
+## What is a Packet?  
+A self-contained unit of data that carries information necessary for it to reach its destination.
+- Data - the actual information being sent
+- Header - contains the destination address (like an envelope in the postal system)
 
-3. encapsulation
-   which is the process of placing
-   a packet processed at one layer inside the data of the
-   packet below.
+The packet contains enough information for the network to independently deliver it to its destination.
 
+## What is Packet Switching?
+Packet switching is the idea that we break our data up into discrete, self-contained chunks of data. Each chunk, called a packet, carries sufficient information that a network can deliver the packet to its destination.
+
+- Key principle: 
+Independently for each arriving packet, pick its outgoing link. If the link is free, send it. Else hold the packet for later.
+
+Each packet is routed separately and independently - there's no dedicated circuit. Consecutive packets can even take different paths through the network.
+
+## How Does Packet Switching Work?
+
+
+
+**Two main approaches:**
+
+**a) Source Routing (Self-Routing):**
+- The packet contains an explicit route specifying each switch along the way (e.g., "A → B → C → destination")
+- Each switch reads the next hop from the packet and forwards accordingly
+- Generally disabled in the Internet due to security concerns
+
+**b) Hop-by-Hop Forwarding (most common today):**
+- Each switch maintains a **forwarding table** mapping destination addresses to next hops
+- Packet only needs to carry the **destination address**
+- Each switch looks up the destination in its local table and forwards to the appropriate next hop
+- The packet travels hop-by-hop until it reaches its destination
+
+**Network components:**
+- **End-hosts** (source and destination)
+- **Links** (connections between switches)
+- **Packet switches** (routers, gateways, Ethernet switches) - forward packets based on destination address in the header
+
+
+## Two Properties of Packet Switching:
+
+**1. Simple packet forwarding: Stateless, Simple Switching:**
+- Each switch makes **individual, local decisions** for each packet independently
+- The switch **doesn't need to keep extra state** about previous packets or track whether packets belong to the same flow/connection
+- The switch doesn't need to know what the packets are for (Skype call, web request, firmware update, etc.) - **it just forwards packets**
+- This greatly **simplifies the switch** design
+
+### No per-flow state required
+
+Flow: A collection of datagrams belonging to the same end-to-end communication, e.g. a TCP connection.
+
+
+
+
+**2. Efficient Link Sharing:**
+- A switch can **efficiently share a link between many parties** without dedicating capacity
+- **Dynamic allocation** - whoever needs bandwidth can use it when available
+
+**Example:** Home WiFi router with two people:
+- Person 1 reading a page (idle) → Person 2 can download at **full link speed**
+- Person 1 starts loading a new page → Link is **shared between both**
+- Download completes → Person 1 gets **full link speed** again
+
+The link capacity automatically adjusts based on demand, with no pre-allocation or reservation needed. This is much more efficient than dedicating fixed portions of the link to each user.
+
+
+
+
+# 1.6 Principle: Layering
+
+Reasons for layering
+1. Modularity
+2. Well defined service
+3. Reuse
+4. Separation of concerns
+5. Continuous improvement
+6. Peer-to-peer communications
+
+# 1.7 Principle: Encapsulation
+which is the process of placing a packet processed at one layer inside the data of the packet below.
 This helps a clear separation of concerns between how data is processed at each layer in the hierarchy.
+![image](../../images/internet_model/Encapsulation.png)
 
-# 1.5 Packet Switching
+## Encapsulation Flexibility
+- Encapsulation allows you to layer recursively
 
-Packet:  
-A self-contained unit of data that carries
-information necessary for it to reach its destination.
+## Example: Virtual Private Network (VPN):
+- HTTP (web) application payload in
+- a TCP transport segment in
+- an IP network packet in
+- a secured TLS(Transport layer Security) presentation message in
+- a TCP transport segment in
+- an IP network packet in
+- an Ethernet link frame.
 
-Packet switching
-is the idea that we break our data up into discrete, self-contained chunks of data. Each chunk, called a packet, carries sufficient information that a network can deliver the packet to its destination.
 
-### two properties.
+Great example. You’re already thinking at the right abstraction level — encapsulation as recursion. Let’s make it precise and mechanical.
 
-1. simple packet forwarding
-   a switch can make individual, local decisions for each packet. It doesn’t need to keep extra state on the packets its seen or whether two packets go to the same destination.
+---
 
-#### No per-flow state required
+### What a VPN Actually Does
 
-Flow:
+A **Virtual Private Network (VPN)** creates a **secure tunnel** between your device and a trusted gateway (e.g., your company network).
 
-A collection of datagrams belonging to the same end-
-to-end communication, e.g. a TCP connection.
+Instead of sending your IP packets directly to their destination, your machine:
 
-2. a switch efficiently share a link between many parties.
+> Encrypts them
+> Wraps them
+> Sends them to the VPN gateway
+> The gateway unwraps and forwards them
 
-### Memory, Byte Order, and Packet Formats
+So the VPN is basically:
 
-#### Endianness
+> A secure transport pipe that carries *entire IP packets* inside it.
+
+---
+### Mental Model (Important)
+
+Think of VPN like this:
+
+> You put a sealed envelope (inner IP packet)
+> Inside a locked safe (TLS session)
+> Ship it to your office
+> Office unlocks safe and delivers envelope internally
+
+Recursive layering.
+
+---
+
+### Architectural View
+VPN gateway acts as:
+
+| Role          | Function                  |
+| ------------- | ------------------------- |
+| TLS server    | Terminates encryption     |
+| Authenticator | Validates users           |
+| Router        | Forwards inner IP packets |
+| Firewall      | Enforces access policies  |
+
+Destination server acts as:
+| Role                 | Function           |
+| -------------------- | ------------------ |
+| Normal host          | Serves application |
+| No Internet exposure | Private only       |
+| No VPN awareness     | Just standard IP   |
+
+#### Clean Layer Visualization
+```
+Client
+  ↓
+Encrypted Tunnel
+  ↓
+VPN Gateway
+  ↓
+Internal Routing
+  ↓
+Destination Server
+```
+
+#### Why This Is Architecturally Clean
+
+Phil’s key insight:
+
+The 4-layer model isn’t rigid.
+
+You can:
+
+* Run IP inside IP
+* Run IP inside TLS
+* Run Ethernet over IP
+* Run MPLS over Ethernet
+
+Protocols don’t care — as long as the outer layer can carry bytes.
+
+Encapsulation enables composability.
+
+#### Why This Is Powerful
+
+Because:
+
+* Your home network doesn’t need to understand company routing
+* Your ISP can’t read your traffic
+* The public Internet only sees encrypted TLS
+* Internal resources remain private
+
+All access control is centralized at the VPN gateway.
+
+This is operationally elegant.
+
+---
+
+
+
+
+### Normal Internet Access (No VPN)
+
+If you access an internal server `10.0.0.25` directly (impossible from home):
+
+```
+HTTP
+  ↓
+TCP
+  ↓
+IP (dst = 10.0.0.25)
+  ↓
+Ethernet
+```
+
+This fails because your home router cannot route to private IP space `10.0.0.0/8`.
+
+---
+
+### 🔐 With VPN
+
+Now you first establish a secure connection to the company VPN gateway.
+
+Let’s say:
+
+* Your local IP: `192.168.2.10`
+* VPN gateway public IP: `203.0.113.5`
+* Internal server: `10.0.0.25`
+
+VPN Gateway (Edge / Entry Point)
+This is:
+- The public-facing machine
+- The device that terminates the encrypted tunnel
+- The enforcement point for authentication & access control
+- The router into the private network
+
+Think of it as: A secure border checkpoint + router.
+
+It has:
+- A public IP (reachable from Internet)
+- A private IP (inside company LAN)
+
+---
+
+#### Phase 1 — Establish Secure Tunnel
+
+You create a TLS connection to the VPN gateway:
+
+```
+TCP handshake to 203.0.113.5
+TLS handshake
+Keys exchanged
+Encrypted tunnel established
+```
+Now you have a secure pipe.
+---
+
+#### Phase 2 — Send Internal Traffic Through Tunnel
+
+- Step 1 — Client Creates Inner Packet
+Your browser generates:
+```
+HTTP GET /internal
+```
+
+That becomes:
+```
+HTTP
+↓
+TCP
+↓
+IP (dst = 10.0.0.25)
+```
+That packet cannot be sent directly.
+
+- Step 2 — OS Encapsulates It
+But instead of sending this IP packet normally, your OS does something clever:
+It treats that entire IP packet as **data**.
+Now encapsulation becomes:
+
+```
+[Inner]
+HTTP
+  ↓
+TCP
+  ↓
+Inner IP (dst = 10.0.0.25)
+
+[Outer]
+TLS (encrypted)
+  ↓
+TCP (dst = 203.0.113.5)
+  ↓
+Outer IP (dst = 203.0.113.5)
+  ↓
+Ethernet
+```
+This is what travels across Internet.
+
+Exactly like your example:
+> HTTP inside TCP inside IP inside TLS inside TCP inside IP inside Ethernet
+
+---
+
+#### Phase 3: Gateway Routes Internally
+
+What Happens at the VPN Gateway
+
+At the gateway:
+
+1. Outer IP received
+2. Outer TCP processed
+3. TLS decrypted
+4. Inner IP packet extracted
+5. Gateway routes that inner IP packet normally
+
+So the gateway now sees:
+```
+IP (dst = 10.0.0.25)
+```
+And forwards it inside the company LAN.
+
+---
+#### Phase 4: Internal Server Receives
+Now the internal server receives a completely normal packet.
+
+
+
+
+---
+
+### Key Concept: Tunneling
+
+VPN = **IP tunneling**
+
+You are transporting Layer 3 packets inside another Layer 4 session.
+
+This is recursive layering.
+
+The OS creates a **virtual network interface** (TUN device).
+
+Your routing table changes:
+
+Instead of:
+
+```
+10.0.0.0/8 → default gateway
+```
+
+It becomes:
+
+```
+10.0.0.0/8 → VPN tunnel interface
+```
+
+So traffic automatically flows into the tunnel.
+
+---
+
+### Types of VPN (Important Distinction)
+
+Not all VPNs use TLS exactly like this.
+
+#### 1️⃣ SSL VPN (OpenVPN, TLS-based)
+
+Exactly like your example.
+
+#### 2️⃣ IPsec VPN
+
+Encapsulates IP inside ESP packets at Layer 3.
+
+#### 3️⃣ WireGuard
+
+Minimal UDP-based encrypted tunnel.
+
+WireGuard stack looks like:
+
+```
+Inner IP
+↓
+UDP
+↓
+IP
+↓
+Ethernet
+```
+
+No TLS, simpler crypto model.
+
+---
+
+#### What Wireshark Sees
+
+If you capture traffic while VPN is active, you will NOT see:
+
+```
+IP → 10.0.0.25
+```
+
+You will see:
+
+```
+IP → 203.0.113.5
+TCP 443 (TLS)
+Encrypted Application Data
+```
+
+Because the internal IP packet is inside encrypted payload.
+
+This is the same reason you couldn’t see remote handshake with proxy earlier.
+
+Encapsulation hides the inner layers.
+
+---
+
+
+
+
+
+# 1.8 Memory, Byte Order, and Packet Formats
+
+## Endianness
 
 How you lay out a multibyte value in memory is called endianness
 
-- little endian:
+- **Little endian**:
   the least significant byte is at the lowest address.
   So the least significant byte comes first in memory. It turns out that from a computational and architectural standpoint, this can make the most sense.
-- big endian:
-  where the most significant byte is the lowest address. Big endian makes more sense to a human reader, because
-  it’s how we write numbers, with the most significant digits first.
+- **Big endian**:
+  where the most significant byte is the lowest address. Big endian makes more sense to a human reader, because it’s how we write numbers, with the most significant digits first.
 
-| Width | Decimal  | Binary    | Hexadecimal | Little Endian       | Big Endian          |
-| ----- | -------- | --------- | ----------- | ------------------- | ------------------- |
-| 16    | 1024     | 2^10      | 0x0400      | 0x00 0x04           | 0x04 0x00           |
-| 16    | 53       |           | 0x0035      | 0x35 0x00           | 0x00 0x35           |
-| 16    | 4116     | 4096 + 96 | 0x1014      | 0x14 0x10           | 0x10 0x14           |
-| 32    | 5        |           | 0x00000005  | 0x05 0x00 0x00 0x00 | 0x00 0x00 0x00 0x05 |
-| 32    | 83886080 |           |             |                     |
+| Width | Decimal    | Binary     | Hexadecimal | Little Endian       | Big Endian          |
+| ----- | ---------- | ---------- | ----------- | ------------------- | ------------------- |
+| 16    | 1024       | 2^10       | 0x0400      | 0x00 0x04           | 0x04 0x00           |
+| 16    | 53         |            | 0x0035      | 0x35 0x00           | 0x00 0x35           |
+| 16    | 4116       |4096=2^12+20| 0x1014      | 0x14 0x10           | 0x10 0x14           |
+| 32    | 5          |            | 0x00000005  | 0x05 0x00 0x00 0x00 | 0x00 0x00 0x00 0x05 |
+| 32    | 83,886,080 |            | 0x05000000  |                     |                     |
+| 32    | 305,414,945|            | 0x21433412  |                     |                     |     
 
-#### Network Byte Order
+
+## Network Byte Order
 
 - Different processors have different endianness
-- Little endian: x86,
-- big endian: ARM
+  - Little endian: x86,
+  - big endian: ARM
 - To interoperate, they need to agree how to represent multi-byte fields
 - Network byte order is big endian
 
@@ -420,77 +820,210 @@ else {
 }
 ```
 
-#### Portable Code
+### Portable Code
 
 You have to convert network byte order values to your host order
 
 ```C
-uint16_t http_port = 80; // host byte order
+uint16_t http_port = 80; // host byte order : 80=0x0050 = 0x50 0x00 (Little Endian)
+if(packet->port== http_port){
+  // network byte order(0x00 0x50) vs host byte order (0x50 0x00)         
+  // Wrong
+  ...
+}
 
-// network byte order vs host byte order
-// Wrong
-// if(packet->port== http_port){
-// }
 
+
+// Using helper functions: ntohs, htons, ntohl, htonl
 // ntohs: network to host short
 // htons: host to network short
 #include <arpa/inet.h>
+uint16_t http_port = 80; 
 uint16_t packet_port = ntohs(packet->port);
-   if(packet_port== http_port){
-      // OK
-   }
+if(packet_port== http_port){
+  // OK
+  ...
+}
 ```
 
-#### Packet Formats
+### Packet Formats
 
-![Packet Formats](../images/Packet-Format.png)
+![Packet Formats](../../images/internet_model/Packet-Format.png)
 
-### Names and Addresses: IPv4
+# 1.9 Names and Addresses: IPv4
 
-#### Address Structure
+## Goal of Internet Protocol Addresses
+- Stitch many different networks together
+- Need network-independent, unique address
 
+
+## Internet Protocol, Version 4
+- An IPv4 address identifies a device on the Internet
+  - Layer 3 (network) address
+  
+- 32 bits long (4 octets): a.b.c.d
+  - Example: 171.64.64.64
+  - Example: 128.30.76.82
+  - Example: 12.22.58.30
+
+- Netmask: apply this mask, if it matches, in the same network
+  - Netmask of 255.255.255.0 means if the first 24 bits match
+  - Netmask of 255.255.252.0 means if the first 22 bits match
+  - Netmask of 255.128.0.0 means if the first 9 bits match
+  - Smaller netmask (fewer 1s) means larger network
+
+```bash
+无线局域网适配器 WLAN:
+
+   连接特定的 DNS 后缀 . . . . . . . : ctc
+   本地链接 IPv6 地址. . . . . . . . : fe80::748b:765f:409d:3fb3%21
+   IPv4 地址 . . . . . . . . . . . . : 192.168.2.10
+   子网掩码  . . . . . . . . . . . . : 255.255.255.0
+   默认网关. . . . . . . . . . . . . : 192.168.2.1
+
+```
+## Address Structure
+
+- Originally hierarchical: network + host
+  - Network to get to correct network (administrative domain)
+  - Host to get to correct device in network (within administrative domain)
+- Originally 3 classes of addresses: class A, class B, class C
+
+![image](../../images/network_layer/Address-Structure.png)
+
+### Address Structure Today
 - Still assign contiguous ranges of addresses to nearby networks
-  Class A, B, C is too coarse grained (e.g., MIT dorms!)
-- http://news.stanford.edu/news/1999/january27/itss127.html
+  Class A, B, C is too coarse grained [e.g., MIT dorms!](http://news.stanford.edu/news/1999/january27/itss127.html)
 
-#### Address Structure Today: Classless Inter-Domain Routing (CIDR)
+#### Classless Inter-Domain Routing (CIDR)
+- What is CIDR?
+CIDR (Classless Inter-Domain Routing) is a flexible system for structuring and allocating IPv4 addresses that replaced the older class-based system (Class A, B, C).
 
-- Address block is a pair: address,count
-- Counts are powers of 2, specify netmask length
-- 171.64.0.0/16 means any address in the range 171.64.0.0 to 171.64.255.255
-- A /24 describes 256 addresses, a /20 describes 4,096 addresses
+- Key principle: 
+  All CIDR blocks define address blocks that are powers of 2 in size.
 
-## Longest Prefix Match
+- How CIDR Works:
+Flexible prefix lengths: Instead of only 8, 16, or 24-bit prefixes, CIDR allows any number of bits as the network prefix, This is called the netmask length or "slash notation"
 
-- Forwarding table is a set of CIDR entries
+  - Address block is a pair: address,count
+  - Counts are powers of 2, specify netmask length
+  - 171.64.0.0/16 means any address in the range 171.64.0.0 to 171.64.255.255
+  - A /24 describes 256 addresses, a /20 describes 4,096 addresses
+
+- Stanford today has 5 /16 blocks -- 325,000 addresses
+
+ 
+### IPv4 Address Assignment
+- IANA: Internet Assigned Numbers Authority
+  - Internet Corporation for Assignment of Names and Numbers (ICANN)’s job
+- IANA gives out /8s to Regional Internet Registries (RIRs)
+  - Ran out in February 2011, in special end case of giving 1 to each RIR
+- RIRs responsible for geographic regions, each has own policy
+  - AfriNIC: Africa
+  - ARIN: U.S.A., Canada, Carribean, Antarctica
+  - APNIC: Asia, Australia, New Zealand
+  - LACNIC: Latin America, Carribean
+  - RIPE NCC: Europe, Russia, Middle East, Central Asia
+
+# 1.10 Longest Prefix Match
+
+Internet routers can have many links. They have many options for which direction to forward a received packet. To select which link to forward a packet over, routers today typically use an algorithm called Longest Prefix Match.
+
+## How Longest Prefix Match Works:
+
+When a router receives a packet, it looks at the **destination IP address** and compares it against multiple entries in its **forwarding table**. 
+- Forwarding table is a set of CIDR entries, Each entry has:
+- A network prefix (in CIDR notation, like /16, /20, /24)
+- A next hop (which link to forward to)
+
+|    dest       | link |
+|---------------|------|
+| 0.0.0.0/0     |  1   |
+| 171.33.0.0/16 |  5   |
+
+The router selects the forwarding entry that has the **longest matching prefix** with the destination address.
+
 - An address might match multiple entries
   E.g., 171.33.0.1 matches both entries on right
+
 - Algorithm: use forwarding entry with the longest matching prefix
   Longest prefix match will chose link 5 for 171.33.0.1
 
+
+## Why "Longest"?
+
+Since CIDR allows flexible prefix lengths, a destination address might match multiple entries in the forwarding table. For example:
+- A destination might match both a /16 prefix (more general) and a /24 prefix (more specific)
+- The router chooses the **/24** because it's the **longest (most specific) match**
+
+## The Principle:
+
+**More specific routes take precedence over more general routes.**
+
+This allows the Internet to have:
+- **General/default routes** for broad address blocks
+- **Specific routes** for particular subnets that need special handling
+
+The longest prefix match ensures packets are routed as specifically as possible, giving network operators fine-grained control over how traffic flows through their networks.
+
+
+
+
+## Example
+A client wants to open a TCP connection to a web server on port 80. Packets travel through multiple routers, and each router must decide which link to forward packets on.
+
+![TCP Byte Stream](../../images/transport_layer/TCP-Byte-Stream.png)
+
+### The Forwarding Table:
+![Inside each hop in router](../../images/transport_layer/Inside-router-hop-02.png)
+Here's an explanation of how Longest Prefix Match works using your example:
+
+The router has a forwarding table with entries like:
+- **Default route** (0.0.0.0/0 or all wildcards) → Link 1
+- **171.33.0.0/16** (171.33.x.x) → Link 5
+- Other specific entries with varying prefix lengths
+
+Each entry has:
+1. **CIDR prefix** - describes a block of addresses
+2. **Next hop/link** - where to forward matching packets
+
+### How LPM Works - Step by Step:
+
+**1. Packet arrives** with a destination IP address
+
+**2. Router checks all matching entries:**
+- An address can match **multiple** entries in the table
+- Example: Address **171.33.5.245** matches:
+  - Default route (0.0.0.0/0) - 0 bits match
+  - 171.33.0.0/16 - first 16 bits match
+
+**3. Router selects the LONGEST (most specific) match:**
+- Default route has prefix length **/0** (0 bits)
+- 171.33.0.0 has prefix length **/16** (16 bits)
+- **16 > 0**, so the router chooses the /16 entry
+- Packet is forwarded on **Link 5**
+
+### Key Principle:
+
+**"Most specific route wins"** - The entry with the longest matching prefix (most bits in common with the destination) is chosen, even if multiple entries match.
+
+### Why This Matters:
+
+- **Default route** catches everything that doesn't have a more specific match
+- **Specific routes** allow fine-grained control for particular subnets
+- The Internet can have general routes with specific exceptions
+
+
+
 # 1.11 Address Resolution Protocol(ARP)
 
-the mechanism by which the network layer can discover the link address associated with a network address it’s directly connected to.
-Put another way, it’s how a device gets an answer to the question:
-“I have an IP packet whose next hop is this address -- what link address should I send it to?”
+## What is ARP?
 
-### IP address & Link address
+**ARP (Address Resolution Protocol)** is the mechanism by which the network layer discovers the **link address** (like an Ethernet address) associated with a **network address** (IP address) for devices it's directly connected to.
 
-- IP address
-  An IP address is a network-level address. It describes a host, a unique destination at the network layer.
-
-- Link address
-
-describes a particular network card, a unique device that sends and receives link layer frames.
-
-Ethernet, for example, has 48 bit addresses. Whenever you buy an Ethernet card, it’s been
-preconfigured with a unique Ethernet address.
-
-So an IP address says “this host”, while an Ethernet address says “this Ethernet card.”
+In other words, ARP answers the question: **"I have an IP packet whose next hop is this IP address -- what link address should I send it to?"**
 
 ## ARP Properties
-
-ARP is a simple request-reply protocol.
 
 - Generates mappings between layer 2 and layer 3 addresses
 
@@ -508,5 +1041,105 @@ ARP is a simple request-reply protocol.
   - Request has sufficient information to generate a mapping
   - Makes debugging much simpler
 - No “sharing” of state: bad state will die eventually
+  
+## Why is ARP Needed?
+
+Each protocol layer has its own names and addresses:
+
+**Network Layer (IP):**
+- Uses **IP addresses** (32-bit for IPv4)
+- Describes a **host** - a unique destination at the network layer
+- Example: 192.168.0.5
+
+**Link Layer (Ethernet):**
+- Uses **link addresses** (48-bit for Ethernet, also called MAC addresses)
+- Describes a particular **network card** - a unique device that sends/receives frames
+- Preconfigured on each Ethernet card at manufacture
+- Written as colon-delimited hexadecimal octets: **0:13:72:4c:d9:6a**
+
+**The Problem:** When you want to send an IP packet to a device on your local network, you know its IP address, but you need its link layer address to actually transmit the frame.
+
+## How the Two Addresses Relate:
+
+**Logically decoupled but practically coupled:**
+
+- The protocols themselves are independent - IP doesn't care about Ethernet addresses
+- But in practice, they're managed together
+
+**Example scenario:**
+![image](../../images/internet_model/Addressing-Problem.png)
+
+- A gateway/router often has **multiple network interfaces**
+- Each interface has:
+  - Its own **link layer address** (identifies the specific network card)
+  - Its own **IP address** (identifies the host within that network segment)
+
+**Gateway example:**
+- **Left interface**: Link address A, IP 192.168.0.1 (in the 192.168.0.0/24 network)
+- **Right interface**: Link address B, IP 171.43.22.8 (in the 171.43.22.0/24 network)
+
+This is necessary because of netmasks - a single IP address can only belong to one network prefix.
+
+## Why Separate Addresses?
+
+**Historical reasons:**
+- Internet needed to run on many different link layer technologies
+- Existing link layers weren't going to abandon their addressing schemes for IP
+- Separate link layer addresses provide useful functionality (e.g., network registration using MAC addresses)
+
+**Practical benefit:** Link layer addresses can be used for device identification and network management independent of IP configuration.
+
+
+the mechanism by which the network layer can discover the link address associated with a network address it’s directly connected to.
+Put another way, it’s how a device gets an answer to the question:
+“I have an IP packet whose next hop is this address -- what link address should I send it to?”
+
+
+
+
 
 ## ARP Packet Format (RFC826)
+
+The Address Resolution Protocol, or ARP, is the mechanism by
+which the network layer can discover the link address associated
+with a network address it’s directly connected to. Put another way,
+it’s how a device gets an answer to the question: “I have an IP
+packet whose next hop is this address -- what link address should
+I send it to?”
+
+ARP is needed because each protocol layer has its
+own names and addresses. An IP address is a
+network-level address. It describes a host, a unique
+destination at the network layer. A link address, in
+contrast, describes a particular network card, a
+unique device that sends and receives link layer
+frames. Ethernet, for example, has 48 bit addresses.
+Whenever you buy an Ethernet card, it’s been
+preconfigured with a unique Ethernet address. So an
+IP address says “this host”, while an Ethernet
+address says “this Ethernet card.”
+
+48-bit Ethernet addresses are usually written as a colon delimited set of 6 octets written in hexidecimal, such as
+0:13:72:4c:d9:6a as in the source, or 9:9:9:9:9:9 as in the destination.
+One thing that can be confusing is that while these link layer and network layer addresses are completely
+decoupled with respect to the protocol layers, in terms of assignment and management they might not be. For
+example, it’s very common for a single host to have multiple IP addresses -- one for each of its interfaces. It
+needs to because of the concept of a netmask. For example, look at this hypothetical setup. The gateway, in the
+middle, has a single IP address: 192.168.0.1. It has two network cards, one connecting it to the destination
+171.43.22.5, one connecting it to the source, 192.168.0.5.
+The address 192.168.0.1 can really only be in one of these networks, the source network. The netmask needed
+for 192.168.0.1 to be in the same network as 171.43.22.5 is 128.0.0.0, or just one bit of netmask! But it can’t be
+that all IP addresses whose first bit is 1 are in the same network as 171.43.22.5 -- 192.168.0.5, for example,
+needs to be reached through the gateway.
+
+So instead we often see setups like this, where the gateway or router has multiple interfaces, each
+with their own link layer address to identify the card, and also each with their own network layer
+address to identify the host within the network that card is part of. For the gateway, the left
+interface has IP address 192.168.0.1, while the right interface has IP address 171.43.22.8.
+The fact that link layer and network layer addresses are decoupled logically but coupled in
+practice is in some ways a historical artifact. When the Internet started, there were many link
+layers, and it wanted to be able to run on top of all of them. These link layers weren’t going to
+suddenly start using IP addresses instead of their own addressing scheme. Furthermore, there
+turns out to be a bunch of situations where having a separate link layer address is very valuable.
+For example, when I register a computer with Stanford’s network, I register its link layer address
+-- the address of the network card.
