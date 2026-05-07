@@ -1,0 +1,1100 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Flow Control: Stop-and-Wait & Sliding Window</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=Source+Serif+4:ital,wght@0,300;0,400;0,600;1,400&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --accent: #1e8a6e;
+    --accent-light: #e8f5f0;
+    --accent-mid: #b2ddd1;
+    --accent-dark: #155f4c;
+    --ink: #1a1a1a;
+    --ink-mid: #444;
+    --ink-light: #777;
+    --bg: #faf9f7;
+    --bg-card: #ffffff;
+    --border: #e4e0db;
+    --font-display: 'DM Serif Display', Georgia, serif;
+    --font-body: 'Source Serif 4', Georgia, serif;
+    --font-mono: 'JetBrains Mono', 'Courier New', monospace;
+    --nav-h: 58px;
+    --radius: 6px;
+    --max-w: 780px;
+  }
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  html { scroll-behavior: smooth; font-size: 17px; }
+
+  body {
+    font-family: var(--font-body);
+    background: var(--bg);
+    color: var(--ink);
+    line-height: 1.75;
+    font-weight: 400;
+  }
+
+  /* ─── NAV ─── */
+  nav {
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    background: rgba(250,249,247,0.95);
+    backdrop-filter: blur(10px);
+    border-bottom: 1px solid var(--border);
+    height: var(--nav-h);
+    display: flex;
+    align-items: center;
+    padding: 0 2rem;
+  }
+
+  .nav-inner {
+    max-width: var(--max-w);
+    margin: 0 auto;
+    width: 100%;
+    display: flex;
+    align-items: center;
+    gap: 0;
+  }
+
+  .nav-brand {
+    font-family: var(--font-display);
+    font-size: 1rem;
+    color: var(--accent);
+    text-decoration: none;
+    white-space: nowrap;
+    margin-right: 2rem;
+    flex-shrink: 0;
+  }
+
+  .nav-links {
+    display: flex;
+    gap: 0;
+    overflow-x: auto;
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+  }
+  .nav-links::-webkit-scrollbar { display: none; }
+
+  .nav-links a {
+    font-family: var(--font-body);
+    font-size: 0.8rem;
+    font-weight: 600;
+    color: var(--ink-light);
+    text-decoration: none;
+    padding: 0.3rem 0.75rem;
+    border-radius: var(--radius);
+    white-space: nowrap;
+    transition: color 0.15s, background 0.15s;
+    letter-spacing: 0.02em;
+  }
+  .nav-links a:hover {
+    color: var(--accent);
+    background: var(--accent-light);
+  }
+
+  /* ─── HERO ─── */
+  .hero {
+    background: linear-gradient(135deg, #0d3d2e 0%, #1a6b52 50%, #1e8a6e 100%);
+    color: white;
+    padding: 5rem 2rem 4rem;
+    position: relative;
+    overflow: hidden;
+  }
+  .hero::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23ffffff' fill-opacity='0.03'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
+  }
+
+  .hero-inner {
+    max-width: var(--max-w);
+    margin: 0 auto;
+    position: relative;
+  }
+
+  .hero-tag {
+    display: inline-block;
+    font-size: 0.72rem;
+    font-weight: 600;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    background: rgba(255,255,255,0.18);
+    border: 1px solid rgba(255,255,255,0.25);
+    border-radius: 100px;
+    padding: 0.25rem 0.85rem;
+    margin-bottom: 1.25rem;
+    color: rgba(255,255,255,0.9);
+  }
+
+  .hero h1 {
+    font-family: var(--font-display);
+    font-size: clamp(2rem, 5vw, 3.2rem);
+    line-height: 1.15;
+    margin-bottom: 1.5rem;
+    color: white;
+    letter-spacing: -0.02em;
+  }
+
+  .hero p {
+    font-size: 1.05rem;
+    line-height: 1.75;
+    color: rgba(255,255,255,0.85);
+    max-width: 640px;
+  }
+
+  .hero-meta {
+    margin-top: 2rem;
+    display: flex;
+    gap: 1.5rem;
+    flex-wrap: wrap;
+  }
+
+  .hero-meta span {
+    font-size: 0.8rem;
+    color: rgba(255,255,255,0.65);
+    display: flex;
+    align-items: center;
+    gap: 0.35rem;
+  }
+
+  /* ─── LAYOUT ─── */
+  main {
+    max-width: var(--max-w);
+    margin: 0 auto;
+    padding: 0 2rem 5rem;
+  }
+
+  section {
+    padding-top: 4.5rem;
+    border-top: 1px solid var(--border);
+    margin-top: 3.5rem;
+  }
+  section:first-of-type {
+    border-top: none;
+  }
+
+  .eyebrow {
+    font-size: 0.7rem;
+    font-weight: 700;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--accent);
+    margin-bottom: 0.6rem;
+  }
+
+  section h2 {
+    font-family: var(--font-display);
+    font-size: clamp(1.55rem, 3vw, 2rem);
+    line-height: 1.2;
+    color: var(--ink);
+    margin-bottom: 1.5rem;
+    letter-spacing: -0.02em;
+  }
+
+  section h3 {
+    font-family: var(--font-display);
+    font-size: 1.2rem;
+    color: var(--ink);
+    margin: 2.25rem 0 0.75rem;
+    letter-spacing: -0.01em;
+  }
+
+  p { margin-bottom: 1.2rem; }
+  p:last-child { margin-bottom: 0; }
+
+  strong { font-weight: 700; color: var(--ink); }
+  em { font-style: italic; }
+
+  /* ─── KEY TAKEAWAY ─── */
+  .key-takeaway {
+    margin: 2.5rem 0;
+    padding: 1.25rem 1.5rem;
+    border-left: 4px solid var(--accent);
+    background: var(--accent-light);
+    border-radius: 0 var(--radius) var(--radius) 0;
+  }
+
+  .key-takeaway .kt-label {
+    font-size: 0.68rem;
+    font-weight: 700;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--accent-dark);
+    margin-bottom: 0.5rem;
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+  }
+
+  .key-takeaway p {
+    font-size: 0.95rem;
+    color: var(--ink);
+    line-height: 1.7;
+    margin-bottom: 0;
+  }
+
+  /* ─── CODE BLOCKS ─── */
+  .code-block {
+    margin: 2rem 0;
+  }
+
+  .code-label {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    font-size: 0.7rem;
+    font-weight: 600;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--accent-dark);
+    background: var(--accent-light);
+    border: 1px solid var(--accent-mid);
+    border-bottom: none;
+    padding: 0.3rem 0.8rem;
+    border-radius: var(--radius) var(--radius) 0 0;
+    font-family: var(--font-mono);
+  }
+
+  pre {
+    background: #0f1e19;
+    border: 1px solid #1e3d30;
+    border-radius: 0 var(--radius) var(--radius) var(--radius);
+    padding: 1.25rem 1.5rem;
+    overflow-x: auto;
+    font-family: var(--font-mono);
+    font-size: 0.82rem;
+    line-height: 1.7;
+    color: #c8e6d4;
+  }
+
+  .code-block:not(:has(.code-label)) pre {
+    border-radius: var(--radius);
+  }
+
+  .code-desc {
+    font-style: italic;
+    font-size: 0.88rem;
+    color: var(--ink-light);
+    margin-top: 0.6rem;
+    padding-left: 0.25rem;
+  }
+
+  /* Syntax highlighting */
+  .kw  { color: #7dd3b8; font-weight: 500; }
+  .str { color: #a8d8a8; }
+  .fn  { color: #5bc8a8; }
+  .cmt { color: #5d8a78; font-style: italic; }
+  .num { color: #e0a070; }
+  .typ { color: #c8b4e8; }
+
+  /* ─── FSM DIAGRAMS ─── */
+  .diagram-wrap {
+    margin: 2rem 0;
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 2rem;
+    text-align: center;
+  }
+
+  .diagram-label {
+    font-size: 0.72rem;
+    font-weight: 700;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--ink-light);
+    margin-bottom: 1.25rem;
+  }
+
+  /* ─── INFO BOX ─── */
+  .info-box {
+    background: #fff8f0;
+    border: 1px solid #f0d8b0;
+    border-left: 4px solid #d4882e;
+    border-radius: 0 var(--radius) var(--radius) 0;
+    padding: 1.1rem 1.4rem;
+    margin: 1.75rem 0;
+    font-size: 0.92rem;
+    line-height: 1.7;
+  }
+
+  .info-box .info-label {
+    font-size: 0.68rem;
+    font-weight: 700;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: #b06020;
+    margin-bottom: 0.4rem;
+  }
+
+  /* ─── TABLE ─── */
+  .table-wrap {
+    overflow-x: auto;
+    margin: 2rem 0;
+  }
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.88rem;
+  }
+  th {
+    background: var(--accent);
+    color: white;
+    font-family: var(--font-body);
+    font-weight: 600;
+    text-align: left;
+    padding: 0.7rem 1rem;
+    letter-spacing: 0.02em;
+  }
+  td {
+    padding: 0.65rem 1rem;
+    border-bottom: 1px solid var(--border);
+    vertical-align: top;
+  }
+  tr:last-child td { border-bottom: none; }
+  tr:nth-child(even) td { background: var(--accent-light); }
+
+  /* ─── SUMMARY ─── */
+  .summary-section {
+    background: linear-gradient(135deg, #0d3d2e 0%, #1a6b52 100%);
+    color: white;
+    padding: 3.5rem 2rem;
+    margin-top: 4rem;
+    margin-left: -2rem;
+    margin-right: -2rem;
+    border-radius: var(--radius);
+  }
+
+  .summary-section .eyebrow {
+    color: var(--accent-mid);
+  }
+
+  .summary-section h2 {
+    color: white;
+    margin-bottom: 2rem;
+  }
+
+  .summary-points {
+    display: grid;
+    gap: 1rem;
+    counter-reset: pts;
+  }
+
+  .summary-point {
+    counter-increment: pts;
+    display: flex;
+    gap: 1rem;
+    align-items: flex-start;
+    background: rgba(255,255,255,0.08);
+    border: 1px solid rgba(255,255,255,0.12);
+    border-radius: var(--radius);
+    padding: 1.1rem 1.25rem;
+  }
+
+  .summary-point::before {
+    content: counter(pts, decimal-leading-zero);
+    font-family: var(--font-mono);
+    font-size: 0.8rem;
+    color: var(--accent-mid);
+    min-width: 28px;
+    margin-top: 0.1rem;
+  }
+
+  .summary-point p {
+    font-size: 0.93rem;
+    line-height: 1.65;
+    color: rgba(255,255,255,0.88);
+    margin: 0;
+  }
+
+  .summary-point strong {
+    color: white;
+  }
+
+  /* ─── SEQUENCES ─── */
+  .seq-wrap {
+    display: flex;
+    gap: 1.5rem;
+    margin: 2rem 0;
+    flex-wrap: wrap;
+  }
+
+  .seq-card {
+    flex: 1;
+    min-width: 160px;
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    overflow: hidden;
+  }
+
+  .seq-card-header {
+    background: var(--accent);
+    color: white;
+    font-size: 0.72rem;
+    font-weight: 700;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    padding: 0.5rem 0.85rem;
+  }
+
+  .seq-card-body {
+    padding: 0.9rem;
+    font-family: var(--font-mono);
+    font-size: 0.8rem;
+    line-height: 2;
+    color: var(--ink-mid);
+  }
+
+  .seq-card-body .arrow { color: var(--accent); }
+  .seq-card-body .time { color: var(--ink-light); font-size: 0.72rem; }
+
+  /* ─── FORMULA ─── */
+  .formula {
+    display: inline-block;
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 0.65rem 1.25rem;
+    font-family: var(--font-mono);
+    font-size: 0.95rem;
+    color: var(--accent-dark);
+    font-weight: 500;
+    margin: 0.35rem 0;
+  }
+
+  .formula-block {
+    margin: 1.25rem 0;
+    display: flex;
+    flex-direction: column;
+    gap: 0.4rem;
+  }
+
+  /* ─── TCP HEADER VIZ ─── */
+  .tcp-header {
+    margin: 2rem 0;
+    overflow-x: auto;
+  }
+  .tcp-row {
+    display: flex;
+    border: 1px solid var(--border);
+    border-bottom: none;
+    font-size: 0.75rem;
+    font-family: var(--font-mono);
+    min-width: 500px;
+  }
+  .tcp-row:last-child { border-bottom: 1px solid var(--border); }
+  .tcp-cell {
+    flex: 1;
+    border-right: 1px solid var(--border);
+    padding: 0.5rem 0.5rem;
+    text-align: center;
+    line-height: 1.3;
+    color: var(--ink-mid);
+  }
+  .tcp-cell:last-child { border-right: none; }
+  .tcp-cell.highlight {
+    background: var(--accent-light);
+    color: var(--accent-dark);
+    font-weight: 600;
+  }
+  .tcp-header-label {
+    font-size: 0.7rem;
+    color: var(--ink-light);
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    margin-bottom: 0.4rem;
+    font-family: var(--font-body);
+  }
+  .tcp-row-label {
+    background: #f0f0f0;
+    min-width: 80px;
+    font-size: 0.65rem;
+    color: var(--ink-light);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-right: 1px solid var(--border);
+    padding: 0.25rem;
+  }
+
+  /* ─── RESPONSIVE ─── */
+  @media (max-width: 600px) {
+    :root { --nav-h: 50px; }
+    nav { padding: 0 1rem; }
+    .hero { padding: 3rem 1.25rem 2.5rem; }
+    main { padding: 0 1.25rem 4rem; }
+    .summary-section { margin-left: -1.25rem; margin-right: -1.25rem; }
+    pre { font-size: 0.75rem; padding: 1rem; }
+    .seq-wrap { flex-direction: column; }
+    .nav-brand { font-size: 0.88rem; margin-right: 1rem; }
+  }
+
+  /* ─── SCROLL INDICATOR ─── */
+  .progress-bar {
+    position: fixed;
+    top: 0;
+    left: 0;
+    height: 3px;
+    background: var(--accent);
+    z-index: 200;
+    width: 0%;
+    transition: width 0.1s linear;
+  }
+</style>
+</head>
+<body>
+
+<div class="progress-bar" id="progressBar"></div>
+
+<nav>
+  <div class="nav-inner">
+    <a href="#hero" class="nav-brand">Flow Control</a>
+    <div class="nav-links">
+      <a href="#fsm">FSMs</a>
+      <a href="#flow-control">Flow Control</a>
+      <a href="#stop-and-wait">Stop-and-Wait</a>
+      <a href="#sliding-window">Sliding Window</a>
+      <a href="#tcp">TCP</a>
+      <a href="#summary">Summary</a>
+    </div>
+  </div>
+</nav>
+
+<!-- ─── HERO ─── -->
+<header class="hero" id="hero">
+  <div class="hero-inner">
+    <div class="hero-tag">Network Protocols · CS144 Stanford</div>
+    <h1>Flow Control:<br>Stop-and-Wait &<br>Sliding Window</h1>
+    <p>
+      When two computers talk over a network, one of them might be much faster than the other. Without a way to slow the sender down, packets pile up, buffers overflow, and data gets lost — silently. This tutorial walks you through the elegant mechanisms that solve this problem: <em>flow control</em>. You'll learn how Finite State Machines model protocol behavior, how Stop-and-Wait ensures reliability at the cost of speed, and how the Sliding Window protocol reclaims that speed while preserving correctness. These same ideas power TCP — the protocol that carries almost all web traffic today.
+    </p>
+    <div class="hero-meta">
+      <span>📡 Networks &amp; Protocols</span>
+      <span>🎓 Beginner-Friendly</span>
+      <span>⏱ ~25 min read</span>
+    </div>
+  </div>
+</header>
+
+<main>
+
+<!-- ─── SECTION 1: FSMs ─── -->
+<section id="fsm">
+  <div class="eyebrow">Section 01</div>
+  <h2>Finite State Machines</h2>
+
+  <p>
+    Before we can understand how network protocols handle errors and flow, we need a common language for describing them precisely. That language is the <strong>Finite State Machine</strong>, or FSM. This section introduces FSMs from the ground up — by the end, you'll see why they're the standard tool for specifying how protocols behave.
+  </p>
+
+  <p>
+    A <strong>Finite State Machine</strong> is a model of a system that can be in exactly one of a limited number of <em>states</em> at any given time. Think of a traffic light: it can be green, yellow, or red — never two at once. Those are its states. The word "finite" just means the number of states is countable; you're not dealing with infinite possibilities.
+  </p>
+
+  <div class="diagram-wrap">
+    <div class="diagram-label">Abstract FSM — three states with transitions</div>
+    <svg viewBox="0 0 560 220" xmlns="http://www.w3.org/2000/svg" style="max-width:540px;width:100%;">
+      <defs>
+        <marker id="arrow" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto">
+          <path d="M0,0 L0,6 L8,3 z" fill="#1e8a6e"/>
+        </marker>
+      </defs>
+      <!-- States -->
+      <circle cx="100" cy="110" r="44" fill="none" stroke="#1e8a6e" stroke-width="2"/>
+      <text x="100" y="106" text-anchor="middle" font-family="DM Serif Display,Georgia,serif" font-size="13" fill="#1a1a1a">State</text>
+      <text x="100" y="122" text-anchor="middle" font-family="DM Serif Display,Georgia,serif" font-size="13" fill="#1a1a1a">1</text>
+
+      <circle cx="300" cy="60" r="44" fill="none" stroke="#1e8a6e" stroke-width="2"/>
+      <text x="300" y="56" text-anchor="middle" font-family="DM Serif Display,Georgia,serif" font-size="13" fill="#1a1a1a">State</text>
+      <text x="300" y="72" text-anchor="middle" font-family="DM Serif Display,Georgia,serif" font-size="13" fill="#1a1a1a">2</text>
+
+      <circle cx="300" cy="165" r="44" fill="none" stroke="#1e8a6e" stroke-width="2"/>
+      <text x="300" y="161" text-anchor="middle" font-family="DM Serif Display,Georgia,serif" font-size="13" fill="#1a1a1a">State</text>
+      <text x="300" y="177" text-anchor="middle" font-family="DM Serif Display,Georgia,serif" font-size="13" fill="#1a1a1a">3</text>
+
+      <!-- Arrows -->
+      <path d="M142,88 Q200,55 255,62" fill="none" stroke="#1e8a6e" stroke-width="1.8" marker-end="url(#arrow)"/>
+      <path d="M142,132 Q200,170 255,165" fill="none" stroke="#1e8a6e" stroke-width="1.8" marker-end="url(#arrow)"/>
+
+      <!-- Labels -->
+      <text x="193" y="56" text-anchor="middle" font-family="Source Serif 4,Georgia,serif" font-size="10" fill="#444" font-style="italic">event</text>
+      <text x="193" y="68" text-anchor="middle" font-family="Source Serif 4,Georgia,serif" font-size="9" fill="#777">action</text>
+      <text x="193" y="163" text-anchor="middle" font-family="Source Serif 4,Georgia,serif" font-size="10" fill="#444" font-style="italic">event</text>
+      <text x="193" y="175" text-anchor="middle" font-family="Source Serif 4,Georgia,serif" font-size="9" fill="#777">action</text>
+
+      <!-- Self loop on State 2 -->
+      <path d="M460,110 a40,40 0 1,1 0.01,0" fill="none" stroke="#b2ddd1" stroke-width="1.5" stroke-dasharray="4,3"/>
+      <text x="460" y="115" text-anchor="middle" font-family="Source Serif 4,Georgia,serif" font-size="9" fill="#aaa">undefined</text>
+    </svg>
+  </div>
+
+  <h3>States, Events, and Actions</h3>
+  <p>
+    An FSM consists of three core ingredients. <strong>States</strong> represent the possible conditions a system can be in. <strong>Events</strong> are the triggers that cause a state change — maybe a packet arrives, a timer fires, or a user calls a function. <strong>Actions</strong> are the things the system does when it transitions: send a message, start a timer, deliver data to the application.
+  </p>
+  <p>
+    Edges drawn between states in a diagram represent these transitions. The label on each edge is written in two parts: the event that causes the transition, and (optionally below it) the action the system takes as it moves. If no action is listed, the system simply moves to the new state and does nothing else.
+  </p>
+
+  <div class="info-box">
+    <div class="info-label">⚠ Important rule</div>
+    For any given state, the transition for any specific event must be <strong>unique</strong>. If the same event could lead to two different next states, the FSM is ambiguous — the system can only be in one state at a time, so the outcome must be deterministic.
+  </div>
+
+  <h3>What Happens with Undefined Events?</h3>
+  <p>
+    If a system is in a state and receives an event for which there is no outgoing transition defined, the FSM's behavior is <em>undefined</em>. This is a practical concern: incomplete specifications lead to bugs. Protocol designers must decide whether to explicitly specify every transition or leave some undefined and document them in accompanying text.
+  </p>
+  <p>
+    The Internet Engineering Task Force (IETF), for example, sometimes deliberately leaves certain transitions unspecified — not by accident, but to keep the spec flexible and let implementers discover what matters through real-world usage.
+  </p>
+
+  <div class="key-takeaway">
+    <div class="kt-label">🔑 Key Takeaway</div>
+    <p>A Finite State Machine is a precise, visual way to describe how a system behaves: what states it can be in, what events trigger transitions, and what actions accompany those transitions. They're powerful because they make implicit behavior explicit — leaving no room for ambiguous "it depends" answers. Every network protocol you'll encounter, including TCP, is formally specified using FSMs.</p>
+  </div>
+</section>
+
+<!-- ─── SECTION 2: FLOW CONTROL ─── -->
+<section id="flow-control">
+  <div class="eyebrow">Section 02</div>
+  <h2>The Flow Control Problem</h2>
+
+  <p>
+    Now that we have the vocabulary of FSMs, we can tackle the central problem this tutorial is about: what happens when a sender is too fast for its receiver? This section explains why the problem exists and sets up the two solutions we'll explore.
+  </p>
+
+  <p>
+    Imagine you have two computers, A and B, connected by a network. Computer A can generate and send data at 500,000 packets per second. Computer B can only process 200,000 packets per second. A is blazing fast; B is merely quick. If A sends at full speed without any coordination, B will be overwhelmed — it can't process packets fast enough, its buffer fills up, and incoming packets start getting <em>dropped on the floor</em>. Data is lost.
+  </p>
+
+  <p>
+    This is the <strong>flow control problem</strong>: ensuring the sender does not overwhelm the receiver. The receiver needs a way to give the sender feedback about how fast it can cope, and the sender needs to respect that feedback.
+  </p>
+
+  <h3>Two Fundamental Approaches</h3>
+  <p>
+    There are two classic approaches to flow control, and both are fundamental to networking:
+  </p>
+
+  <div class="table-wrap">
+    <table>
+      <tr>
+        <th>Approach</th>
+        <th>Core Idea</th>
+        <th>Trade-off</th>
+      </tr>
+      <tr>
+        <td><strong>Stop-and-Wait</strong></td>
+        <td>Send one packet, then pause until the receiver acknowledges it</td>
+        <td>Simple &amp; safe, but slow — like having one conversation at a time</td>
+      </tr>
+      <tr>
+        <td><strong>Sliding Window</strong></td>
+        <td>Send multiple packets at once, up to a limit the receiver can handle</td>
+        <td>Efficient &amp; fast, but more complex bookkeeping</td>
+      </tr>
+    </table>
+  </div>
+
+  <p>
+    The key insight behind both approaches is the same: <em>the receiver gives the sender feedback</em>. The feedback mechanism differs, but the cooperation is essential.
+  </p>
+
+  <div class="key-takeaway">
+    <div class="kt-label">🔑 Key Takeaway</div>
+    <p>Flow control is about protecting the receiver from being overwhelmed by a fast sender. Rather than letting the sender blast data as fast as possible, the receiver communicates its capacity back to the sender, and the sender must respect that limit. Without flow control, fast networks would ironically cause data loss — speed without coordination is chaos.</p>
+  </div>
+</section>
+
+<!-- ─── SECTION 3: STOP AND WAIT ─── -->
+<section id="stop-and-wait">
+  <div class="eyebrow">Section 03</div>
+  <h2>Stop-and-Wait</h2>
+
+  <p>
+    Stop-and-Wait is the simplest possible flow control protocol, and understanding it deeply — including its failure modes — is essential before moving to more sophisticated designs. Think of it as a conversation where you speak one sentence, then wait for the other person to say "I heard you" before speaking again.
+  </p>
+
+  <h3>The Rules of Stop-and-Wait</h3>
+  <p>
+    The protocol has a clean, minimal ruleset: at most <em>one packet is in flight</em> at any time. The sender sends a single packet and then stops. The receiver, upon successfully receiving the data, sends back an <strong>acknowledgment</strong> (or ACK for short — think of it as a receipt). When the sender gets the ACK, it sends the next packet. If a timer expires before an ACK arrives, the sender assumes the packet was lost and retransmits it.
+  </p>
+
+  <div class="seq-wrap">
+    <div class="seq-card">
+      <div class="seq-card-header">No Loss ✓</div>
+      <div class="seq-card-body">
+        Sender <span class="arrow">→</span> data<br>
+        <span class="time">&nbsp;&nbsp;&nbsp;(network)</span><br>
+        Receiver <span class="arrow">→</span> ACK<br>
+        Sender <span class="arrow">→</span> next data
+      </div>
+    </div>
+    <div class="seq-card">
+      <div class="seq-card-header">Data Loss</div>
+      <div class="seq-card-body">
+        Sender <span class="arrow">→</span> data<br>
+        <span class="time">&nbsp;&nbsp;&nbsp;(lost!)</span><br>
+        <span class="time">&nbsp;&nbsp;&nbsp;...timeout...</span><br>
+        Sender <span class="arrow">→</span> data (retry)
+      </div>
+    </div>
+    <div class="seq-card">
+      <div class="seq-card-header">ACK Loss</div>
+      <div class="seq-card-body">
+        Sender <span class="arrow">→</span> data<br>
+        Receiver <span class="arrow">→</span> ACK<br>
+        <span class="time">&nbsp;&nbsp;&nbsp;(ACK lost!)</span><br>
+        <span class="time">&nbsp;&nbsp;&nbsp;...timeout...</span><br>
+        Sender <span class="arrow">→</span> data (retry)
+      </div>
+    </div>
+    <div class="seq-card">
+      <div class="seq-card-header">ACK Delay</div>
+      <div class="seq-card-body">
+        Sender <span class="arrow">→</span> data<br>
+        Receiver <span class="arrow">→</span> ACK<br>
+        <span class="time">&nbsp;&nbsp;&nbsp;...timeout...</span><br>
+        Sender <span class="arrow">→</span> data (retry)<br>
+        <span class="time">&nbsp;&nbsp;&nbsp;late ACK arrives!</span>
+      </div>
+    </div>
+  </div>
+
+  <h3>The Duplicate Problem</h3>
+  <p>
+    Look at the "ACK Delay" scenario above. The ACK arrived so late that the sender timed out and retransmitted the same data. Now the receiver gets two copies of the same packet. Without any way to distinguish between them, it might deliver the same data to the application <em>twice</em> — a serious bug.
+  </p>
+  <p>
+    The fix is elegant: include a <strong>1-bit counter</strong> in both data packets and acknowledgments. The sender alternates the counter value between 0 and 1 for each new packet. The receiver uses this bit to determine whether an incoming packet is fresh new data or a retransmission to discard. This tiny addition solves the duplicate problem completely, under two simplifying assumptions: the network never duplicates packets on its own, and packets are never delayed across multiple timeout intervals.
+  </p>
+
+  <div class="code-block">
+    <div class="code-label">Stop-and-Wait — Sender FSM (pseudocode)</div>
+    <pre><span class="cmt">// Sender starts in "Wait for Data" state (software has data to send)</span>
+<span class="kw">state</span> WaitForData:
+  <span class="kw">on</span> <span class="fn">softwareSend</span>(packet):
+    <span class="fn">sendPacket</span>(packet, seqNo)      <span class="cmt">// seqNo is 0 or 1</span>
+    <span class="fn">startTimer</span>()
+    <span class="kw">goto</span> WaitForACK
+
+<span class="kw">state</span> WaitForACK:
+  <span class="kw">on</span> <span class="fn">receiveACK</span>(ackNo):
+    <span class="kw">if</span> ackNo == seqNo:              <span class="cmt">// correct ACK?</span>
+      seqNo = <span class="num">1</span> - seqNo            <span class="cmt">// flip bit: 0→1, 1→0</span>
+      <span class="fn">cancelTimer</span>()
+      <span class="kw">goto</span> WaitForData
+  <span class="kw">on</span> timeout:
+    <span class="fn">sendPacket</span>(packet, seqNo)      <span class="cmt">// retransmit same packet</span>
+    <span class="fn">restartTimer</span>()</pre>
+  </div>
+  <p class="code-desc"><em>This FSM captures the entire sender logic in two states. Notice how <code>seqNo = 1 - seqNo</code> flips between 0 and 1 as each new packet is acknowledged — that single bit is the duplicate-detection mechanism.</em></p>
+
+  <div class="code-block">
+    <div class="code-label">Stop-and-Wait — Receiver FSM (pseudocode)</div>
+    <pre><span class="cmt">// Receiver waits for packets, sends ACK, delivers to application</span>
+<span class="kw">state</span> WaitForPackets:
+  <span class="kw">on</span> <span class="fn">receiveData</span>(packet, seqNo):
+    <span class="kw">if</span> seqNo == expected:           <span class="cmt">// new data, not a duplicate</span>
+      <span class="fn">deliverToApp</span>(packet)
+      expected = <span class="num">1</span> - expected       <span class="cmt">// advance expected sequence</span>
+    <span class="fn">sendACK</span>(seqNo)                  <span class="cmt">// always ACK, even duplicates</span>
+    <span class="kw">goto</span> WaitForPackets             <span class="cmt">// always return to same state</span></pre>
+  </div>
+  <p class="code-desc"><em>The receiver only ever has one state. Crucially, it sends an ACK even for duplicates — this "heals" the case where the original ACK was lost, preventing the sender from retransmitting forever.</em></p>
+
+  <h3>The Performance Problem</h3>
+  <p>
+    Stop-and-Wait works correctly, but it's slow. Imagine a connection between San Francisco and Boston — a round-trip time (RTT) of roughly 50 milliseconds. The bottleneck link can carry 10 Mbps (megabits per second). With Stop-and-Wait, you send one packet, then wait 50ms for the ACK. During those 50ms, the link sits completely idle. You're using only a tiny fraction of the available bandwidth.
+  </p>
+  <p>
+    The problem is the protocol never keeps the "pipe" full. Like a highway where only one car is allowed at a time, most of the road sits empty. This motivates the next protocol.
+  </p>
+
+  <div class="key-takeaway">
+    <div class="kt-label">🔑 Key Takeaway</div>
+    <p>Stop-and-Wait achieves <em>correctness</em>: with a single 1-bit counter, it handles data loss, ACK loss, and delayed duplicates cleanly. Its fatal flaw is <em>efficiency</em>: one packet in flight at a time means the network pipe is almost always empty. On high-latency links, you're wasting the vast majority of available bandwidth. The 1-bit sequence number is an important pattern — minimal overhead for maximum correctness.</p>
+  </div>
+</section>
+
+<!-- ─── SECTION 4: SLIDING WINDOW ─── -->
+<section id="sliding-window">
+  <div class="eyebrow">Section 04</div>
+  <h2>Sliding Window</h2>
+
+  <p>
+    The Sliding Window protocol is a direct generalization of Stop-and-Wait. Instead of waiting for one ACK before sending the next packet, the sender is allowed to have several packets "in flight" simultaneously — up to a limit called the <em>window size</em>. This keeps the network pipe full and dramatically increases throughput. This section covers how the sender and receiver each maintain their own "window" state.
+  </p>
+
+  <h3>Why "Sliding Window"?</h3>
+  <p>
+    Picture a train of numbered packets: 0, 1, 2, 3, 4, 5, 6 … The sender can send any packets within its current "window" — say, packets 0 through 4. As ACKs arrive, the window <em>slides</em> forward: once packet 0 is acknowledged, the window advances to cover packets 1 through 5. It's like a magnifying glass moving along the number line of packets.
+  </p>
+
+  <div class="diagram-wrap">
+    <div class="diagram-label">Sliding Window — the window advances as ACKs arrive</div>
+    <svg viewBox="0 0 540 100" xmlns="http://www.w3.org/2000/svg" style="max-width:520px;width:100%;">
+      <defs>
+        <marker id="arr2" markerWidth="7" markerHeight="7" refX="5" refY="3" orient="auto">
+          <path d="M0,0 L0,6 L7,3 z" fill="#1e8a6e"/>
+        </marker>
+      </defs>
+      <!-- Sequence number line -->
+      <rect x="20" y="35" width="500" height="32" rx="4" fill="#f0f4f2" stroke="#d0e0d8" stroke-width="1"/>
+      <!-- Cells -->
+      <g font-family="JetBrains Mono,monospace" font-size="12" text-anchor="middle">
+        <rect x="20" y="35" width="50" height="32" fill="#b2ddd1" stroke="#fff" stroke-width="1"/>
+        <text x="45" y="56" fill="#155f4c">ACK'd</text>
+        <rect x="70" y="35" width="50" height="32" fill="#1e8a6e" stroke="#fff" stroke-width="1"/>
+        <text x="95" y="56" fill="white">1</text>
+        <rect x="120" y="35" width="50" height="32" fill="#1e8a6e" stroke="#fff" stroke-width="1"/>
+        <text x="145" y="56" fill="white">2</text>
+        <rect x="170" y="35" width="50" height="32" fill="#1e8a6e" stroke="#fff" stroke-width="1"/>
+        <text x="195" y="56" fill="white">3</text>
+        <rect x="220" y="35" width="50" height="32" fill="#c8e8e0" stroke="#fff" stroke-width="1"/>
+        <text x="245" y="56" fill="#1e8a6e">4</text>
+        <rect x="270" y="35" width="50" height="32" fill="#f0f4f2" stroke="#d0e0d8" stroke-width="1"/>
+        <text x="295" y="56" fill="#aaa">5</text>
+        <rect x="320" y="35" width="50" height="32" fill="#f0f4f2" stroke="#d0e0d8" stroke-width="1"/>
+        <text x="345" y="56" fill="#aaa">6</text>
+        <rect x="370" y="35" width="50" height="32" fill="#f0f4f2" stroke="#d0e0d8" stroke-width="1"/>
+        <text x="395" y="56" fill="#aaa">7</text>
+        <rect x="420" y="35" width="50" height="32" fill="#f0f4f2" stroke="#d0e0d8" stroke-width="1"/>
+        <text x="445" y="56" fill="#aaa">…</text>
+      </g>
+      <!-- Window bracket -->
+      <rect x="68" y="31" width="204" height="40" rx="3" fill="none" stroke="#1e8a6e" stroke-width="2" stroke-dasharray="5,3"/>
+      <text x="170" y="25" text-anchor="middle" font-family="Source Serif 4,Georgia,serif" font-size="10" fill="#1e8a6e" font-style="italic">window (SWS = 4)</text>
+      <!-- Labels -->
+      <text x="20" y="85" font-family="Source Serif 4,Georgia,serif" font-size="9" fill="#777">LAR →</text>
+      <text x="265" y="85" font-family="Source Serif 4,Georgia,serif" font-size="9" fill="#777">← LSS</text>
+    </svg>
+  </div>
+
+  <h3>Sender State Variables</h3>
+  <p>
+    The sender maintains three key variables at all times. The <strong>Send Window Size (SWS)</strong> is the maximum number of unacknowledged packets the sender is allowed to have in flight simultaneously — this is the cap negotiated with the receiver. The <strong>Last Acknowledgment Received (LAR)</strong> is the sequence number of the most recent ACK received; it marks the left edge of the window. The <strong>Last Segment Sent (LSS)</strong> is the sequence number of the most recently sent packet; it marks the right edge.
+  </p>
+
+  <p>
+    The sender must uphold one invariant at all times:</p>
+  <div class="formula-block">
+    <div class="formula">(LSS − LAR) ≤ SWS</div>
+  </div>
+  <p>
+    In plain English: the gap between the last thing you sent and the last thing acknowledged cannot exceed the window size. When you receive a new ACK, you advance LAR forward, which "opens up" space in the window to send more packets. The sender must also <em>buffer</em> up to SWS packets in memory, because any of them might need to be retransmitted if their ACK never arrives.
+  </p>
+
+  <h3>Receiver State Variables</h3>
+  <p>
+    The receiver mirrors this structure. It has a <strong>Receive Window Size (RWS)</strong> — how many out-of-order packets it's willing to buffer. The <strong>Last Acceptable Segment (LAS)</strong> is the highest sequence number it will accept right now. The <strong>Last Segment Received (LSR)</strong> is the most recently received sequence number.
+  </p>
+
+  <div class="formula-block">
+    <div class="formula">(LAS − LSR) ≤ RWS</div>
+  </div>
+
+  <p>
+    If an incoming packet's sequence number is less than LAS, the receiver accepts it and sends back an acknowledgment. Crucially, TCP uses <strong>cumulative acknowledgments</strong>: if packets 1, 2, 3, and 5 have arrived but not 4, the receiver only acknowledges up to 3. It won't acknowledge 5 until 4 arrives, because the application needs data delivered in order. In TCP's notation, an ACK of "4" means "I have everything up to and including 3 — please send 4 next."
+  </p>
+
+  <div class="code-block">
+    <div class="code-label">Sender logic — enforcing the window invariant</div>
+    <pre><span class="kw">let</span> SWS = <span class="num">4</span>        <span class="cmt">// window size: max 4 unacked packets</span>
+<span class="kw">let</span> LAR = <span class="num">0</span>        <span class="cmt">// last acknowledgment received</span>
+<span class="kw">let</span> LSS = <span class="num">0</span>        <span class="cmt">// last segment sent</span>
+<span class="kw">let</span> buffer = []   <span class="cmt">// retransmit buffer</span>
+
+<span class="kw">function</span> <span class="fn">trySend</span>(packet) {
+  <span class="kw">if</span> (LSS - LAR < SWS) {       <span class="cmt">// window has space?</span>
+    LSS++
+    buffer.<span class="fn">push</span>(packet)
+    <span class="fn">transmit</span>(packet, LSS)
+    <span class="fn">startTimer</span>(LSS)
+  } <span class="kw">else</span> {
+    <span class="fn">waitForAck</span>()              <span class="cmt">// window full — must wait</span>
+  }
+}
+
+<span class="kw">function</span> <span class="fn">onAck</span>(ackNo) {
+  LAR = <span class="fn">Math.max</span>(LAR, ackNo)  <span class="cmt">// advance left edge of window</span>
+  buffer.<span class="fn">removeAcknowledged</span>(ackNo)
+  <span class="fn">trySend</span>(nextPacket)          <span class="cmt">// window opened up, try sending</span>
+}</pre>
+  </div>
+  <p class="code-desc"><em>Each time an ACK arrives, LAR advances and the window "slides" forward, creating room for new packets. The buffer holds all sent-but-not-yet-acknowledged packets, ready for retransmission if a timer fires.</em></p>
+
+  <h3>How Much Sequence Number Space Do We Need?</h3>
+  <p>
+    This is a subtle but important question. Sequence numbers must be large enough to avoid ambiguity — the receiver must always be able to tell whether an arriving packet is a <em>new</em> packet or a retransmission of an old one. The required space depends on the relationship between RWS and SWS:
+  </p>
+
+  <div class="table-wrap">
+    <table>
+      <tr>
+        <th>Scenario</th>
+        <th>Required Sequence Numbers</th>
+        <th>Why</th>
+      </tr>
+      <tr>
+        <td>RWS = 1 ("Go-Back-N")</td>
+        <td>SWS + 1</td>
+        <td>One extra to distinguish new data from retransmissions</td>
+      </tr>
+      <tr>
+        <td>RWS = SWS</td>
+        <td>2 × SWS</td>
+        <td>Both sender and receiver buffers can be full simultaneously</td>
+      </tr>
+      <tr>
+        <td>General case</td>
+        <td>RWS + SWS</td>
+        <td>RWS packets in ambiguous ACK state + SWS in flight</td>
+      </tr>
+    </table>
+  </div>
+
+  <p>
+    The "Go-Back-N" protocol, where RWS = 1, means the receiver discards any out-of-order packet and forces the sender to retransmit from the point of loss. This is simple but wasteful. When RWS = SWS, the receiver can buffer all out-of-order packets, and the sender only retransmits truly lost packets — much more efficient.
+  </p>
+
+  <div class="key-takeaway">
+    <div class="kt-label">🔑 Key Takeaway</div>
+    <p>The Sliding Window protocol solves Stop-and-Wait's efficiency problem by allowing a whole "window" of packets to be in flight at once. Both sender and receiver track three variables (window size, last-acknowledged, last-sent/received) and maintain a simple invariant. The window size determines throughput: larger windows keep high-latency links busy. The sequence number space must be sized carefully — it needs to be at least RWS + SWS to prevent ambiguity between new packets and retransmissions.</p>
+  </div>
+</section>
+
+<!-- ─── SECTION 5: TCP FLOW CONTROL ─── -->
+<section id="tcp">
+  <div class="eyebrow">Section 05</div>
+  <h2>TCP Flow Control in Practice</h2>
+
+  <p>
+    Everything you've learned so far comes together in TCP — the Transmission Control Protocol that carries the vast majority of internet traffic. This section shows how TCP implements sliding window flow control using a specific field in its packet header, and briefly introduces how the full TCP connection lifecycle is modeled as an FSM.
+  </p>
+
+  <h3>The Window Field in TCP Headers</h3>
+  <p>
+    TCP has flow control built directly into its packet format. Every TCP packet carries a <strong>window field</strong> in its header. The receiver fills this field with its current RWS — how much more data it can accept — and sends it back to the sender with every acknowledgment. This is called <em>receiver window advertisement</em>.
+  </p>
+
+  <p>
+    The sender's rule is simple: it can only send data up to <code>LAR + window</code>. If the receiver's window shrinks to zero (its buffer is full), the sender stops transmitting entirely until the window reopens.
+  </p>
+
+  <div class="tcp-header">
+    <div class="tcp-header-label">TCP Header — the window field is highlighted</div>
+    <div class="tcp-row">
+      <div class="tcp-row-label">Row 1</div>
+      <div class="tcp-cell" style="flex:2">Source Port</div>
+      <div class="tcp-cell" style="flex:2">Destination Port</div>
+    </div>
+    <div class="tcp-row">
+      <div class="tcp-row-label">Row 2</div>
+      <div class="tcp-cell" style="flex:4">Data Sequence Number</div>
+    </div>
+    <div class="tcp-row">
+      <div class="tcp-row-label">Row 3</div>
+      <div class="tcp-cell" style="flex:4">Acknowledgment Sequence Number</div>
+    </div>
+    <div class="tcp-row">
+      <div class="tcp-row-label">Row 4</div>
+      <div class="tcp-cell">Offset</div>
+      <div class="tcp-cell">Res</div>
+      <div class="tcp-cell">Flags (N C E U A P R S F)</div>
+      <div class="tcp-cell highlight">Window ← RWS here</div>
+    </div>
+    <div class="tcp-row">
+      <div class="tcp-row-label">Row 5</div>
+      <div class="tcp-cell" style="flex:2">Checksum</div>
+      <div class="tcp-cell" style="flex:2">Urgent</div>
+    </div>
+    <div class="tcp-row">
+      <div class="tcp-row-label">Row 6</div>
+      <div class="tcp-cell" style="flex:4">Options (variable)</div>
+    </div>
+  </div>
+
+  <p>
+    Every time the receiver sends an acknowledgment, it also tells the sender: "here's how much more buffer space I have." The sender uses this to dynamically adjust how many bytes it sends. If the receiver's application is consuming data quickly, the window stays large. If the application slows down, the window shrinks, naturally throttling the sender.
+  </p>
+
+  <h3>The TCP Connection FSM</h3>
+  <p>
+    TCP connection management — how connections are opened and closed — is one of the most famous FSMs in networking. While a complete walkthrough is beyond this tutorial's scope, the key insight is that the three-way handshake (SYN → SYN/ACK → ACK) is modeled as an FSM with states like CLOSED, LISTEN, SYN_SENT, SYN_RECEIVED, and ESTABLISHED.
+  </p>
+
+  <div class="code-block">
+    <div class="code-label">TCP 3-way handshake — simplified FSM transitions</div>
+    <pre><span class="cmt">// Client side (active opener)</span>
+CLOSED  <span class="kw">→</span> [<span class="fn">connect()</span>]  → SYN_SENT    <span class="cmt">// sends SYN</span>
+SYN_SENT <span class="kw">→</span> [<span class="fn">recv SYN/ACK</span>] → ESTABLISHED <span class="cmt">// sends ACK</span>
+
+<span class="cmt">// Server side (passive opener)</span>
+CLOSED   <span class="kw">→</span> [<span class="fn">listen()</span>]    → LISTEN       <span class="cmt">// no packets sent</span>
+LISTEN   <span class="kw">→</span> [<span class="fn">recv SYN</span>]    → SYN_RECEIVED <span class="cmt">// sends SYN/ACK</span>
+SYN_RECEIVED <span class="kw">→</span> [<span class="fn">recv ACK</span>] → ESTABLISHED  <span class="cmt">// connection open!</span>
+
+<span class="cmt">// Both sides now in ESTABLISHED: data flows freely</span></pre>
+  </div>
+  <p class="code-desc"><em>The FSM makes it precise: calling <code>connect()</code> sends a SYN and moves the socket to SYN_SENT; receiving a SYN/ACK response completes the client side; receiving the final ACK completes the server side. Before FSMs, these rules lived only in prose — ambiguous and error-prone.</em></p>
+
+  <h3>Connection Teardown: The FIN Handshake</h3>
+  <p>
+    Closing a TCP connection is more complex than opening one, because TCP is <em>bidirectional</em>. Either side can "half-close" its direction while still receiving data from the other. When one side calls <code>close()</code>, it sends a FIN packet and enters FIN_WAIT_1. The other side acknowledges and enters CLOSE_WAIT. Both sides eventually exchange FINs and acknowledgments through a sequence of states — FIN_WAIT_2, TIME_WAIT, LAST_ACK — before the connection fully closes.
+  </p>
+  <p>
+    The TIME_WAIT state deserves a mention: it's a deliberate delay before the socket is fully closed, to ensure any lingering delayed packets from the old connection are flushed from the network before the same port pair could be reused. It typically lasts 2× the maximum segment lifetime (usually around 60 seconds).
+  </p>
+
+  <div class="key-takeaway">
+    <div class="kt-label">🔑 Key Takeaway</div>
+    <p>TCP implements sliding window flow control through a single <code>window</code> field in every packet header. The receiver dynamically advertises how much buffer space it has; the sender adjusts accordingly in real time. The entire lifecycle of a TCP connection — from CLOSED through ESTABLISHED to TIME_WAIT — is an FSM with 12 states. What once seemed like vague prose ("shake hands, then exchange data, then close") becomes a precise, implementable specification when modeled as an FSM.</p>
+  </div>
+</section>
+
+<!-- ─── SUMMARY ─── -->
+<section id="summary" style="border-top:none; padding-top:0;">
+  <div class="summary-section">
+    <div class="eyebrow">Summary</div>
+    <h2>The Five Things That Matter</h2>
+    <div class="summary-points">
+      <div class="summary-point">
+        <p><strong>Flow control protects the receiver.</strong> When a sender is faster than a receiver, data gets dropped unless the receiver can signal its capacity back to the sender. The two main strategies — Stop-and-Wait and Sliding Window — both rely on the receiver giving feedback; they differ only in how much data is allowed in flight at once.</p>
+      </div>
+      <div class="summary-point">
+        <p><strong>FSMs make protocol behavior precise.</strong> A Finite State Machine turns fuzzy prose descriptions ("send a packet, wait for acknowledgment") into a deterministic specification: states, events, actions, and transitions. Any ambiguity in an FSM is a bug waiting to happen. TCP's 12-state FSM is the canonical example of this rigor in practice.</p>
+      </div>
+      <div class="summary-point">
+        <p><strong>Stop-and-Wait trades efficiency for simplicity.</strong> Limiting the sender to one packet in flight at a time is easy to implement and reason about. A single 1-bit alternating counter handles duplicate detection. But on any link with non-trivial latency, the network pipe sits mostly idle — which is why this protocol is rarely used alone.</p>
+      </div>
+      <div class="summary-point">
+        <p><strong>Sliding Window keeps the pipe full.</strong> By allowing SWS packets in flight, the sender can continuously fill the link without waiting for individual ACKs. The window "slides" as acknowledgments arrive. Choosing the right window size is a function of bandwidth and round-trip time: <code>window ≥ bandwidth × RTT</code> (the "bandwidth-delay product") to saturate the link.</p>
+      </div>
+      <div class="summary-point">
+        <p><strong>TCP puts it all together with a window field.</strong> The 16-bit window field in every TCP header is the receiver's real-time advertisement of available buffer space. Sender and receiver continuously negotiate the effective flow rate through this field. This is how your browser download adapts to a slow server, and why streaming video buffers when your network is congested — the window is shrinking.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+</main>
+
+<script>
+  // Progress bar
+  const bar = document.getElementById('progressBar');
+  window.addEventListener('scroll', () => {
+    const scrolled = window.scrollY;
+    const total = document.documentElement.scrollHeight - window.innerHeight;
+    bar.style.width = (scrolled / total * 100) + '%';
+  });
+</script>
+</body>
+</html>

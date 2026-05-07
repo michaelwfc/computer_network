@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+  </ul>
+
+  <div class="code-label">Example — Simplified Handshake Pseudocode</div>
+  <pre><code><span class="kw">state</span> = <span class="str">"CLOSED"</span>
+
+<span class="kw">on</span> <span class="fn">connect</span>():
+    <span class="fn">send</span>(SYN)
+    <span class="kw">state</span> = <span class="str">"SYN_SENT"</span>
+
+<span class="kw">on</span> <span class="fn">receive</span>(SYN_ACK):
+    <span class="fn">send</span>(ACK)
+    <span class="kw">state</span> = <span class="str">"ESTABLISHED"</span>
+</code></pre>
+
+  <p><em>This pseudocode shows how TCP transitions from a closed state into an established connection after completing the handshake.</em></p>
+
+  <p>
+    TCP also supports a rare scenario called <strong>simultaneous open</strong>, where both sides send SYN packets at the same time. Each side then acknowledges the other's SYN.
+  </p>
+
+  <div class="takeaway">
+    <strong>Key Takeaway:</strong> The three-way handshake establishes mutual agreement, synchronizes sequence numbers, and confirms bidirectional communication.
+  </div>
+</section>
+
+<section id="teardown">
+  <div class="eyebrow">Section 04</div>
+  <h2>Connection Teardown</h2>
+
+  <p>
+    Ending a TCP connection is more complicated than ending a phone call. TCP must ensure that all in-flight data has arrived before deleting connection state.
+  </p>
+
+  <p>
+    TCP uses the <strong>FIN</strong> flag to indicate that one side has no more data to send.
+  </p>
+
+  <div class="diagram">
+    <strong>Typical Teardown Sequence</strong>
+    <ol>
+      <li>A → B: FIN</li>
+      <li>B → A: ACK</li>
+      <li>B → A: FIN</li>
+      <li>A → B: ACK</li>
+    </ol>
+  </div>
+
+  <p>
+    Notice something important: TCP connections are <strong>full duplex</strong>. Each direction of communication shuts down independently.
+  </p>
+
+  <p>
+    One side may finish sending data while still receiving data from the other side.
+  </p>
+
+  <p>
+    This is similar to two people talking on a radio. One person may say “I'm done talking,” but still continue listening.
+  </p>
+
+  <div class="code-label">Example — Closing a TCP Connection</div>
+  <pre><code><span class="kw">on</span> <span class="fn">close</span>():
+    <span class="fn">send</span>(FIN)
+    <span class="kw">state</span> = <span class="str">"FIN_WAIT_1"</span>
+
+<span class="kw">on</span> <span class="fn">receive</span>(ACK):
+    <span class="kw">state</span> = <span class="str">"FIN_WAIT_2"</span>
+
+<span class="kw">on</span> <span class="fn">receive</span>(FIN):
+    <span class="fn">send</span>(ACK)
+    <span class="kw">state</span> = <span class="str">"TIME_WAIT"</span>
+</code></pre>
+
+  <p><em>This logic demonstrates how a TCP endpoint safely transitions through shutdown states while acknowledging the remote side.</em></p>
+
+  <div class="takeaway">
+    <strong>Key Takeaway:</strong> TCP teardown is symmetric. Both sides must independently signal that they are finished sending data.
+  </div>
+</section>
+
+<section id="timewait">
+  <div class="eyebrow">Section 05</div>
+  <h2>Why TIME_WAIT Exists</h2>
+
+  <p>
+    One of the most misunderstood TCP states is <strong>TIME_WAIT</strong>. After the final ACK is sent, t

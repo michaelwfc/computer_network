@@ -1,0 +1,1045 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Finite State Machines & Protocol Specification</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=Source+Serif+4:ital,wght@0,300;0,400;0,600;1,400&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+
+<style>
+  /* ── Design tokens ── */
+  :root {
+    --accent:     #1e8a6e;
+    --accent-lt:  #e8f5f1;
+    --accent-mid: #b2ddd3;
+    --ink:        #1a1f23;
+    --ink-mid:    #4a5260;
+    --ink-lt:     #7a8494;
+    --bg:         #faf9f7;
+    --bg-warm:    #f3f1ed;
+    --code-bg:    #1c2128;
+    --code-ink:   #cdd9e5;
+    --border:     #ddd9d3;
+    --nav-h:      60px;
+    --max-w:      780px;
+    --serif:      'Source Serif 4', Georgia, serif;
+    --display:    'DM Serif Display', Georgia, serif;
+    --mono:       'JetBrains Mono', 'Courier New', monospace;
+  }
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  html { scroll-behavior: smooth; font-size: 17px; }
+
+  body {
+    font-family: var(--serif);
+    background: var(--bg);
+    color: var(--ink);
+    line-height: 1.75;
+  }
+
+  /* ── Navigation ── */
+  nav {
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    height: var(--nav-h);
+    background: rgba(250,249,247,0.95);
+    backdrop-filter: blur(8px);
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    padding: 0 2rem;
+    gap: 1rem;
+  }
+
+  .nav-brand {
+    font-family: var(--display);
+    font-size: 1.05rem;
+    color: var(--accent);
+    text-decoration: none;
+    white-space: nowrap;
+    flex-shrink: 0;
+    margin-right: 0.5rem;
+  }
+
+  .nav-links {
+    display: flex;
+    gap: 0.15rem;
+    list-style: none;
+    overflow-x: auto;
+    scrollbar-width: none;
+    flex-wrap: nowrap;
+  }
+  .nav-links::-webkit-scrollbar { display: none; }
+
+  .nav-links a {
+    display: block;
+    padding: 0.3rem 0.65rem;
+    font-size: 0.72rem;
+    font-family: var(--mono);
+    color: var(--ink-mid);
+    text-decoration: none;
+    border-radius: 4px;
+    white-space: nowrap;
+    transition: background 0.15s, color 0.15s;
+    letter-spacing: 0.01em;
+  }
+  .nav-links a:hover {
+    background: var(--accent-lt);
+    color: var(--accent);
+  }
+  .nav-links a.active {
+    background: var(--accent);
+    color: #fff;
+  }
+
+  /* ── Hero ── */
+  .hero {
+    background: var(--ink);
+    color: #fff;
+    padding: 5rem 2rem 4.5rem;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .hero::before {
+    content: '';
+    position: absolute;
+    top: -80px; right: -80px;
+    width: 500px; height: 500px;
+    border-radius: 50%;
+    background: radial-gradient(circle, rgba(30,138,110,0.25) 0%, transparent 70%);
+    pointer-events: none;
+  }
+
+  .hero-inner {
+    max-width: var(--max-w);
+    margin: 0 auto;
+    position: relative;
+  }
+
+  .hero-eyebrow {
+    display: inline-block;
+    font-family: var(--mono);
+    font-size: 0.7rem;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--accent-mid);
+    margin-bottom: 1.25rem;
+    border: 1px solid rgba(30,138,110,0.4);
+    padding: 0.25rem 0.65rem;
+    border-radius: 2px;
+  }
+
+  .hero h1 {
+    font-family: var(--display);
+    font-size: clamp(2.2rem, 6vw, 3.6rem);
+    line-height: 1.1;
+    color: #fff;
+    margin-bottom: 1.5rem;
+    font-style: italic;
+  }
+
+  .hero-intro {
+    font-size: 1.05rem;
+    color: rgba(255,255,255,0.72);
+    max-width: 620px;
+    line-height: 1.8;
+  }
+
+  .hero-meta {
+    margin-top: 2.5rem;
+    display: flex;
+    gap: 2rem;
+    flex-wrap: wrap;
+  }
+
+  .hero-meta-item {
+    font-family: var(--mono);
+    font-size: 0.7rem;
+    color: rgba(255,255,255,0.45);
+    letter-spacing: 0.06em;
+  }
+
+  .hero-meta-item strong {
+    display: block;
+    color: var(--accent-mid);
+    margin-bottom: 0.15rem;
+    font-size: 0.6rem;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+  }
+
+  /* ── Main layout ── */
+  main {
+    max-width: var(--max-w);
+    margin: 0 auto;
+    padding: 0 2rem 6rem;
+  }
+
+  /* ── Sections ── */
+  section {
+    padding-top: calc(var(--nav-h) + 3rem);
+    margin-top: -var(--nav-h);
+    border-bottom: 1px solid var(--border);
+    padding-bottom: 3.5rem;
+  }
+  section:last-of-type { border-bottom: none; }
+
+  .section-eyebrow {
+    font-family: var(--mono);
+    font-size: 0.65rem;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    color: var(--accent);
+    margin-bottom: 0.6rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+  .section-eyebrow::after {
+    content: '';
+    flex: 1;
+    height: 1px;
+    background: var(--accent-mid);
+    max-width: 60px;
+  }
+
+  h2 {
+    font-family: var(--display);
+    font-size: clamp(1.6rem, 4vw, 2.2rem);
+    line-height: 1.2;
+    color: var(--ink);
+    margin-bottom: 1.5rem;
+  }
+
+  h3 {
+    font-family: var(--display);
+    font-size: 1.25rem;
+    color: var(--ink);
+    margin: 2.5rem 0 0.75rem;
+    font-style: italic;
+  }
+
+  p {
+    margin-bottom: 1.25rem;
+    color: var(--ink);
+  }
+  p:last-child { margin-bottom: 0; }
+
+  strong { font-weight: 600; color: var(--ink); }
+
+  em { font-style: italic; color: var(--ink-mid); }
+
+  /* ── Key Takeaway ── */
+  .takeaway {
+    background: var(--accent-lt);
+    border-left: 4px solid var(--accent);
+    border-radius: 0 8px 8px 0;
+    padding: 1.25rem 1.5rem;
+    margin: 2.5rem 0 0;
+  }
+
+  .takeaway-label {
+    font-family: var(--mono);
+    font-size: 0.65rem;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--accent);
+    margin-bottom: 0.5rem;
+    font-weight: 500;
+  }
+
+  .takeaway p {
+    font-size: 0.95rem;
+    color: #1a3d34;
+    margin-bottom: 0;
+    line-height: 1.7;
+  }
+
+  /* ── Code blocks ── */
+  .code-wrap {
+    margin: 2rem 0;
+  }
+
+  .code-label {
+    font-family: var(--mono);
+    font-size: 0.65rem;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--ink-lt);
+    background: var(--bg-warm);
+    border: 1px solid var(--border);
+    border-bottom: none;
+    padding: 0.4rem 0.85rem;
+    display: inline-block;
+    border-radius: 4px 4px 0 0;
+  }
+
+  pre {
+    background: var(--code-bg);
+    color: var(--code-ink);
+    border-radius: 0 8px 8px 8px;
+    padding: 1.35rem 1.5rem;
+    overflow-x: auto;
+    font-family: var(--mono);
+    font-size: 0.8rem;
+    line-height: 1.7;
+    border: 1px solid rgba(255,255,255,0.05);
+    scrollbar-width: thin;
+    scrollbar-color: #444 transparent;
+  }
+
+  .code-caption {
+    font-style: italic;
+    font-size: 0.85rem;
+    color: var(--ink-lt);
+    margin-top: 0.6rem;
+    padding-left: 0.1rem;
+  }
+
+  /* Syntax highlight */
+  .kw  { color: #f47067; }
+  .str { color: #96d0ff; }
+  .fn  { color: #dcbdfb; }
+  .cmt { color: #636e7b; font-style: italic; }
+  .num { color: #6cb6ff; }
+  .var { color: #adbac7; }
+
+  /* ── FSM Diagram ── */
+  .diagram-wrap {
+    background: var(--bg-warm);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 2rem;
+    margin: 2rem 0;
+    text-align: center;
+    overflow-x: auto;
+  }
+
+  .diagram-wrap svg {
+    max-width: 100%;
+    height: auto;
+  }
+
+  .diagram-caption {
+    font-size: 0.8rem;
+    font-family: var(--mono);
+    color: var(--ink-lt);
+    margin-top: 1rem;
+    letter-spacing: 0.03em;
+  }
+
+  /* ── Quiz blocks ── */
+  .quiz-block {
+    background: var(--bg-warm);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 1.5rem 1.75rem;
+    margin: 2rem 0;
+  }
+
+  .quiz-label {
+    font-family: var(--mono);
+    font-size: 0.65rem;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--ink-lt);
+    margin-bottom: 0.75rem;
+  }
+
+  .quiz-q {
+    font-weight: 600;
+    margin-bottom: 0.75rem;
+    font-size: 0.95rem;
+  }
+
+  .quiz-options {
+    font-family: var(--mono);
+    font-size: 0.78rem;
+    color: var(--ink-mid);
+    margin-bottom: 1rem;
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 0.6rem 0.85rem;
+  }
+
+  .quiz-answer {
+    display: none;
+    background: var(--accent-lt);
+    border-left: 3px solid var(--accent);
+    padding: 0.85rem 1rem;
+    border-radius: 0 6px 6px 0;
+    font-size: 0.9rem;
+    color: #1a3d34;
+    margin-top: 0.75rem;
+  }
+
+  .quiz-toggle {
+    font-family: var(--mono);
+    font-size: 0.72rem;
+    color: var(--accent);
+    background: none;
+    border: 1px solid var(--accent-mid);
+    padding: 0.35rem 0.85rem;
+    border-radius: 4px;
+    cursor: pointer;
+    letter-spacing: 0.05em;
+    transition: background 0.15s, color 0.15s;
+  }
+
+  .quiz-toggle:hover {
+    background: var(--accent);
+    color: #fff;
+    border-color: var(--accent);
+  }
+
+  /* ── State table ── */
+  .state-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.85rem;
+    margin: 1.5rem 0;
+    font-family: var(--mono);
+  }
+  .state-table th {
+    background: var(--accent);
+    color: #fff;
+    padding: 0.6rem 0.85rem;
+    text-align: left;
+    font-weight: 500;
+    font-size: 0.7rem;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+  }
+  .state-table td {
+    padding: 0.55rem 0.85rem;
+    border-bottom: 1px solid var(--border);
+    color: var(--ink-mid);
+    font-size: 0.78rem;
+  }
+  .state-table tr:nth-child(even) td { background: var(--bg-warm); }
+  .state-table tr:last-child td { border-bottom: none; }
+  .state-name { color: var(--accent); font-weight: 500; }
+
+  /* ── Summary ── */
+  #summary {
+    background: var(--ink);
+    color: #fff;
+    border-radius: 16px;
+    padding: 3rem;
+    margin-top: 4rem;
+  }
+  #summary .section-eyebrow { color: var(--accent-mid); }
+  #summary .section-eyebrow::after { background: rgba(30,138,110,0.4); }
+  #summary h2 { color: #fff; }
+  #summary p { color: rgba(255,255,255,0.75); }
+
+  .summary-list {
+    list-style: none;
+    margin-top: 1.5rem;
+  }
+  .summary-list li {
+    display: flex;
+    gap: 1rem;
+    align-items: flex-start;
+    padding: 0.85rem 0;
+    border-bottom: 1px solid rgba(255,255,255,0.08);
+    color: rgba(255,255,255,0.82);
+    font-size: 0.95rem;
+    line-height: 1.65;
+  }
+  .summary-list li:last-child { border-bottom: none; }
+  .summary-num {
+    font-family: var(--mono);
+    font-size: 0.75rem;
+    color: var(--accent-mid);
+    flex-shrink: 0;
+    width: 2rem;
+    padding-top: 0.1rem;
+  }
+
+  /* ── Responsive ── */
+  @media (max-width: 600px) {
+    nav { padding: 0 1rem; gap: 0.5rem; }
+    .nav-brand { font-size: 0.9rem; }
+    main { padding: 0 1.25rem 4rem; }
+    .hero { padding: 3.5rem 1.25rem 3rem; }
+    pre { font-size: 0.72rem; padding: 1rem 1rem; }
+    #summary { padding: 2rem 1.5rem; }
+    .hero-meta { gap: 1rem; }
+    .diagram-wrap { padding: 1rem; }
+    table { font-size: 0.72rem; }
+  }
+
+  /* ── Scroll-reveal ── */
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(16px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+  .reveal { animation: fadeUp 0.55s ease both; }
+</style>
+</head>
+
+<body>
+
+<!-- ══ NAV ══ -->
+<nav>
+  <a href="#intro" class="nav-brand">FSM Guide</a>
+  <ul class="nav-links">
+    <li><a href="#intro">Intro</a></li>
+    <li><a href="#what-is-fsm">What is an FSM?</a></li>
+    <li><a href="#states-transitions">States & Transitions</a></li>
+    <li><a href="#http-example">HTTP Example</a></li>
+    <li><a href="#tcp-fsm">TCP FSM</a></li>
+    <li><a href="#tcp-handshake">3-Way Handshake</a></li>
+    <li><a href="#tcp-teardown">Connection Teardown</a></li>
+    <li><a href="#quiz">Quiz</a></li>
+    <li><a href="#summary">Summary</a></li>
+  </ul>
+</nav>
+
+<!-- ══ HERO ══ -->
+<header class="hero" id="top">
+  <div class="hero-inner">
+    <span class="hero-eyebrow">CS144 · Stanford University</span>
+    <h1>Finite State Machines & Protocol Specification</h1>
+    <p class="hero-intro">
+      Network protocols like TCP aren't just clever algorithms — they are precise contracts written in a formal language. This tutorial teaches you that language: Finite State Machines. By the end, you'll understand how the designers of the Internet describe complex, multi-party communication as a set of states and transitions, and you'll be able to read — and reason about — the famous TCP state diagram yourself.
+    </p>
+    <div class="hero-meta">
+      <div class="hero-meta-item"><strong>Audience</strong>Junior Developers</div>
+      <div class="hero-meta-item"><strong>Source</strong>CS144 — Intro to Computer Networking</div>
+      <div class="hero-meta-item"><strong>Sections</strong>7 + Quiz + Summary</div>
+    </div>
+  </div>
+</header>
+
+<main>
+
+<!-- ══ SECTION 01 ══ -->
+<section id="intro">
+  <div class="section-eyebrow">Section 01</div>
+  <h2>Why Precise Specification Matters</h2>
+
+  <p>
+    Imagine two engineers on opposite sides of the world, each independently building their half of a network protocol. One writes the client, the other writes the server. When their code finally meets on the wire, it either works perfectly or fails in mysterious ways — and there is no easy debug session they can share. The only thing connecting them is a <strong>specification</strong>: a written description of exactly how the system should behave in every possible situation.
+  </p>
+
+  <p>
+    Plain English is surprisingly bad at this job. Sentences are ambiguous. Paragraphs leave edge cases unaddressed. Readers make different assumptions. What you need is a formal notation that is precise enough to be read the same way by every implementer, yet visual enough to be understood at a glance. That notation is the <strong>Finite State Machine</strong>, or FSM.
+  </p>
+
+  <p>
+    FSMs appear everywhere in computing — in compilers, game logic, UI workflows, and network protocols. But they're especially central to <strong>networking</strong>, where many parties must agree on behavior without being able to negotiate in real time. The TCP protocol — the backbone of virtually all web traffic — is formally defined by an FSM with 12 states. By learning FSMs, you're gaining the ability to read and reason about the same specification documents that built the Internet.
+  </p>
+
+  <div class="takeaway">
+    <div class="takeaway-label">Key Takeaway</div>
+    <p>Protocol specifications must be unambiguous because independent teams implement both sides of a conversation. Finite State Machines provide a formal, visual language that eliminates the vagueness of plain English and leaves no room for misinterpretation.</p>
+  </div>
+</section>
+
+<!-- ══ SECTION 02 ══ -->
+<section id="what-is-fsm">
+  <div class="section-eyebrow">Section 02</div>
+  <h2>What Is a Finite State Machine?</h2>
+
+  <p>
+    An FSM is exactly what its name suggests: a machine that can be in one of a <strong>finite number of states</strong>. A <strong>state</strong> is a snapshot — a particular configuration of the system at a point in time. Think of a vending machine: it might be in the "waiting for coins" state, the "coin inserted" state, or the "dispensing item" state. At any moment, it is in exactly one of those states, never two at once.
+  </p>
+
+  <p>
+    The word "finite" is doing important work here. A vending machine doesn't have an infinite number of modes — it has a bounded, enumerable list of them. This boundedness is what makes FSMs useful for specification: you can exhaustively describe every situation the system might encounter.
+  </p>
+
+  <p>
+    In diagrams, states are typically drawn as <strong>circles or rounded rectangles</strong>, each labeled with a name. An abstract example with three states looks like this:
+  </p>
+
+  <div class="diagram-wrap">
+    <svg viewBox="0 0 520 180" xmlns="http://www.w3.org/2000/svg" style="max-width:520px">
+      <!-- State 1 -->
+      <circle cx="90"  cy="90" r="55" fill="#e8f5f1" stroke="#1e8a6e" stroke-width="2"/>
+      <text x="90"  y="86"  text-anchor="middle" font-family="DM Serif Display,Georgia,serif" font-size="13" fill="#1a1f23">State</text>
+      <text x="90"  y="102" text-anchor="middle" font-family="DM Serif Display,Georgia,serif" font-size="13" fill="#1a1f23">1</text>
+      <!-- State 2 -->
+      <circle cx="260" cy="90" r="55" fill="#e8f5f1" stroke="#1e8a6e" stroke-width="2"/>
+      <text x="260" y="86"  text-anchor="middle" font-family="DM Serif Display,Georgia,serif" font-size="13" fill="#1a1f23">State</text>
+      <text x="260" y="102" text-anchor="middle" font-family="DM Serif Display,Georgia,serif" font-size="13" fill="#1a1f23">2</text>
+      <!-- State 3 -->
+      <circle cx="430" cy="90" r="55" fill="#e8f5f1" stroke="#1e8a6e" stroke-width="2"/>
+      <text x="430" y="86"  text-anchor="middle" font-family="DM Serif Display,Georgia,serif" font-size="13" fill="#1a1f23">State</text>
+      <text x="430" y="102" text-anchor="middle" font-family="DM Serif Display,Georgia,serif" font-size="13" fill="#1a1f23">3</text>
+      <!-- Arrow 1→2 -->
+      <defs>
+        <marker id="arrow" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto">
+          <path d="M0,0 L0,6 L8,3 z" fill="#1e8a6e"/>
+        </marker>
+      </defs>
+      <line x1="148" y1="90" x2="197" y2="90" stroke="#1e8a6e" stroke-width="2" marker-end="url(#arrow)"/>
+      <!-- Arrow 2→3 -->
+      <line x1="318" y1="90" x2="367" y2="90" stroke="#1e8a6e" stroke-width="2" marker-end="url(#arrow)"/>
+    </svg>
+    <div class="diagram-caption">Figure 1 — A simple three-state FSM. The system is always in exactly one state.</div>
+  </div>
+
+  <div class="takeaway">
+    <div class="takeaway-label">Key Takeaway</div>
+    <p>A Finite State Machine describes a system using a bounded list of states — configurations the system can occupy. At any instant, the system is in exactly one state. This mutual exclusivity is what makes FSMs precise: there is no ambiguity about "where" the system is.</p>
+  </div>
+</section>
+
+<!-- ══ SECTION 03 ══ -->
+<section id="states-transitions">
+  <div class="section-eyebrow">Section 03</div>
+  <h2>States, Transitions, Events, and Actions</h2>
+
+  <p>
+    States alone are just a list of positions. What makes an FSM <em>dynamic</em> — what gives it the ability to describe behavior over time — is the concept of a <strong>transition</strong>. A transition is an edge (an arrow) drawn between two states. When the system is in a given state and a specific <strong>event</strong> occurs, the transition fires: the system moves from the source state to the destination state.
+  </p>
+
+  <p>
+    Think of it like a traffic light: "green" is a state. The event "timer expires" triggers a transition to "yellow." The event "timer expires again" triggers a transition to "red." No ambiguity, no negotiation — just a deterministic rule.
+  </p>
+
+  <h3>Anatomy of a Transition Arrow</h3>
+
+  <p>Each edge in an FSM diagram carries two pieces of information:</p>
+
+  <div class="diagram-wrap">
+    <svg viewBox="0 0 500 160" xmlns="http://www.w3.org/2000/svg" style="max-width:500px">
+      <defs>
+        <marker id="arr2" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto">
+          <path d="M0,0 L0,6 L8,3 z" fill="#1e8a6e"/>
+        </marker>
+      </defs>
+      <!-- State A -->
+      <rect x="20" y="45" width="130" height="70" rx="8" fill="#e8f5f1" stroke="#1e8a6e" stroke-width="2"/>
+      <text x="85" y="86" text-anchor="middle" font-family="DM Serif Display,Georgia,serif" font-size="14" fill="#1a1f23">State A</text>
+      <!-- Arrow -->
+      <line x1="153" y1="80" x2="320" y2="80" stroke="#1e8a6e" stroke-width="2" marker-end="url(#arr2)"/>
+      <!-- Label on arrow -->
+      <text x="238" y="64" text-anchor="middle" font-family="JetBrains Mono,monospace" font-size="10" fill="#1e8a6e">event causing</text>
+      <text x="238" y="76" text-anchor="middle" font-family="JetBrains Mono,monospace" font-size="10" fill="#1e8a6e">state transition</text>
+      <text x="238" y="96" text-anchor="middle" font-family="JetBrains Mono,monospace" font-size="10" fill="#7a8494">actions taken on</text>
+      <text x="238" y="108" text-anchor="middle" font-family="JetBrains Mono,monospace" font-size="10" fill="#7a8494">state transition</text>
+      <!-- State B -->
+      <rect x="325" y="45" width="130" height="70" rx="8" fill="#e8f5f1" stroke="#1e8a6e" stroke-width="2"/>
+      <text x="390" y="86" text-anchor="middle" font-family="DM Serif Display,Georgia,serif" font-size="14" fill="#1a1f23">State B</text>
+    </svg>
+    <div class="diagram-caption">Figure 2 — Transition anatomy. The top label is the event (trigger), the bottom label is the action (optional response).</div>
+  </div>
+
+  <p>
+    <strong>Event (trigger):</strong> The condition that causes the transition. This is written above the arrow. An event might be a message arriving, a timer firing, or a user calling a function — something that happens to the system from the outside.
+  </p>
+
+  <p>
+    <strong>Action (response):</strong> What the system <em>does</em> when the transition fires. This is written below the arrow. Actions are optional — not every transition has a side effect. But when an action exists, specifying it is critical. An incomplete specification that omits actions leaves implementers guessing, and guessing produces bugs.
+  </p>
+
+  <h3>Multiple Transitions and Determinism</h3>
+
+  <p>
+    A state can have more than one outgoing transition — one for each event it might receive. The rule, however, is strict: <strong>for any given state and any given event, there must be exactly one transition</strong>. If the same event could lead to two different destination states from the same source, the FSM is <em>ambiguous</em> — the system literally cannot know what to do.
+  </p>
+
+  <p>
+    What happens if the system is in a state and an event arrives for which no transition is defined? The behavior of the FSM is <strong>undefined</strong>. This is both a design warning and a practical concern: undefined behavior in a network protocol means that different implementers will handle the situation differently, leading to interoperability failures.
+  </p>
+
+  <div class="takeaway">
+    <div class="takeaway-label">Key Takeaway</div>
+    <p>Transitions connect states through events and optionally trigger actions. Every transition for a given (state, event) pair must be unique — ambiguity breaks the specification. Missing transitions leave behavior undefined, which in network protocols means unpredictable interoperability failures.</p>
+  </div>
+</section>
+
+<!-- ══ SECTION 04 ══ -->
+<section id="http-example">
+  <div class="section-eyebrow">Section 04</div>
+  <h2>FSM in Practice: An HTTP Request</h2>
+
+  <p>
+    Abstract principles only go so far. Let's ground the FSM concepts in something you interact with every day: loading a web page via HTTP. While a production HTTP client involves far more complexity, this simplified three-state model captures the essential structure.
+  </p>
+
+  <h3>The Three States</h3>
+
+  <p>
+    Our HTTP client FSM has three states: <strong>Idle</strong> (viewing the current page or doing nothing), <strong>Page Requesting</strong> (a connection is open and resources are being requested), and <strong>Request Pending</strong> (a single HTTP GET has been sent and we're awaiting the server's response).
+  </p>
+
+  <div class="diagram-wrap">
+    <svg viewBox="0 0 560 240" xmlns="http://www.w3.org/2000/svg" style="max-width:560px">
+      <defs>
+        <marker id="arr3" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto">
+          <path d="M0,0 L0,6 L8,3 z" fill="#1e8a6e"/>
+        </marker>
+        <marker id="arr3b" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto">
+          <path d="M0,0 L0,6 L8,3 z" fill="#4a5260"/>
+        </marker>
+      </defs>
+      <!-- IDLE -->
+      <rect x="10" y="90" width="130" height="60" rx="8" fill="#e8f5f1" stroke="#1e8a6e" stroke-width="2"/>
+      <text x="75" y="124" text-anchor="middle" font-family="DM Serif Display,Georgia,serif" font-size="13" fill="#1a1f23">Idle</text>
+      <!-- PAGE REQUESTING -->
+      <rect x="205" y="90" width="150" height="60" rx="8" fill="#e8f5f1" stroke="#1e8a6e" stroke-width="2"/>
+      <text x="280" y="118" text-anchor="middle" font-family="DM Serif Display,Georgia,serif" font-size="13" fill="#1a1f23">Page</text>
+      <text x="280" y="134" text-anchor="middle" font-family="DM Serif Display,Georgia,serif" font-size="13" fill="#1a1f23">Requesting</text>
+      <!-- REQUEST PENDING -->
+      <rect x="410" y="90" width="140" height="60" rx="8" fill="#e8f5f1" stroke="#1e8a6e" stroke-width="2"/>
+      <text x="480" y="118" text-anchor="middle" font-family="DM Serif Display,Georgia,serif" font-size="13" fill="#1a1f23">Request</text>
+      <text x="480" y="134" text-anchor="middle" font-family="DM Serif Display,Georgia,serif" font-size="13" fill="#1a1f23">Pending</text>
+      <!-- Arrow: Idle → Page Requesting -->
+      <path d="M 143 110 Q 175 75 202 110" stroke="#1e8a6e" stroke-width="1.5" fill="none" marker-end="url(#arr3)"/>
+      <text x="172" y="72" text-anchor="middle" font-family="JetBrains Mono,monospace" font-size="9" fill="#1e8a6e">load new page</text>
+      <text x="172" y="83" text-anchor="middle" font-family="JetBrains Mono,monospace" font-size="9" fill="#7a8494">open connection</text>
+      <!-- Arrow: Page Requesting → Idle (connection closed) -->
+      <path d="M 207 140 Q 175 175 145 140" stroke="#4a5260" stroke-width="1.5" fill="none" marker-end="url(#arr3b)"/>
+      <text x="173" y="170" text-anchor="middle" font-family="JetBrains Mono,monospace" font-size="9" fill="#4a5260">connection closed</text>
+      <!-- Arrow: Page Requesting → Request Pending -->
+      <path d="M 357 110 Q 385 72 408 110" stroke="#1e8a6e" stroke-width="1.5" fill="none" marker-end="url(#arr3)"/>
+      <text x="383" y="70" text-anchor="middle" font-family="JetBrains Mono,monospace" font-size="9" fill="#1e8a6e">more resources</text>
+      <text x="383" y="81" text-anchor="middle" font-family="JetBrains Mono,monospace" font-size="9" fill="#7a8494">HTTP GET</text>
+      <!-- Arrow: Request Pending → Page Requesting -->
+      <path d="M 412 140 Q 385 180 358 140" stroke="#4a5260" stroke-width="1.5" fill="none" marker-end="url(#arr3b)"/>
+      <text x="383" y="175" text-anchor="middle" font-family="JetBrains Mono,monospace" font-size="9" fill="#4a5260">receive response</text>
+    </svg>
+    <div class="diagram-caption">Figure 3 — Simplified HTTP client FSM. Events are shown above arrows, actions below.</div>
+  </div>
+
+  <h3>Walking Through the States</h3>
+
+  <p>
+    The journey begins in <strong>Idle</strong>. When the user clicks a link (event: <em>load new page</em>), the FSM transitions to <strong>Page Requesting</strong> and takes the action of opening a TCP connection to the web server. Now in the Page Requesting state, if there are more resources to fetch (event: <em>more resources to request</em>), the FSM sends an HTTP GET (action) and moves to <strong>Request Pending</strong>. When the response arrives (event: <em>receive response</em>), it transitions back to Page Requesting, ready to fetch the next resource. When the connection closes, it returns to Idle.
+  </p>
+
+  <h3>The Incompleteness Problem</h3>
+
+  <p>
+    This FSM has four events: <em>load new page</em>, <em>more resources</em>, <em>receive response</em>, and <em>connection closed</em>. Combined with three states, that's up to twelve possible (state, event) pairs. Our diagram only defines six of them. What should happen when <em>connection closed</em> fires while we're in <strong>Request Pending</strong>? Or when <em>receive response</em> arrives while we're in <strong>Idle</strong>?
+  </p>
+
+  <p>
+    This is the core tension in protocol specification. A fully explicit FSM — one that handles every (state, event) pair — can grow extremely large and intimidating. In practice, there are two approaches:
+  </p>
+
+  <p>
+    <strong>Option 1 — Supplement with text:</strong> Write down the common cases in the diagram and address edge cases in accompanying prose. This keeps the diagram readable while ensuring nothing is truly undefined.
+  </p>
+
+  <p>
+    <strong>Option 2 — Intentional underspecification:</strong> The Internet Engineering Task Force (IETF) — the body that designs Internet standards — sometimes deliberately leaves parts of a protocol undefined. The philosophy is that by specifying only what's necessary for interoperability, you preserve flexibility for future experimentation. If an edge case turns out to matter, a later revision of the specification can define it.
+  </p>
+
+  <div class="takeaway">
+    <div class="takeaway-label">Key Takeaway</div>
+    <p>Real FSMs face a tradeoff between completeness and readability. Fully specifying every (state, event) pair is rigorous but creates overwhelming diagrams. In practice, protocol designers often specify only the common paths and handle edge cases in supplementary text — a pragmatic approach that the IETF uses deliberately to leave room for future refinement.</p>
+  </div>
+</section>
+
+<!-- ══ SECTION 05 ══ -->
+<section id="tcp-fsm">
+  <div class="section-eyebrow">Section 05</div>
+  <h2>The TCP State Machine: The Internet's Most Famous FSM</h2>
+
+  <p>
+    TCP — the Transmission Control Protocol — is the protocol underneath virtually every HTTP request your browser makes. It's responsible for ensuring that data arrives reliably, in order, and without corruption. Managing a TCP connection involves carefully coordinating two machines through a precisely specified sequence of states. That specification is a finite state machine with 12 states.
+  </p>
+
+  <p>
+    At first glance the TCP FSM looks intimidating. Twelve states, dozens of transitions, a mix of user-program events and network-packet events — it's a lot to take in at once. But it has a clean four-part structure that makes it tractable:
+  </p>
+
+  <table class="state-table">
+    <thead>
+      <tr><th>Part</th><th>States</th><th>Purpose</th></tr>
+    </thead>
+    <tbody>
+      <tr><td>Connection Opening</td><td class="state-name">CLOSED, LISTEN, SYN_SENT, SYN_RECEIVED</td><td>Establishing a new connection (the 3-way handshake)</td></tr>
+      <tr><td>Data Transfer</td><td class="state-name">ESTABLISHED</td><td>Sending and receiving data</td></tr>
+      <tr><td>Connection Closing</td><td class="state-name">FIN_WAIT_1, FIN_WAIT_2, CLOSING, TIME_WAIT, CLOSE_WAIT, LAST_ACK</td><td>Graceful teardown of the connection</td></tr>
+      <tr><td>Final State</td><td class="state-name">CLOSED</td><td>Connection fully closed; node may forget it</td></tr>
+    </tbody>
+  </table>
+
+  <p>
+    Notice that <strong>CLOSED</strong> appears at both the top and bottom of the diagram. This isn't a mistake — it reflects the lifecycle of a connection: every connection begins from nothing (CLOSED) and eventually returns to nothing (CLOSED). The FSM is a cycle.
+  </p>
+
+  <p>
+    TCP also introduces an important concept you won't see in simple FSMs: a distinction between <strong>passive openers</strong> (servers) and <strong>active openers</strong> (clients). Both sides use the same FSM diagram, but they enter it from different starting transitions and traverse different paths through the opening handshake. One FSM, two perspectives — this elegance is one of TCP's great design achievements.
+  </p>
+
+  <div class="takeaway">
+    <div class="takeaway-label">Key Takeaway</div>
+    <p>TCP's 12-state FSM defines every aspect of connection lifecycle — opening, data transfer, and closing — for both endpoints simultaneously. Despite its apparent complexity, it divides cleanly into four logical parts. Learning to read it section by section, rather than all at once, reveals the underlying clarity of the design.</p>
+  </div>
+</section>
+
+<!-- ══ SECTION 06 ══ -->
+<section id="tcp-handshake">
+  <div class="section-eyebrow">Section 06</div>
+  <h2>TCP Connection Opening: The Three-Way Handshake</h2>
+
+  <p>
+    Before two machines can exchange data over TCP, they need to <strong>synchronize</strong> — agree on starting sequence numbers, confirm that both sides are ready, and establish the connection. This is done via the <strong>three-way handshake</strong>: a sequence of three packets (SYN → SYN/ACK → ACK) that you'll see referenced throughout networking literature.
+  </p>
+
+  <p>
+    Think of it like a phone call: you ring someone (SYN), they pick up and say "hello?" (SYN/ACK), and you say "hi, I can hear you" (ACK). Only after that exchange does the conversation begin. The handshake confirms that both parties are reachable and ready.
+  </p>
+
+  <h3>The Server Side: Passive Opener</h3>
+
+  <p>
+    The server is the <strong>passive opener</strong> — it waits for incoming connections rather than initiating them. When a server program calls <code>listen()</code> on a socket, the socket transitions from <span style="color:var(--accent);font-family:var(--mono);font-size:0.85em">CLOSED</span> to <span style="color:var(--accent);font-family:var(--mono);font-size:0.85em">LISTEN</span>. No packets are sent; this is purely a local state change. The server is now watching for incoming connection requests.
+  </p>
+
+  <div class="code-wrap">
+    <div class="code-label">Server: entering the LISTEN state</div>
+    <pre><span class="cmt">// When a server calls listen(), the socket transitions:</span>
+<span class="cmt">// CLOSED → LISTEN</span>
+<span class="cmt">// No packets are sent — this is a local state change only.</span>
+
+<span class="kw">const</span> net = <span class="fn">require</span>(<span class="str">'net'</span>);
+<span class="kw">const</span> server = net.<span class="fn">createServer</span>();
+
+server.<span class="fn">listen</span>(<span class="num">8080</span>, () => {
+  <span class="cmt">// Socket is now in LISTEN state.</span>
+  console.<span class="fn">log</span>(<span class="str">'Server listening on port 8080'</span>);
+});</pre>
+    <p class="code-caption"><em>Calling <code>listen()</code> transitions the socket from CLOSED to LISTEN. No messages are sent over the network — this transition only changes local state, which is why its action is empty in the FSM diagram.</em></p>
+  </div>
+
+  <h3>The Client Side: Active Opener</h3>
+
+  <p>
+    The client is the <strong>active opener</strong> — it initiates the connection. When the client calls <code>connect()</code>, two things happen simultaneously: the local socket transitions from <span style="color:var(--accent);font-family:var(--mono);font-size:0.85em">CLOSED</span> to <span style="color:var(--accent);font-family:var(--mono);font-size:0.85em">SYN_SENT</span>, and a SYN packet is sent over the network to the server's port.
+  </p>
+
+  <div class="code-wrap">
+    <div class="code-label">Client: initiating the handshake</div>
+    <pre><span class="cmt">// When a client calls connect(), the socket transitions:</span>
+<span class="cmt">// CLOSED → SYN_SENT  (action: send SYN packet)</span>
+
+<span class="kw">const</span> net = <span class="fn">require</span>(<span class="str">'net'</span>);
+<span class="kw">const</span> client = net.<span class="fn">createConnection</span>({ port: <span class="num">8080</span> }, () => {
+  <span class="cmt">// By the time this callback fires, we're in ESTABLISHED.</span>
+  <span class="cmt">// The handshake completed successfully.</span>
+  console.<span class="fn">log</span>(<span class="str">'Connected! SYN → SYN/ACK → ACK handshake complete.'</span>);
+});</pre>
+    <p class="code-caption"><em>In Node.js, <code>createConnection()</code> initiates the three-way handshake internally. The callback fires only when the handshake is complete and the socket reaches the ESTABLISHED state.</em></p>
+  </div>
+
+  <h3>Walking the Handshake State by State</h3>
+
+  <p>
+    Let's trace both sides through the FSM simultaneously:
+  </p>
+
+  <div class="code-wrap">
+    <div class="code-label">Three-way handshake: state trace</div>
+    <pre><span class="cmt">// Initial state for both sides:</span>
+<span class="cmt">// Client: CLOSED    Server: CLOSED</span>
+
+<span class="cmt">// Step 1 — Server calls listen():</span>
+<span class="cmt">// Server: CLOSED → LISTEN   (no packets sent)</span>
+
+<span class="cmt">// Step 2 — Client calls connect() and sends SYN:</span>
+<span class="cmt">// Client: CLOSED → SYN_SENT (sends SYN)</span>
+
+<span class="cmt">// Step 3 — Server receives SYN, sends SYN/ACK:</span>
+<span class="cmt">// Server: LISTEN → SYN_RECEIVED (sends SYN/ACK)</span>
+
+<span class="cmt">// Step 4 — Client receives SYN/ACK, sends ACK:</span>
+<span class="cmt">// Client: SYN_SENT → ESTABLISHED (sends ACK)</span>
+<span class="cmt">// Client can now send data. ✓</span>
+
+<span class="cmt">// Step 5 — Server receives ACK:</span>
+<span class="cmt">// Server: SYN_RECEIVED → ESTABLISHED (no packet sent)</span>
+<span class="cmt">// Server can now send and receive data. ✓</span></pre>
+    <p class="code-caption"><em>This state trace maps exactly to the TCP FSM diagram. Notice the asymmetry: the client reaches ESTABLISHED one step before the server does, because the client sends the final ACK and doesn't need to wait for confirmation that it arrived.</em></p>
+  </div>
+
+  <div class="takeaway">
+    <div class="takeaway-label">Key Takeaway</div>
+    <p>The three-way handshake is a precise FSM traversal: both client and server move through specific states triggered by specific events (connect, SYN, SYN/ACK, ACK). The FSM makes explicit what a verbal description leaves vague — exactly when each side considers the connection established and ready for data.</p>
+  </div>
+</section>
+
+<!-- ══ SECTION 07 ══ -->
+<section id="tcp-teardown">
+  <div class="section-eyebrow">Section 07</div>
+  <h2>TCP Connection Teardown: A Careful Goodbye</h2>
+
+  <p>
+    Closing a TCP connection is significantly more complex than opening one — and understanding why reveals something deep about the protocol's design. Unlike the symmetric handshake, connection teardown is <strong>asymmetric</strong>: one side might want to stop sending data while the other still has data in-flight. TCP handles this gracefully by allowing each direction of the connection to be closed independently.
+  </p>
+
+  <p>
+    Where connection setup used <strong>SYN</strong> (synchronize) packets, teardown uses <strong>FIN</strong> (finish) packets. The side that sends the first FIN is called the <strong>active closer</strong>; the side that receives it first is the <strong>passive closer</strong>.
+  </p>
+
+  <h3>The Active Closer's Path</h3>
+
+  <p>
+    When a program calls <code>close()</code> on a connected socket (from ESTABLISHED), it becomes the active closer and enters <span style="color:var(--accent);font-family:var(--mono);font-size:0.85em">FIN_WAIT_1</span>. A FIN packet is sent to the other side. From FIN_WAIT_1, three things can happen — which is where the complexity lives:
+  </p>
+
+  <p>
+    <strong>Path A — Full close:</strong> The passive closer acknowledges the FIN <em>and</em> sends its own FIN in the same response. The active closer moves directly to <span style="color:var(--accent);font-family:var(--mono);font-size:0.85em">TIME_WAIT</span>.
+  </p>
+
+  <p>
+    <strong>Path B — Half-close:</strong> The passive closer only acknowledges the FIN (it still has data to send). The active closer moves to <span style="color:var(--accent);font-family:var(--mono);font-size:0.85em">FIN_WAIT_2</span>, where it continues receiving data. When the passive closer eventually sends its own FIN, the active closer moves to TIME_WAIT.
+  </p>
+
+  <p>
+    <strong>Path C — Simultaneous close:</strong> Both sides call close at almost the same moment and send FINs to each other. Both enter <span style="color:var(--accent);font-family:var(--mono);font-size:0.85em">CLOSING</span>, and when each receives acknowledgement of its own FIN, both move to TIME_WAIT.
+  </p>
+
+  <h3>The Passive Closer's Path</h3>
+
+  <p>
+    The passive closer receives a FIN and enters <span style="color:var(--accent);font-family:var(--mono);font-size:0.85em">CLOSE_WAIT</span>. It can continue sending data — the active closer will receive and acknowledge it. Only when the passive closer calls <code>close()</code> does it send its own FIN and enter <span style="color:var(--accent);font-family:var(--mono);font-size:0.85em">LAST_ACK</span>, waiting for the acknowledgement of that final FIN. When that ACK arrives, it transitions to CLOSED.
+  </p>
+
+  <h3>Why TIME_WAIT Exists</h3>
+
+  <p>
+    Both closing paths converge at <span style="color:var(--accent);font-family:var(--mono);font-size:0.85em">TIME_WAIT</span>. Rather than immediately transitioning to CLOSED, TCP waits in TIME_WAIT for a period (typically twice the maximum segment lifetime, around 60–120 seconds). This delay is deliberate and important.
+  </p>
+
+  <p>
+    Imagine the final ACK the active closer sends gets lost in the network. The passive closer, stuck in LAST_ACK, would retransmit its FIN. If the active closer had already fully closed and freed its state, it couldn't respond — and the passive closer would be stuck forever. TIME_WAIT ensures the active closer remains available to handle that retransmission.
+  </p>
+
+  <div class="code-wrap">
+    <div class="code-label">Teardown: state trace (active closer)</div>
+    <pre><span class="cmt">// Active closer (e.g., the client calls close()):</span>
+<span class="cmt">// ESTABLISHED → FIN_WAIT_1   (sends FIN)</span>
+
+<span class="cmt">// Passive closer receives FIN:</span>
+<span class="cmt">// ESTABLISHED → CLOSE_WAIT   (sends ACK)</span>
+
+<span class="cmt">// Path B — half-close (passive still has data):</span>
+<span class="cmt">// Active:  FIN_WAIT_1 → FIN_WAIT_2 (receives ACK, no FIN yet)</span>
+<span class="cmt">// Passive continues sending data...</span>
+<span class="cmt">// Passive calls close():</span>
+<span class="cmt">// Passive: CLOSE_WAIT → LAST_ACK   (sends FIN)</span>
+<span class="cmt">// Active receives FIN:</span>
+<span class="cmt">// Active:  FIN_WAIT_2 → TIME_WAIT  (sends ACK)</span>
+<span class="cmt">// Passive receives ACK:</span>
+<span class="cmt">// Passive: LAST_ACK → CLOSED       ✓</span>
+<span class="cmt">// Active waits ~2×MSL, then:</span>
+<span class="cmt">// Active:  TIME_WAIT → CLOSED      ✓</span></pre>
+    <p class="code-caption"><em>This is the half-close teardown path. The connection asymmetry — one side can still send after the other "closes" — is a deliberate TCP feature that allows streaming responses to finish gracefully even after the request is sent.</em></p>
+  </div>
+
+  <div class="takeaway">
+    <div class="takeaway-label">Key Takeaway</div>
+    <p>TCP teardown is more complex than setup because connections are bidirectional — each direction must be closed independently. The FSM makes this explicit with six closing states that handle every combination: full close, half-close, simultaneous close, and the TIME_WAIT delay that prevents state-confusion when final ACKs get lost.</p>
+  </div>
+</section>
+
+<!-- ══ SECTION 08: QUIZ ══ -->
+<section id="quiz">
+  <div class="section-eyebrow">Section 08</div>
+  <h2>Test Your Understanding</h2>
+
+  <p>
+    The following two questions come directly from the CS144 lecture. For both questions, assume the TCP FSM diagram is the <em>only</em> documentation — there is no supporting text defining additional transitions. If a transition doesn't appear in the diagram, the behavior is undefined.
+  </p>
+
+  <div class="quiz-block">
+    <div class="quiz-label">Question 1</div>
+    <p class="quiz-q">Suppose we start in the CLOSED state, then call <code>listen()</code>, then receive a SYN, then call <code>close()</code>. What state will we be in?</p>
+    <div class="quiz-options">CLOSED · SYN_SENT · SYN_RECEIVED · ESTABLISHED · FIN_WAIT_1 · undefined</div>
+    <button class="quiz-toggle" onclick="this.nextElementSibling.style.display='block'; this.style.display='none';">Reveal Answer</button>
+    <div class="quiz-answer">
+      <strong>Answer: FIN_WAIT_1</strong><br><br>
+      Trace the path: CLOSED <strong>→</strong> (call <code>listen()</code>) <strong>→</strong> LISTEN <strong>→</strong> (receive SYN, send SYN/ACK) <strong>→</strong> SYN_RECEIVED <strong>→</strong> (call <code>close()</code>, send FIN) <strong>→</strong> <strong>FIN_WAIT_1</strong>. The FSM has a defined edge from SYN_RECEIVED on the <code>close()</code> event — it leads to FIN_WAIT_1.
+    </div>
+  </div>
+
+  <div class="quiz-block">
+    <div class="quiz-label">Question 2</div>
+    <p class="quiz-q">Suppose we start in the CLOSED state, then call <code>connect()</code>, then call <code>close()</code>. What state will we be in?</p>
+    <div class="quiz-options">CLOSED · SYN_SENT · SYN_RECEIVED · ESTABLISHED · FIN_WAIT_1 · undefined</div>
+    <button class="quiz-toggle" onclick="this.nextElementSibling.style.display='block'; this.style.display='none';">Reveal Answer</button>
+    <div class="quiz-answer">
+      <strong>Answer: CLOSED</strong><br><br>
+      Trace the path: CLOSED <strong>→</strong> (call <code>connect()</code>, send SYN) <strong>→</strong> SYN_SENT <strong>→</strong> (call <code>close()</code>) <strong>→</strong> <strong>CLOSED</strong>. The FSM has a defined edge from SYN_SENT on the <code>close()</code> event that returns directly to CLOSED, aborting the connection attempt.
+    </div>
+  </div>
+
+  <p style="margin-top:1.5rem; color: var(--ink-mid); font-size:0.9rem;">
+    These questions illustrate the practical power of FSM specifications: you don't need to guess what "should" happen in an edge case. You look up the state, find the event, and follow the arrow. If no arrow exists, the behavior is undefined — and that itself is an important piece of information for an implementer.
+  </p>
+
+  <div class="takeaway">
+    <div class="takeaway-label">Key Takeaway</div>
+    <p>FSMs turn ambiguous "what happens if…" questions into deterministic lookups. Given a current state and an event, you either find a defined transition (and follow it) or you discover that the behavior is undefined — which is itself a meaningful specification outcome that implementers must handle.</p>
+  </div>
+</section>
+
+<!-- ══ SUMMARY ══ -->
+<section id="summary" style="background:var(--ink); border-radius: 16px; border-bottom: none; padding-top:3rem; padding-bottom:3rem; padding-left:3rem; padding-right:3rem; margin-top:4rem;">
+  <div class="section-eyebrow" style="color:var(--accent-mid);">Summary</div>
+  <h2 style="color:#fff; margin-bottom:1rem;">The Five Things to Remember</h2>
+  <p style="color:rgba(255,255,255,0.65); margin-bottom:0;">This tutorial covered a lot of ground — from abstract FSM structure to the full TCP lifecycle. Here are the five most essential takeaways:</p>
+
+  <ol class="summary-list">
+    <li>
+      <span class="summary-num">01</span>
+      <span><strong style="color:#fff;">FSMs are the language of protocol specification.</strong> When you need two independent systems to agree on behavior without real-time negotiation, plain English fails. Finite State Machines provide a formal, visual notation where every state, event, and action is precisely defined and leaves no room for misinterpretation.</span>
+    </li>
+    <li>
+      <span class="summary-num">02</span>
+      <span><strong style="color:#fff;">A system is always in exactly one state.</strong> The mutual exclusivity of states is what makes FSMs deterministic. For any (state, event) pair, there is at most one defined transition — and if there isn't one, the behavior is explicitly undefined. Ambiguity in the diagram means bugs in the implementation.</span>
+    </li>
+    <li>
+      <span class="summary-num">03</span>
+      <span><strong style="color:#fff;">Completeness versus readability is a real tradeoff.</strong> Fully specifying every (state, event) pair is rigorous but produces overwhelming diagrams. Protocol designers — including the IETF — deliberately leave some transitions undefined to keep specifications manageable and to preserve design flexibility.</span>
+    </li>
+    <li>
+      <span class="summary-num">04</span>
+      <span><strong style="color:#fff;">TCP's 12-state FSM is the Internet's most important FSM.</strong> Despite its apparent complexity, it divides into four clean parts: connection opening (the 3-way handshake), data transfer (ESTABLISHED), connection teardown (6 states), and final closure (CLOSED). Understanding this structure makes the diagram readable, not intimidating.</span>
+    </li>
+    <li>
+      <span class="summary-num">05</span>
+      <span><strong style="color:#fff;">Connection teardown is harder than setup — intentionally so.</strong> TCP connections are bidirectional; each direction must be closed independently. The six closing states handle all cases: full close, half-close, simultaneous close, and the TIME_WAIT delay that prevents permanent state confusion when final ACKs are lost in transit.</span>
+    </li>
+  </ol>
+</section>
+
+</main>
+
+<script>
+  // Active nav link on scroll
+  const sections = document.querySelectorAll('section[id]');
+  const navLinks = document.querySelectorAll('.nav-links a');
+
+  const observer = new IntersectionObserver((entries) => {
+    entries.forEach(entry => {
+      if (entry.isIntersecting) {
+        navLinks.forEach(l => l.classList.remove('active'));
+        const active = document.querySelector(`.nav-links a[href="#${entry.target.id}"]`);
+        if (active) {
+          active.classList.add('active');
+          active.scrollIntoView({ inline: 'nearest', block: 'nearest' });
+        }
+      }
+    });
+  }, { rootMargin: '-60px 0px -60% 0px', threshold: 0 });
+
+  sections.forEach(s => observer.observe(s));
+</script>
+</body>
+</html>
