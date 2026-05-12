@@ -1,17 +1,23 @@
 For build prereqs, see [the CS144 VM setup instructions](https://web.stanford.edu/class/cs144/vm_howto).
 
+# Sponge quickstart
 
-## cmake: Sponge quickstart
+
+## A. `cmake` : configures the build system
 To set up your build directory:
 ```bash
 $ mkdir -p <path/to/sponge>/build
 $ cd <path/to/sponge>/build
 $ cmake ..
 ```
-### What does `cmake ..` do?
+
+CMake generates native build files (Makefiles on Linux, Xcode projects on macOS, Visual Studio solutions on Windows). You write CMakeLists.txt once, and it works across OSs.
+
+
+### 1. What does `cmake ..` do?
 The command `cmake ..` performs the following:
-- **Configures the build system**: It reads the `CMakeLists.txt` file from the parent directory (..)
-- **Generates build files**: Creates Makefiles or other build system files needed to compile the project
+- **Configures the build system**: It reads the `CMakeLists.txt` file from the parent directory (..) to understand project dependencies, compiler flags, and source files.
+- **Generates build files**: Creates `Makefiles` or other build system files needed to compile the project
     - Makefiles
     - other build system files: Could be Ninja files, CMake files, MSBuild files, etc.
   
@@ -20,33 +26,48 @@ The command `cmake ..` performs the following:
 The .. indicates that the CMake configuration file (`CMakeLists.txt`) is located one directory level up from where you're running the command (in the build directory). This is part of the standard out-of-source build pattern where build artifacts are kept separate from source code.
 
 
-### Explanation of the CMakeLists.txt file ?
+### 2. Explanation of the CMakeLists.txt file ?
 
 The [CMakeLists.txt](file:///home/cs144/computer_network/sponge/CMakeLists.txt) file in the Sponge networking library defines the build configuration and structure for the entire project:
 
-Basic Project Configuration
+#### a. Basic Project Configuration
 - **`cmake_minimum_required (VERSION 2.8.5)`** - Sets the minimum required CMake version
 - **`cmake_policy (SET CMP0054 NEW)`** - Sets a specific CMake policy regarding string comparisons
 - **`project (Sponge)`** - Defines the project name as "Sponge"
 
-Include External Configuration Files
+
+#### b. Global Configuration (The etc/ includes):
+
+Instead of writing all compiler flags and tool settings here, the project imports them from separate files in the etc/ directory.
+
 The project includes multiple external CMake files that provide additional functionality:
 - **[etc/build_defs.cmake](file:///home/cs144/computer_network/sponge/etc/build_defs.cmake)** - Contains basic build definitions and macros
 - **[etc/build_type.cmake](file:///home/cs144/computer_network/sponge/etc/build_type.cmake)** - Handles build type configurations (Debug, Release, etc.)
-- **[etc/cflags.cmake](file:///home/cs144/computer_network/sponge/etc/cflags.cmake)** - Manages compiler flags
+- **[etc/cflags.cmake](file:///home/cs144/computer_network/sponge/etc/cflags.cmake)** - Sets compiler flags (e.g., -std=c++17, warnings).
 - **[etc/doxygen.cmake](file:///home/cs144/computer_network/sponge/etc/doxygen.cmake)** - Configures Doxygen documentation generation
 - **[etc/clang_format.cmake](file:///home/cs144/computer_network/sponge/etc/clang_format.cmake)** - Sets up clang-format for code formatting
-- **[etc/clang_tidy.cmake](file:///home/cs144/computer_network/sponge/etc/clang_tidy.cmake)** - Configures clang-tidy for static analysis
+- **[etc/clang_tidy.cmake](file:///home/cs144/computer_network/sponge/etc/clang_tidy.cmake)** - Configures code quality tools clang-tidy for static analysis
+
 - **[etc/cppcheck.cmake](file:///home/cs144/computer_network/sponge/etc/cppcheck.cmake)** - Integrates cppcheck for static analysis
 - **[etc/tests.cmake](file:///home/cs144/computer_network/sponge/etc/tests.cmake)** - Defines test-related build targets
 
-Header Search Paths
+
+#### c. Header Search Paths
+`include_directories (...)`: Tells the compiler where to look for .hh (header) files.
+
 The following lines add directories to the header search path:
 - **`${PROJECT_SOURCE_DIR}/libsponge/util`** - Utility classes and functions
 - **`${PROJECT_SOURCE_DIR}/libsponge/tcp_helpers`** - TCP helper implementations
 - **`${PROJECT_SOURCE_DIR}/libsponge`** - Main library headers
 
-Subdirectories
+It adds libsponge/util, libsponge/tcp_helpers, and libsponge so that any source file in the project can #include "address.hh" or #include "tcp_socket.hh" without specifying the full path.
+
+
+#### d. Subdirectories
+
+This is the core structural element. It tells CMake to go into these folders and look for their CMakeLists.txt files.
+
+
 The project organizes its components into subdirectories:
 - **[libsponge](file:///home/cs144/computer_network/sponge/libsponge/)** - Core networking library implementation
 - **[apps](file:///home/cs144/computer_network/sponge/apps/)** - Applications built using the library
@@ -55,9 +76,12 @@ The project organizes its components into subdirectories:
 
 This structure allows for modular development and separates the library code from applications, tests, and documentation while maintaining proper dependencies between them.
 
+#### e. Test Integration:
+
+include (etc/tests.cmake): Registers the built tests with CTest (CMake's testing driver), allowing you to run make check_lab0.
 
 
-### What are `Makefiles` or other build system files?
+### 3. What are `Makefiles` or other build system files?
 Based on the context from the Sponge networking library README, here's an explanation:
 
 **Makefiles** and **other build system files** are configuration files that contain instructions for building software projects:
@@ -86,25 +110,22 @@ As mentioned in the README, the `cmake ..` command generates these files in the 
 
 **Note:** all further commands listed below should be run from the `build` dir.
 
-## To build:
+## B. `make`: To build
 
 ```bash
+# This command compiles and links the source code into executable programs and libraries.
 $ make
+
 
 # You can use the `-j` switch to build in parallel, e.g.,
 $ make -j$(nproc)
 
-# To test (after building; make sure you've got the [build prereqs](https://web.stanford.edu/class/cs144/vm_howto) installed!)
-$ make check_lab0
-# or
-$ make check_lab1
-# etc.
 ```
 
 The first time you run a `make check`, it may run `sudo` to configure two
 [TUN](https://www.kernel.org/doc/Documentation/networking/tuntap.txt) devices for use during testing.
 
-### build options
+### 1. build options
 
 You can specify a different compiler when you run cmake:
 ```bash
@@ -137,14 +158,28 @@ Of course, you can combine all of the above, e.g.,
 **Note:** if you want to change `CC`, `CXX`, `CLANG_TIDY`, or `CLANG_FORMAT`, you need to remove
 `build/CMakeCache.txt` and re-run cmake. (This isn't necessary for `CMAKE_BUILD_TYPE`.)
 
-### other useful targets
+
+## C. To test
+To test (after building; make sure you've got the [build prereqs](https://web.stanford.edu/class/cs144/vm_howto) installed!)
+
+```bash
+$ make check_lab0
+# or
+$ make check_lab1
+```
+
+The first time you run a `make check`, it may run `sudo` to configure two
+[TUN](https://www.kernel.org/doc/Documentation/networking/tuntap.txt) devices for use during testing.
+
+
+
+# Other useful targets
 
 To generate documentation (you'll need `doxygen`; output will be in `build/doc/`):
 
     $ make doc
 
-## To lint 
-(you'll need `clang-tidy`):
+To lint (you'll need `clang-tidy`):
 
     $ make -j$(nproc) tidy
 
@@ -160,6 +195,18 @@ To see all available targets,
 
     $ make help
 
+
+## To generate documentation
+
+To generate documentation (you'll need `doxygen`; output will be in `build/doc/`):
+
+    $ make doc
+
+## To lint 
+
+(you'll need `clang-tidy`):
+
+    $ make -j$(nproc) tidy
 
 ### What does "lint" mean?
 
@@ -242,3 +289,7 @@ cmake ..
 make format
 
 ```
+
+
+
+

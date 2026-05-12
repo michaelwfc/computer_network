@@ -348,17 +348,17 @@ git clone https://github.com/cs144/sponge # not exists, replace with
 
 to fetch the source code for the lab.
 
-2. Optional: Feel free to backup your repository to a private GitHub/GitLab/Bitbucket repository 
-(e.g., using the instructions at https://stackoverflow.com/questions/10065526/
-github-how-to-make-a-fork-of-public-repository-private), but please make absolutely sure
-that your work remains private.
-3. Enter the Lab 0 directory: cd sponge
+2. Optional: Feel free to backup your repository to a private GitHub/GitLab/Bitbucket repository (e.g., using the instructions at https://stackoverflow.com/questions/10065526/github-how-to-make-a-fork-of-public-repository-private), but please make absolutely sure that your work remains private.
+3. Enter the Lab 0 directory: `cd sponge`
 4. Create a directory to compile the lab software:` mkdir build`
 5. Enter the build directory: `cd build`
 6. Set up the build system: `cmake ..`
 7. Compile the source code: `make` (you can run `make -j4` to use four processors).
 8. Outside the build directory, open and start editing the writeups/lab0.md file. 
 9. This is the template for your lab writeup and will be included in your submission.
+
+
+
 
 ## 3.2 Modern C++: mostly safe but still fast and low-level
 
@@ -411,7 +411,7 @@ To support this style of programming, Sponge's classes wrap operating-system fun
 
 
 ## 3.4 Writing webget
-It's time to implement `webget`, a program to fetch Web pages over the Internet using the operating system's TCP support and stream-socket abstraction|just like you did by hand earlier in this lab.
+It's time to implement `webget`, a program to fetch Web pages over the Internet using the operating system's TCP support and stream-socket abstraction just like you did by hand earlier in this lab.
 
 1. From the build directory, open the file `../apps/webget.cc` in a text editor or IDE.
 2. In the `get_URL` function,find the comment starting "// Your code here."
@@ -531,14 +531,12 @@ cs144@cs144vm:~/computer_network/sponge/build$ ./apps/webget cs144.keithw.org /n
 # HTTP/1.1 200 OK
 # Content-type: text/plain
 
-# 7SmXqWkrLKzVBCEalbSPqBcvs11Pw263K7x4Wv3JckI
 
 # manuly run ./tests/webget_t.sh
 cs144@cs144vm:~/computer_network/sponge/build$ ../tests/webget_t.sh 
 # HTTP/1.1 200 OK
 # Content-type: text/plain
 
-# 7SmXqWkrLKzVBCEalbSPqBcvs11Pw263K7x4Wv3JckI
 
 
 
