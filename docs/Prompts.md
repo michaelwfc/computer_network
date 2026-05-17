@@ -179,5 +179,5 @@ After producing the HTML, convert it to a clean Markdown (.md) file:
 
 
 ## Source material
-[retransmission.pdf]
+[all pdfs in this project]
 ```

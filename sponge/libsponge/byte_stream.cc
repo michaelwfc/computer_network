@@ -22,8 +22,7 @@ template <typename... Targs> void DUMMY_CODE(Targs &&.../* unused */) {}
 using namespace std;
 
 /**
-use member initialization lists
-
+constructor definition using a member initialization list
 */
 ByteStream::ByteStream(const size_t capacity)
    : _capacity(capacity){} // Only initialize what's not default
@@ -56,6 +55,7 @@ size_t ByteStream::write(const string &data) {
 
 //! \param[in] len bytes will be copied from the output side of the buffer
 // "Peek" means look but don't remove
+// 2nd const:  this member function does NOT modify the object
 string ByteStream::peek_output(const size_t len) const {
   std::string result;
   size_t count = std::min(len, _buffer.size());

@@ -5,6 +5,7 @@
 
 #include <cstdint>
 #include <string>
+#include <map>
 
 //! \brief A class that assembles a series of excerpts from a byte stream
 //! (possibly out of order, possibly overlapping) into an in-order byte stream.
@@ -14,6 +15,13 @@ private:
 
   ByteStream _output; //!< The reassembled in-order byte stream
   size_t _capacity;   //!< The maximum number of bytes
+  size_t _first_unassembled_index=0;
+  // storage for unresolved future bytes
+  // Only out-of-order bytes belong there. Contiguous bytes should flow directly into _output. 
+  std::map<uint64_t, char> _buffer;
+
+  bool _eof_received=false;
+  uint64_t _eof_index=0; //Conventionally:one-past-last-byte index
 
 public:
   //! \brief Construct a `StreamReassembler` that will store up to `capacity`
@@ -31,13 +39,13 @@ public:
   //! \param data the substring
   //! \param index indicates the index (place in sequence) of the first byte in
   //! `data`
-  //! \param eof the last byte of `data` will be the last byte in the entire
-  //! stream
+  //! \param eof the last byte of `data` will be the last byte in the entire stream
   void push_substring(const std::string &data, const uint64_t index,
                       const bool eof);
 
   //! \name Access the reassembled byte stream
   //!@{
+  // const ByteStream &: return an alias/reference to the original object, returned reference is read-only
   const ByteStream &stream_out() const { return _output; }
   ByteStream &stream_out() { return _output; }
   //!@}

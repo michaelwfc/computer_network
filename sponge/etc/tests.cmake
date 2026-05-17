@@ -22,6 +22,11 @@ add_test(NAME t_send_ack             COMMAND send_ack)
 add_test(NAME t_send_close           COMMAND send_close)
 add_test(NAME t_send_extra           COMMAND send_extra)
 
+# add_test(
+#     NAME test_name
+#     COMMAND executable_name
+# )
+# Register a test named t_strm_reassem_single that runs executable: fsm_stream_reassembler_single
 add_test(NAME t_strm_reassem_single      COMMAND fsm_stream_reassembler_single)
 add_test(NAME t_strm_reassem_seq         COMMAND fsm_stream_reassembler_seq)
 add_test(NAME t_strm_reassem_dup         COMMAND fsm_stream_reassembler_dup)
@@ -212,6 +217,9 @@ add_custom_target (check_webget COMMAND ${CMAKE_CTEST_COMMAND} --output-on-failu
                               COMMENT "Testing webget...")
 add_custom_target (check_lab0 COMMAND ${CMAKE_CTEST_COMMAND} --output-on-failure --timeout 10 -R 't_webget|t_byte_stream|_dt'
                               COMMENT "Testing Lab 0...")
+# add_custom_target(check_lab1 ...)
+# means: “define a convenient command to run related tests together.”
+# When user runs: `make check_lab1`  , CMake executes:`ctest ...` with filters/options.
 add_custom_target (check_lab1 COMMAND ${CMAKE_CTEST_COMMAND} --output-on-failure --timeout 10 -R 't_strm_reassem_|t_byte_stream|_dt'
                               COMMENT "Testing the stream reassembler...")
 add_custom_target (check_lab2 COMMAND ${CMAKE_CTEST_COMMAND} --output-on-failure --timeout 10 -R 't_recv_|t_wrapping_|t_strm_reassem_|t_byte_stream|_dt'

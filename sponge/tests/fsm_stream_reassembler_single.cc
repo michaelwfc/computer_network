@@ -8,6 +8,13 @@
 
 using namespace std;
 
+/**
+ * Each block:
+creates fresh StreamReassembler
+runs operations
+checks expectations
+ * 
+ */
 int main() {
   try {
     {
@@ -19,11 +26,13 @@ int main() {
     }
 
     {
+      // create fresh StreamReassembler with capacity 65000
       ReassemblerTestHarness test{65000};
-
+      // submit a segment with data "a", index 0, and eof false,Equivalent to: reassembler.push_substring("a", 0, false);
       test.execute(SubmitSegment{"a", 0});
-
+      // Assertion: total assembled bytes must equal 1
       test.execute(BytesAssembled(1));
+      // Reading from output stream should produce "a"
       test.execute(BytesAvailable("a"));
       test.execute(NotAtEof{});
     }
