@@ -2,6 +2,47 @@
   "version": "0.2.0",
   "configurations": [
     {
+      "name": "Debug Lab1-StreamReassembler",
+      "type": "cppdbg",
+      "request": "launch",
+      "program": "${workspaceFolder}/sponge/build/tests/fsm_stream_reassembler_single",
+      "args": [],
+      "stopAtEntry": false,
+      "cwd": "${workspaceFolder}/sponge/build",
+      "environment": [],
+      "externalConsole": false,
+      "MIMode": "gdb",
+      "setupCommands": [
+        {
+          "description": "Enable pretty-printing for gdb",
+          "text": "-enable-pretty-printing",
+          "ignoreFailures": true
+        }
+      ],
+      "preLaunchTask": "build cs144-sponge"
+    },
+    {
+      "name": "Debug Lab0-ByteStream-byte_stream_one_write",
+      "type": "cppdbg",
+      "request": "launch",
+      "program": "${workspaceFolder}/sponge/build/tests/byte_stream_one_write",
+      "args": [],
+      "stopAtEntry": false,
+      "cwd": "${workspaceFolder}/sponge/build",
+      "environment": [],
+      "externalConsole": false,
+      "MIMode": "gdb",
+      "setupCommands": [
+        {
+          "description": "Enable pretty-printing for gdb",
+          "text": "-enable-pretty-printing",
+          "ignoreFailures": true
+        }
+      ],
+      "preLaunchTask": "build cs144-sponge",
+      "miDebuggerPath": "/usr/bin/gdb"
+    },
+    {
       "name": "C/C++: gcc build and debug active file",
       "type": "cppdbg",
       "request": "launch",
@@ -22,29 +63,9 @@
       ],
       "preLaunchTask": "C/C++: g++ build active file",
       "targetArchitecture": "x86_64",
-      "logging": { "engineLogging": true },
-    },
-
-    {
-        "name": "Debug byte_stream_one_write",
-        "type": "cppdbg",
-        "request": "launch",
-        "program": "${workspaceFolder}/sponge/build/tests/byte_stream_one_write",
-        "args": [],
-        "stopAtEntry": false,
-        "cwd": "${workspaceFolder}/sponge/build",
-        "environment": [],
-        "externalConsole": false,
-        "MIMode": "gdb",
-        "setupCommands": [
-            {
-                "description": "Enable pretty-printing for gdb",
-                "text": "-enable-pretty-printing",
-                "ignoreFailures": true
-            }
-        ],
-        "preLaunchTask": "cs144 build",
-        "miDebuggerPath": "/usr/bin/gdb"
+      "logging": {
+        "engineLogging": true
+      },
     }
   ]
 }

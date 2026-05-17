@@ -11,6 +11,29 @@
 #include <string>
 #include <utility>
 
+/**
+Understand The Class Hierarchy
+
+ReassemblerTestStep
+├── ReassemblerAction
+│    └── SubmitSegment
+│
+└── ReassemblerExpectation
+     ├── BytesAssembled
+     ├── BytesAvailable
+     ├── AtEof
+     └── ...
+
+Meaning:
+every test operation is a "step"
+some steps DO things (actions)
+some VERIFY things (expectations)
+
+
+struct SubmitSegment : public ReassemblerAction
+Meaning: SubmitSegment IS-A ReassemblerAction
+ */
+
 class ReassemblerExpectationViolation : public std::runtime_error {
 public:
   ReassemblerExpectationViolation(const std::string msg)
@@ -143,11 +166,13 @@ struct NotAtEof : public ReassemblerExpectation {
   }
 };
 
+// inheritance hierarchy: SubmitSegment IS-A ReassemblerAction IS-A ReassemblerTestStep
 struct SubmitSegment : public ReassemblerAction {
   std::string _data;
   size_t _index;
   bool _eof{false};
-
+  
+  // constructor with data and index, eof defaults to false
   SubmitSegment(std::string data, size_t index) : _data(data), _index(index) {}
 
   SubmitSegment &with_eof(bool eof) {
@@ -162,11 +187,18 @@ struct SubmitSegment : public ReassemblerAction {
     return ss.str();
   }
 
+  // override the execute function to call reassembler.push_substring with the appropriate parameters
+  // the actual action happens: SubmitSegment.execute(...) -> reassembler.push_substring(...)
   void execute(StreamReassembler &reassembler) const {
     reassembler.push_substring(_data, _index, _eof);
   }
 };
 
+/**
+How ReassemblerTestHarness::execute() Works: dynamic polymorphism via base-class reference
+
+
+ */
 class ReassemblerTestHarness {
   StreamReassembler reassembler;
   std::vector<std::string> steps_executed;
