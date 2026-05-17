@@ -6,9 +6,7 @@ Let's get started with using the network. You are going to do two tasks by hand:
 - retrieving a Web page (just like a Web browser) 
 - sending an email message (like an email client). 
 Both of these tasks rely on a networking abstraction called **a reliable bidirectional byte stream**: 
-you'll type a sequence of bytes into the terminal, and the same sequence of bytes will eventually
-be delivered, in the same order, to a program running on another computer (a server). The
-server responds with its own sequence of bytes, delivered back to your terminal.
+you'll type a sequence of bytes into the terminal, and the same sequence of bytes will eventually be delivered, in the same order, to a program running on another computer (a server). The server responds with its own sequence of bytes, delivered back to your terminal.
 
    
 ## 2.1 Fetch a Web page
@@ -314,7 +312,7 @@ nc <Person_A_IP> 9090
 In the next part of this warmup lab, you will write a short program that fetches a Web page over the Internet. You will make use of a feature provided by the Linux kernel, and by most other operating systems: the ability to create **a reliable bidirectional byte stream** between two programs, one running on your computer, and the other on a different computer across the Internet (e.g., a Web server such as `Apache` or `nginx`, or the `netcat` program).
 
 
-This feature is known as a `stream socket`. To your program and to the Web server, the socket looks like an ordinary file descriptor (similar to a file on disk, or to the stdin or stdout I/O streams). When two stream sockets are connected, any bytes written to one socket will eventually come out in the same order from the other socket on the other computer.
+This feature is known as a `stream socket`. To your program and to the Web server, the `socket` looks like an ordinary `file descriptor` (similar to a file on disk, or to the stdin or stdout I/O streams). When two stream sockets are connected, any bytes written to one socket will eventually come out in the same order from the other socket on the other computer.
 
 In reality, however, the Internet doesn't provide a service of reliable byte-streams. Instead, the only thing the Internet really does is to give its "best effort" to deliver short pieces of data, called **Internet datagrams**, to their destination. Each datagram contains some metadata (`headers`) that specifies things like the source and destination addresses---what computer it came from, and what computer it's headed towards---as well as some `payload` data (up to about 1,500 bytes) to be delivered to the destination computer.
 

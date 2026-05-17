@@ -1,6 +1,25 @@
+# VM Setup
+## the CS144 VM setup
+
 For build prereqs, see [the CS144 VM setup instructions](https://web.stanford.edu/class/cs144/vm_howto).
 
 
+The CS144 lab is designed to work with the GNU/Linux operating system. You have four options for setting up your development machine:
+
+1. On Intel/AMD computers: Use a VM image that we prepared in VirtualBox
+2. Use a Google Cloud virtual machine (we have $50 coupon codes available for the class)
+3. Use your own GNU/Linux installation "at your own risk" with a C++23 compiler (GCC 14.2 or later, clang++ 20 or later)
+4. On ARM MacBooks and Macs: please install the UTM virtual machine software and use our ARM64 GNU/Linux virtual machine image
+Because the labs were designed to use Linux-specific interfaces, we cannot support development on any other operating system—though you’re free to do whatever works for you, so long as the code you turn in works in the supported environment! It's unlikely that MacOS or Microsoft Windows (even with WSL) will be sufficient.
+
+## Setting up your CS144 VM using VirtualBox
+
+- https://web.stanford.edu/class/cs144/vm_howto/vm-howto-image.html
+
+
+
+
+# C++
 ## cmake: Sponge quickstart
 To set up your build directory:
 ```bash

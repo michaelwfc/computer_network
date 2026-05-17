@@ -1,0 +1,1077 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>CS144: Packet Switching — A Developer's Guide</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=Source+Serif+4:ital,wght@0,300;0,400;0,600;1,400&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+<style>
+  /* ── Reset & tokens ── */
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --accent:      #1e8a6e;
+    --accent-pale: #e6f5f1;
+    --ink:         #1a1a1a;
+    --ink-mid:     #444;
+    --ink-light:   #777;
+    --bg:          #fafaf8;
+    --bg-alt:      #f2f2ee;
+    --border:      #ddddd8;
+    --nav-h:       56px;
+    --font-display: 'DM Serif Display', Georgia, serif;
+    --font-body:    'Source Serif 4', Georgia, serif;
+    --font-mono:    'JetBrains Mono', 'Courier New', monospace;
+  }
+
+  html { scroll-behavior: smooth; scroll-padding-top: calc(var(--nav-h) + 24px); }
+
+  body {
+    font-family: var(--font-body);
+    font-size: 18px;
+    line-height: 1.75;
+    color: var(--ink);
+    background: var(--bg);
+  }
+
+  /* ── Sticky nav ── */
+  nav {
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    height: var(--nav-h);
+    background: #fff;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    padding: 0 24px;
+    gap: 0;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+  nav .brand {
+    font-family: var(--font-display);
+    font-size: 1rem;
+    color: var(--accent);
+    white-space: nowrap;
+    margin-right: 28px;
+    text-decoration: none;
+    flex-shrink: 0;
+  }
+  nav a {
+    font-family: var(--font-body);
+    font-size: 0.78rem;
+    font-weight: 600;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    color: var(--ink-mid);
+    text-decoration: none;
+    white-space: nowrap;
+    padding: 0 14px;
+    height: var(--nav-h);
+    display: flex;
+    align-items: center;
+    border-bottom: 2px solid transparent;
+    transition: color 0.15s, border-color 0.15s;
+  }
+  nav a:hover, nav a.active {
+    color: var(--accent);
+    border-bottom-color: var(--accent);
+  }
+
+  /* ── Hero ── */
+  .hero {
+    background: var(--ink);
+    color: #fff;
+    padding: 72px 24px 60px;
+    text-align: center;
+  }
+  .hero .eyebrow {
+    display: inline-block;
+    font-size: 0.75rem;
+    font-weight: 600;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--accent);
+    border: 1px solid var(--accent);
+    padding: 4px 12px;
+    margin-bottom: 20px;
+  }
+  .hero h1 {
+    font-family: var(--font-display);
+    font-size: clamp(2rem, 5vw, 3.5rem);
+    line-height: 1.15;
+    color: #fff;
+    max-width: 800px;
+    margin: 0 auto 24px;
+  }
+  .hero p {
+    font-size: 1.05rem;
+    line-height: 1.7;
+    max-width: 680px;
+    margin: 0 auto;
+    color: rgba(255,255,255,0.75);
+  }
+
+  /* ── Layout ── */
+  .wrapper {
+    max-width: 780px;
+    margin: 0 auto;
+    padding: 0 24px;
+  }
+
+  section {
+    padding: 64px 0 40px;
+    border-bottom: 1px solid var(--border);
+  }
+  section:last-of-type { border-bottom: none; }
+
+  .eyebrow-label {
+    display: inline-block;
+    font-size: 0.7rem;
+    font-weight: 700;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--accent);
+    margin-bottom: 10px;
+  }
+
+  h2 {
+    font-family: var(--font-display);
+    font-size: clamp(1.5rem, 3.5vw, 2.1rem);
+    line-height: 1.2;
+    color: var(--ink);
+    margin-bottom: 22px;
+  }
+
+  h3 {
+    font-family: var(--font-display);
+    font-size: 1.25rem;
+    color: var(--ink);
+    margin: 36px 0 12px;
+  }
+
+  p { margin-bottom: 1.15em; }
+  p:last-child { margin-bottom: 0; }
+
+  strong { color: var(--ink); }
+
+  /* ── Key Takeaway ── */
+  .takeaway {
+    border-left: 4px solid var(--accent);
+    background: var(--accent-pale);
+    padding: 20px 24px;
+    margin: 36px 0;
+  }
+  .takeaway .label {
+    font-size: 0.7rem;
+    font-weight: 700;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--accent);
+    display: block;
+    margin-bottom: 6px;
+  }
+  .takeaway p {
+    font-size: 0.97rem;
+    color: var(--ink);
+    margin: 0;
+  }
+
+  /* ── Code blocks ── */
+  .code-wrap {
+    margin: 28px 0;
+  }
+  .code-label {
+    display: inline-block;
+    font-family: var(--font-mono);
+    font-size: 0.68rem;
+    font-weight: 500;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--accent);
+    background: var(--accent-pale);
+    border: 1px solid var(--accent);
+    border-bottom: none;
+    padding: 4px 12px;
+  }
+  pre {
+    background: #1a1e2e;
+    color: #d4daf0;
+    padding: 22px 24px;
+    overflow-x: auto;
+    font-family: var(--font-mono);
+    font-size: 0.82rem;
+    line-height: 1.65;
+    border: 1px solid #2e3348;
+  }
+  code { font-family: var(--font-mono); font-size: 0.85em; }
+  p code, li code {
+    background: var(--bg-alt);
+    border: 1px solid var(--border);
+    padding: 2px 6px;
+    color: var(--accent);
+  }
+
+  /* Syntax colours */
+  .kw  { color: #8be9fd; }
+  .fn  { color: #50fa7b; }
+  .str { color: #f1fa8c; }
+  .cmt { color: #6272a4; font-style: italic; }
+  .num { color: #ffb86c; }
+  .op  { color: #ff79c6; }
+
+  .code-desc {
+    font-style: italic;
+    font-size: 0.9rem;
+    color: var(--ink-mid);
+    margin-top: 10px;
+  }
+
+  /* ── Tables ── */
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 24px 0;
+    font-size: 0.9rem;
+  }
+  th {
+    background: var(--ink);
+    color: #fff;
+    text-align: left;
+    padding: 10px 14px;
+    font-weight: 600;
+    font-family: var(--font-body);
+  }
+  td {
+    padding: 10px 14px;
+    border-bottom: 1px solid var(--border);
+  }
+  tr:nth-child(even) td { background: var(--bg-alt); }
+
+  /* ── Comparison boxes ── */
+  .two-col {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+    margin: 24px 0;
+  }
+  .box {
+    border: 1px solid var(--border);
+    padding: 18px 20px;
+  }
+  .box h4 {
+    font-family: var(--font-display);
+    font-size: 1rem;
+    color: var(--accent);
+    margin-bottom: 10px;
+  }
+  .box ul {
+    padding-left: 18px;
+    font-size: 0.9rem;
+    color: var(--ink-mid);
+  }
+  .box li { margin-bottom: 5px; }
+
+  /* ── Formula display ── */
+  .formula {
+    background: var(--bg-alt);
+    border: 1px solid var(--border);
+    border-left: 4px solid var(--accent);
+    padding: 16px 20px;
+    margin: 20px 0;
+    font-family: var(--font-mono);
+    font-size: 0.9rem;
+    color: var(--ink);
+    overflow-x: auto;
+  }
+
+  /* ── Summary section ── */
+  #summary {
+    background: var(--ink);
+    color: #fff;
+    padding: 64px 24px 72px;
+    margin-top: 0;
+  }
+  #summary .wrapper { }
+  #summary .eyebrow-label { color: var(--accent); }
+  #summary h2 { color: #fff; }
+  #summary ol {
+    padding-left: 0;
+    list-style: none;
+    counter-reset: summary-counter;
+    margin-top: 28px;
+  }
+  #summary ol li {
+    counter-increment: summary-counter;
+    display: flex;
+    gap: 20px;
+    align-items: flex-start;
+    padding: 18px 0;
+    border-bottom: 1px solid rgba(255,255,255,0.1);
+  }
+  #summary ol li::before {
+    content: counter(summary-counter, decimal-leading-zero);
+    font-family: var(--font-mono);
+    font-size: 0.75rem;
+    color: var(--accent);
+    flex-shrink: 0;
+    padding-top: 4px;
+    min-width: 26px;
+  }
+  #summary ol li strong { color: #fff; display: block; margin-bottom: 4px; }
+  #summary ol li span { color: rgba(255,255,255,0.65); font-size: 0.95rem; }
+
+  /* ── Responsive ── */
+  @media (max-width: 600px) {
+    nav { padding: 0 12px; gap: 0; }
+    nav a { padding: 0 10px; font-size: 0.7rem; }
+    .hero { padding: 48px 16px 40px; }
+    .wrapper { padding: 0 16px; }
+    section { padding: 48px 0 32px; }
+    .two-col { grid-template-columns: 1fr; }
+    pre { font-size: 0.75rem; padding: 16px; }
+    #summary { padding: 48px 16px 56px; }
+  }
+</style>
+</head>
+<body>
+
+<!-- ═══════════════════════════════════════════════════
+     NAVIGATION
+══════════════════════════════════════════════════════ -->
+<nav>
+  <a class="brand" href="#top">CS144</a>
+  <a href="#history">History</a>
+  <a href="#what-is-ps">Packet Switching</a>
+  <a href="#delay">Delay</a>
+  <a href="#playback">Playback Buffers</a>
+  <a href="#queue-model">Queue Models</a>
+  <a href="#queue-props">Queue Properties</a>
+  <a href="#switching">How Switches Work</a>
+  <a href="#rate">Rate Guarantees</a>
+  <a href="#delay-guarantees">Delay Guarantees</a>
+  <a href="#summary">Summary</a>
+</nav>
+
+<!-- ═══════════════════════════════════════════════════
+     HERO
+══════════════════════════════════════════════════════ -->
+<div class="hero" id="top">
+  <div class="eyebrow">CS144 · Stanford University · Unit 3</div>
+  <h1>Packet Switching: From First Principles to Delay Guarantees</h1>
+  <p>
+    Every time you load a web page, stream a video, or make a video call, billions of tiny packets are flying across the Internet at the speed of light. This tutorial — drawn from Stanford's CS144 — explains exactly how that works: what packet switching is, why the Internet chose it, how routers decide where to send packets, and how engineers guarantee that your real-time video call won't stutter. No networking background required.
+  </p>
+</div>
+
+<!-- ═══════════════════════════════════════════════════
+     SECTIONS
+══════════════════════════════════════════════════════ -->
+<div class="wrapper">
+
+<!-- ── Section 01: History ── -->
+<section id="history">
+  <span class="eyebrow-label">Section 01</span>
+  <h2>A Brief History of Networks</h2>
+
+  <p>
+    The Internet may feel like a recent invention, but the fundamental ideas behind it — encoding information, routing it across a network, dealing with errors, and controlling the flow of data — are centuries old.
+  </p>
+
+  <h3>Ancient Long-Distance Communication</h3>
+  <p>
+    The first recorded long-distance communications date from around 1,000 BC, mostly for military purposes. Fire beacons could signal danger at the speed of light, but carried almost no information — just "enemy approaching" or "attack." Carrier pigeons and horse relays could carry more information, but traveled slowly and could be intercepted. Around 2,000 years ago, optical methods such as flags and heliographs emerged, encoding digital information (letters, words, numbers) at the speed of light.
+  </p>
+
+  <h3>Claude Chappe and the Birth of Protocols</h3>
+  <p>
+    The biggest leap in optical communications happened during the French Revolution. In 1793, Claude Chappe built a semaphore telegraph network: towers topped with a horizontal beam and two smaller arms, whose positions encoded symbols. Operators could send messages across France in under 30 minutes — an extraordinary achievement.
+  </p>
+  <p>
+    To make the network function reliably, Chappe's engineers invented five concepts that are <em>still used in every computer network today</em>:
+  </p>
+  <table>
+    <thead><tr><th>Concept</th><th>What it does</th><th>Modern equivalent</th></tr></thead>
+    <tbody>
+      <tr><td>Codes</td><td>Symbols for characters and control signals (START, WAIT, ERROR)</td><td>Packet headers, protocol opcodes</td></tr>
+      <tr><td>Flow Control</td><td>Tell the sender to slow down when the receiver can't keep up</td><td>TCP receive window</td></tr>
+      <tr><td>Synchronization</td><td>Mark where one symbol ends and the next begins</td><td>Framing bytes, clock recovery</td></tr>
+      <tr><td>Error Correction & Retransmission</td><td>Tell the sender when a symbol was garbled; ask for a resend</td><td>TCP ACKs, checksums</td></tr>
+      <tr><td>Encryption</td><td>Prevent eavesdropping</td><td>TLS/HTTPS</td></tr>
+    </tbody>
+  </table>
+
+  <h3>The Telephone and Circuit Switching</h3>
+  <p>
+    Alexander Graham Bell transmitted the first voice call in 1876. Within 10 years, over 150,000 people owned telephones; by 1915 the first transcontinental call crossed the USA. The telephone network introduced <strong>circuit switching</strong> — dedicating a physical path (a circuit) from caller to receiver for the entire duration of a call. We'll contrast this with packet switching in the next section.
+  </p>
+
+  <h3>The Road to the Internet</h3>
+  <p>
+    The chain of events leading to the Internet began in 1960. J.C.R. Licklider at MIT wrote about an "Intergalactic Network" — everyone on the globe connected, able to access programs and data anywhere. He became the first head of DARPA's computer research program in 1962, seeding the ideas that would become the ARPANET.
+  </p>
+  <p>
+    In 1965, Larry Roberts connected two computers across a telephone line — the first wide-area computer network. In 1969, the first four ARPANET nodes went live at UCLA, SRI, UCSB, and the University of Utah. In 1974, Vint Cerf (then at Stanford) and Bob Kahn described TCP in their landmark paper, "A Protocol for Packet Network Intercommunication." They are considered the fathers of the Internet.
+  </p>
+  <p>
+    By 1990, Tim Berners-Lee at CERN invented the World Wide Web. In 1993 the Mosaic browser appeared, and within a year, over a million people were using the Web.
+  </p>
+
+  <div class="takeaway">
+    <span class="label">Key Takeaway</span>
+    <p>Networking concepts like flow control, error correction, and protocol encoding predate computers by centuries. The Internet didn't invent these ideas — it built on 200 years of hard-won engineering insight from telegraph operators, telephone engineers, and early computer scientists.</p>
+  </div>
+</section>
+
+<!-- ── Section 02: What is Packet Switching ── -->
+<section id="what-is-ps">
+  <span class="eyebrow-label">Section 02</span>
+  <h2>What Is Packet Switching — And Why Does the Internet Use It?</h2>
+
+  <p>
+    To understand packet switching, you first need to understand what it replaced.
+  </p>
+
+  <h3>Circuit Switching: The Telephone Model</h3>
+  <p>
+    When you make a traditional phone call, the network creates a <strong>dedicated circuit</strong> — a reserved path of physical connections from your phone to the other. Think of it like booking an entire lane of a highway just for your car. The circuit is yours for the whole call, regardless of whether you're talking or sitting in silence.
+  </p>
+  <p>
+    In a digital telephone network, each voice call gets a dedicated 64 kb/s channel. Hundreds of thousands of such circuits share the high-speed "trunk lines" between cities — each one private and unshared. When you hang up, the circuit is torn down and all its reserved resources are freed.
+  </p>
+
+  <div class="two-col">
+    <div class="box">
+      <h4>Circuit Switching</h4>
+      <ul>
+        <li>Dedicated circuit reserved end-to-end</li>
+        <li>Guaranteed bandwidth and delay</li>
+        <li>Resources wasted when line is idle</li>
+        <li>State maintained in every switch</li>
+        <li>Setup phase required before data flows</li>
+      </ul>
+    </div>
+    <div class="box">
+      <h4>Packet Switching</h4>
+      <ul>
+        <li>No dedicated circuit — links are shared</li>
+        <li>Bandwidth used only when sending</li>
+        <li>Efficient: many flows share one link</li>
+        <li>Little persistent state in switches</li>
+        <li>Send immediately — no setup needed</li>
+      </ul>
+    </div>
+  </div>
+
+  <h3>Packet Switching: The Post Office Model</h3>
+  <p>
+    First described by Paul Baran in the early 1960s, <strong>packet switching</strong> works like the postal system. Instead of reserving a private lane, you take your message, chop it into smaller pieces called <strong>packets</strong>, and attach a header to each one — just like writing an address on an envelope.
+  </p>
+  <p>
+    Each packet travels independently through the network. At every <strong>packet switch</strong> (router) along the way, the switch reads the destination address in the header, looks it up in a local <strong>forwarding table</strong>, and sends the packet out the correct port toward its destination. This is called <strong>hop-by-hop routing</strong>.
+  </p>
+
+  <div class="code-wrap">
+    <span class="code-label">Packet forwarding — conceptual pseudocode</span>
+    <pre><span class="kw">function</span> <span class="fn">forward_packet</span>(packet):
+    dest = packet.header.destination_address
+    next_hop = forwarding_table.<span class="fn">lookup</span>(dest)
+
+    <span class="kw">if</span> next_hop <span class="kw">is not</span> None:
+        output_queue[next_hop].<span class="fn">enqueue</span>(packet)
+    <span class="kw">else</span>:
+        <span class="fn">drop</span>(packet)   <span class="cmt"># No route found</span></pre>
+    <p class="code-desc"><em>Every router in the Internet runs logic like this for every packet. The forwarding table is what makes routing decisions — it maps destination addresses to output ports.</em></p>
+  </div>
+
+  <h3>Why Packet Switching Wins</h3>
+  <p>
+    Imagine 1,000 users each sending occasional short messages over the same network. In a circuit-switched network you'd need 1,000 dedicated circuits — even though most of them are idle most of the time. In a packet-switched network, all 1,000 users share the same links, and those links are only busy when someone is actually transmitting. This is called <strong>statistical multiplexing</strong> — taking advantage of the fact that not everyone sends at the same time.
+  </p>
+  <p>
+    There's another benefit: breaking a large message into many small packets allows <strong>parallel transmission</strong> across multiple links simultaneously. Instead of waiting for the entire message to travel one link at a time, different packets can be in-flight on different hops at the same time (like a pipeline). This dramatically reduces end-to-end latency for large transfers.
+  </p>
+
+  <div class="takeaway">
+    <span class="label">Key Takeaway</span>
+    <p>Packet switching replaced dedicated circuits with shared, opportunistic transmission. By adding addresses to data chunks (packets) and routing them hop-by-hop, the Internet achieves high efficiency, robustness, and low cost — at the price of variable, unpredictable delay.</p>
+  </div>
+</section>
+
+<!-- ── Section 03: Delay ── -->
+<section id="delay">
+  <span class="eyebrow-label">Section 03</span>
+  <h2>Propagation, Packetization, and End-to-End Delay</h2>
+
+  <p>
+    When a packet travels from A to B, time passes for several distinct reasons. Understanding each type of delay is essential for building real-time applications.
+  </p>
+
+  <h3>Propagation Delay</h3>
+  <p>
+    <strong>Propagation delay</strong> is the time it takes a single bit to travel from one end of a link to the other. It depends only on the length of the cable and the speed at which signals travel through that medium — roughly the speed of light.
+  </p>
+
+  <div class="formula">
+    propagation_delay = link_length / propagation_speed
+    <br><br>
+    Example: 300 km fiber link at 2×10⁸ m/s → 1.5 ms
+  </div>
+
+  <p>
+    Crucially, propagation delay does <em>not</em> depend on the data rate of the link. A bit travels just as fast on a 1 kb/s link as on a 100 Gb/s link — the speed of light doesn't care how wide the pipe is.
+  </p>
+
+  <h3>Packetization Delay</h3>
+  <p>
+    <strong>Packetization delay</strong> (also called transmission delay) is the time from when the first bit of a packet is placed onto the link until the last bit is sent. Think of it like the time it takes to pour a glass of water — it depends on the size of the glass (packet size) and how fast you pour (data rate).
+  </p>
+
+  <div class="formula">
+    packetization_delay = packet_size_in_bits / link_data_rate
+    <br><br>
+    Example: 12,000-bit packet on 100 Mb/s link → 0.12 ms
+  </div>
+
+  <p>
+    Packetization delay does <em>not</em> depend on the length of the link.
+  </p>
+
+  <h3>Store-and-Forward Switching</h3>
+  <p>
+    Internet routers are <strong>store-and-forward</strong> switches — they wait until the <em>entire</em> packet has arrived before looking up the destination and forwarding it. This means the packetization delay is incurred at every hop. (An alternative, "cut-through" switching, can start forwarding after seeing just the header, but it's less common in Internet routers.)
+  </p>
+
+  <h3>End-to-End Delay</h3>
+  <p>
+    The total delay for a packet traversing <em>n</em> links is the sum of propagation and packetization delays across every link. But there's a third, wild-card term: <strong>queueing delay</strong>.
+  </p>
+
+  <div class="formula">
+    end_to_end_delay = Σᵢ (packet_size / rᵢ) + Σᵢ (lᵢ / c) + Σᵢ queueing_delay_at_switch_i
+  </div>
+
+  <p>
+    Queueing delay is the time a packet spends waiting in a router's buffer while other packets ahead of it are being transmitted. Because links are shared, packets from many users arrive at the same router at the same time — and only one can go at a time. The others wait in a <strong>packet buffer</strong> (a queue in memory).
+  </p>
+  <p>
+    Queueing delay is the <strong>only unpredictable component</strong>. Propagation delay and packetization delay are both deterministic given the network topology. Queueing delay depends on what everyone else on the Internet is doing right now — it's effectively a random variable.
+  </p>
+
+  <h3>Measuring It: The Ping Tool</h3>
+  <p>
+    The <code>ping</code> command measures the round-trip time (RTT) — the end-to-end delay in both directions. Measurements from Stanford to Princeton show RTTs clustering around 100–120 ms with about 50 ms of variation. Measurements to Tsinghua University in China (10,000 km away) show RTTs from 320 ms to over 500 ms — a 200 ms spread, almost entirely due to variable queueing delay.
+  </p>
+
+  <div class="takeaway">
+    <span class="label">Key Takeaway</span>
+    <p>End-to-end delay has two deterministic parts (propagation, packetization) and one unpredictable part (queueing). The queueing delay — caused by packets waiting in router buffers while other users' traffic is served first — is what makes network delay variable and hard to guarantee.</p>
+  </div>
+</section>
+
+<!-- ── Section 04: Playback Buffers ── -->
+<section id="playback">
+  <span class="eyebrow-label">Section 04</span>
+  <h2>Playback Buffers: How Streaming Video Handles Variable Delay</h2>
+
+  <p>
+    Most applications — loading a web page, sending email — don't mind if packets arrive with slightly varying delays. A few milliseconds of jitter is invisible to the user.
+  </p>
+  <p>
+    But <strong>real-time applications</strong> like streaming video and voice calls are fundamentally different. They need to play back content at a steady, constant rate. If a video is encoded at 1 Mb/s, the player must display frames at exactly 30 fps. If a packet arrives late, there's no data to show and the screen freezes.
+  </p>
+
+  <h3>The Problem: Jitter</h3>
+  <p>
+    Imagine a YouTube server sending video at 1 Mb/s. The client receives the data, but because of variable queueing delays in routers along the path, the bytes don't arrive at a perfectly smooth rate — they arrive in bursts and gaps. The server's cumulative sending curve is a straight line; the client's cumulative arrival curve is wobbly and irregular.
+  </p>
+
+  <h3>The Solution: Buffer Before Playback</h3>
+  <p>
+    The fix is the <strong>playback buffer</strong>. The client deliberately waits and accumulates a reserve of data before starting playback. Think of it like filling a bathtub before getting in — you wait until there's enough water, then you can enjoy a steady supply even if the tap temporarily slows.
+  </p>
+  <p>
+    You've seen this in action on YouTube: that grey bar that fills up ahead of the red playback indicator. The client is building a cushion of buffered video. If a burst of queueing delay hits some packets on the way, the player can draw from the buffer rather than freezing.
+  </p>
+
+  <h3>The Tradeoff: Buffer Size vs. Startup Latency</h3>
+  <p>
+    A bigger playback buffer makes freezing less likely, but it increases startup latency (the time before video begins playing) and also delays live content. If the buffer runs dry — called a <strong>rebuffering event</strong> — playback freezes while the client waits for more data to arrive. You can fix rebuffering by streaming at a lower quality level, or by downloading the video ahead of time.
+  </p>
+
+  <p>
+    The playback buffer also has a known upper bound: packets cannot be delayed longer than the maximum total queueing delay in all routers along the path (since routers have finite buffers and serve packets in order). Unfortunately, this worst-case delay can be large — often half a second or more — which is why video players sometimes wait several seconds before beginning playback.
+  </p>
+
+  <div class="takeaway">
+    <span class="label">Key Takeaway</span>
+    <p>Streaming applications cannot eliminate variable network delay — so instead they absorb it using a playback buffer. By pre-buffering ahead of the playback point, the player shields the user from temporary delivery gaps, trading startup latency for smooth, uninterrupted playback.</p>
+  </div>
+</section>
+
+<!-- ── Section 05: Queue Models ── -->
+<section id="queue-model">
+  <span class="eyebrow-label">Section 05</span>
+  <h2>A Simple Deterministic Queue Model</h2>
+
+  <p>
+    To reason about packet delay in a network, we need a mathematical model of a router's queue. The simplest useful model tracks two functions over time.
+  </p>
+
+  <h3>A(t) and D(t)</h3>
+  <p>
+    Define <strong>A(t)</strong> as the cumulative number of bytes that have <em>arrived</em> at a router queue up until time t. Define <strong>D(t)</strong> as the cumulative number of bytes that have <em>departed</em> up until time t. Both functions are non-decreasing (bytes can't un-arrive), and A(t) ≥ D(t) always (you can't send bytes before they arrive).
+  </p>
+  <p>
+    The router serves bytes at a maximum rate R (bits per second). As long as the queue is non-empty, bytes depart at rate R.
+  </p>
+
+  <div class="formula">
+    Queue occupancy:    Q(t) = A(t) − D(t)    [bytes currently in the buffer]
+    <br>
+    Queueing delay:     d(t) = horizontal distance between A(t) and D(t)
+    <br>
+                               at time t (for a FCFS queue)
+  </div>
+
+  <h3>Worked Example</h3>
+  <p>
+    Consider a queue where, at the start of every second, a train of 100 bits arrives at 1,000 bits/second. The queue serves bits at 500 bits/second.
+  </p>
+
+  <div class="code-wrap">
+    <span class="code-label">Queue occupancy example — step by step</span>
+    <pre><span class="cmt"># Setup</span>
+arrival_rate  = <span class="num">1000</span>  <span class="cmt"># bits/s during the burst</span>
+burst_size    = <span class="num">100</span>   <span class="cmt"># bits per train</span>
+service_rate  = <span class="num">500</span>   <span class="cmt"># bits/s</span>
+burst_duration = burst_size / arrival_rate  <span class="cmt"># = 0.1 s</span>
+
+<span class="cmt"># During 0 → 0.1s: bits arrive at 1000 b/s, depart at 500 b/s</span>
+<span class="cmt"># Queue builds at 500 b/s, reaching peak of 50 bits at t=0.1s</span>
+
+<span class="cmt"># During 0.1s → 0.2s: no more arrivals, queue drains at 500 b/s</span>
+<span class="cmt"># Queue empty at t=0.2s</span>
+
+<span class="cmt"># During 0.2s → 1.0s: queue stays empty (0.8s idle)</span>
+
+avg_occupancy_first_0_2s = <span class="num">0.5</span> * (<span class="num">0.1</span> * <span class="num">500</span>)  <span class="cmt"># = 25 bits</span>
+time_avg_occupancy = (<span class="num">0.2</span> * <span class="num">25</span>) + (<span class="num">0.8</span> * <span class="num">0</span>)   <span class="cmt"># = 5 bits</span></pre>
+    <p class="code-desc"><em>The queue fills for 0.1 s, drains for 0.1 s, then sits idle for 0.8 s. The time-weighted average occupancy is just 5 bits — much lower than the 50-bit peak, because the queue is mostly empty.</em></p>
+  </div>
+
+  <h3>Why Break Messages Into Packets?</h3>
+  <p>
+    Consider sending a large message M bits long across a path with multiple links. If you send it as one giant packet, each router must receive the entire message before forwarding it — there's no pipelining. If instead you break it into p-bit packets, different packets can simultaneously occupy different links, like cars on a highway.
+  </p>
+
+  <div class="formula">
+    One big packet:   t = M/rᵢ + Σ lᵢ/c    (sequential transmission per hop)
+    <br>
+    Many small packets:  t = p/rᵢ + Σ lᵢ/c + (M/p − 1) × p/rₘᵢₙ    (pipelined)
+  </div>
+
+  <p>
+    The pipelined version finishes much sooner because intermediate links are kept busy with subsequent packets while early packets move ahead.
+  </p>
+
+  <h3>Statistical Multiplexing</h3>
+  <p>
+    When many flows share a single output link, the link doesn't need to run at the sum of all their rates. Because different users are active at different times, the peak aggregate demand is much less than N times each user's peak rate. A buffer absorbs the brief periods when combined traffic exceeds the link rate. This is <strong>statistical multiplexing gain</strong> — the ratio of what the link would need to handle all flows at peak vs. what it actually needs.
+  </p>
+  <p>
+    The tradeoff: the buffer has finite size, so if too many users burst at once, packets will be dropped.
+  </p>
+
+  <div class="takeaway">
+    <span class="label">Key Takeaway</span>
+    <p>The A(t)/D(t) model gives us a concrete way to reason about queue occupancy and delay. Breaking messages into packets enables pipelining. Statistical multiplexing lets one shared link efficiently serve many users, because their peak demands rarely coincide.</p>
+  </div>
+</section>
+
+<!-- ── Section 06: Queue Properties ── -->
+<section id="queue-props">
+  <span class="eyebrow-label">Section 06</span>
+  <h2>Useful Queue Properties</h2>
+
+  <p>
+    When arrival processes are random (as they are in real networks), queueing theory gives us powerful tools for reasoning about performance. Here are three fundamental results.
+  </p>
+
+  <h3>Property 1: Burstiness Increases Delay</h3>
+  <p>
+    Compare two scenarios with the same average arrival rate: (a) packets arrive one at a time, evenly spaced, and (b) packets arrive in bursts. Scenario (b) has higher average queueing delay. When a burst arrives, many packets pile up in the queue simultaneously; later packets in the burst must wait for all the earlier ones to depart. The more bursty the traffic, the longer packets wait on average.
+  </p>
+  <p>
+    This is why traffic shaping (smoothing out bursts) can significantly reduce delay — and why network engineers care about burstiness, not just average rates.
+  </p>
+
+  <h3>Property 2: Determinism Minimizes Delay</h3>
+  <p>
+    Given a fixed average arrival rate, the arrival pattern that minimizes average queueing delay is the most regular (deterministic) one — packets arriving at perfectly equal intervals. Random arrivals always produce higher average delay than periodic arrivals at the same rate, because random arrivals cluster and create congestion that deterministic arrivals avoid.
+  </p>
+
+  <h3>Property 3: Little's Result</h3>
+  <p>
+    One of the most elegant and universal results in queueing theory, <strong>Little's Result</strong> states:
+  </p>
+  <div class="formula">
+    L = λ × d
+    <br><br>
+    L = average number of items in the system
+    λ = average arrival rate (items per second)
+    d = average time each item spends in the system
+  </div>
+  <p>
+    This holds for <em>any</em> stable queue, regardless of the arrival distribution, service distribution, or number of servers. If you know any two of these quantities, you immediately know the third. For example: if you know a router has 100 packets in its buffer on average, and packets arrive at 10,000 packets/second, then each packet waits 10 ms on average.
+  </p>
+
+  <h3>The M/M/1 Queue</h3>
+  <p>
+    The simplest analytically tractable random queue model is the <strong>M/M/1 queue</strong>: Poisson arrivals (M), exponential service times (M), and one server (1). The Poisson process models the aggregation of many independent random events — like new phone calls arriving at a switch or new web requests arriving at a server.
+  </p>
+  <p>
+    A word of caution: network traffic is <em>very</em> bursty, and individual packet arrivals are not well modeled by a Poisson process. However, the arrival of new flows (new TCP connections, new web requests) is reasonably well approximated by Poisson.
+  </p>
+
+  <div class="takeaway">
+    <span class="label">Key Takeaway</span>
+    <p>Burstiness is the enemy of low delay. Smooth, deterministic arrivals produce the lowest possible queueing delay. Little's Result (L = λd) is a universal law connecting queue occupancy, throughput, and delay — use it to check your intuitions about any system where things wait in line.</p>
+  </div>
+</section>
+
+<!-- ── Section 07: How Switches Work ── -->
+<section id="switching">
+  <span class="eyebrow-label">Section 07</span>
+  <h2>How a Packet Switch Works</h2>
+
+  <p>
+    A packet switch is the hardware that moves packets from an input port to the correct output port. Every packet switch — whether it's a home Wi-Fi router or a massive data-center switch handling terabits per second — performs two fundamental operations.
+  </p>
+
+  <h3>The Two Operations</h3>
+  <p>
+    <strong>1. Address Lookup:</strong> Read the destination address from the packet header and look it up in the forwarding table to determine the correct output port.
+  </p>
+  <p>
+    <strong>2. Switching:</strong> Physically move the packet from the input port to the output port.
+  </p>
+
+  <h3>Ethernet Switches vs. Internet Routers</h3>
+  <p>
+    Both are packet switches, but they differ in what they look at and how they look it up.
+  </p>
+
+  <div class="code-wrap">
+    <span class="code-label">Ethernet switch — forwarding logic</span>
+    <pre><span class="kw">function</span> <span class="fn">process_ethernet_frame</span>(frame, input_port):
+    <span class="cmt"># Learn: record which port this source MAC came from</span>
+    forwarding_table[frame.src_mac] = input_port
+
+    <span class="kw">if</span> frame.dst_mac <span class="kw">in</span> forwarding_table:
+        output_port = forwarding_table[frame.dst_mac]
+        <span class="fn">forward</span>(frame, output_port)
+    <span class="kw">else</span>:
+        <span class="cmt"># Unknown destination: flood to all ports except source</span>
+        <span class="fn">broadcast</span>(frame, exclude=input_port)</pre>
+    <p class="code-desc"><em>Ethernet switches self-learn: they build their forwarding table by watching which MAC addresses arrive on which port. Unknown destinations are broadcast ("flooded") to everyone, and the correct host will respond.</em></p>
+  </div>
+
+  <div class="code-wrap">
+    <span class="code-label">Internet router — forwarding logic</span>
+    <pre><span class="kw">function</span> <span class="fn">process_ip_packet</span>(packet):
+    <span class="cmt"># Step 1: Accept only frames addressed to this router</span>
+    <span class="kw">if</span> packet.eth_dst != this_router.mac:
+        <span class="fn">drop</span>(packet); <span class="kw">return</span>
+
+    <span class="cmt"># Step 2: Decrement TTL (Time to Live) to prevent routing loops</span>
+    packet.ttl -= <span class="num">1</span>
+    <span class="fn">update_checksum</span>(packet)
+    <span class="kw">if</span> packet.ttl == <span class="num">0</span>:
+        <span class="fn">drop</span>(packet); <span class="kw">return</span>
+
+    <span class="cmt"># Step 3: Longest-prefix match on destination IP</span>
+    next_hop = forwarding_table.<span class="fn">longest_prefix_match</span>(packet.ip_dst)
+
+    <span class="cmt"># Step 4: Rewrite Ethernet header for next hop and send</span>
+    next_mac = arp_table.<span class="fn">lookup</span>(next_hop)
+    packet.eth_src = this_router.mac
+    packet.eth_dst = next_mac
+    <span class="fn">send</span>(packet, next_hop)</pre>
+    <p class="code-desc"><em>Routers must also manage the TTL field (decremented at each hop to kill looping packets) and rewrite the Ethernet header at each hop — while keeping the IP header intact all the way to the destination.</em></p>
+  </div>
+
+  <h3>Address Lookup: Exact Match vs. Longest Prefix Match</h3>
+  <p>
+    Ethernet switches perform <strong>exact match</strong> lookups — they look for the precise 48-bit MAC address in a hash table. This is fast and simple.
+  </p>
+  <p>
+    IP routers perform <strong>longest prefix match</strong>. An IP forwarding table contains entries like "send everything starting with 128.9.0.0/16 to port 3." Multiple prefixes can match a given destination address; the router picks the longest (most specific) match. For example, 128.9.16.14 matches both 128.9.0.0/16 and 128.9.16.0/21 — the router uses the /21 entry because it's more specific.
+  </p>
+
+  <h3>Implementing Longest Prefix Match</h3>
+  <p>
+    Two common hardware approaches:
+  </p>
+  <p>
+    <strong>Binary tries:</strong> Build a tree where each level represents one bit of the IP address. Traverse the tree bit-by-bit and remember the last valid entry you passed.
+  </p>
+  <p>
+    <strong>Ternary Content Addressable Memory (TCAM):</strong> A specialized memory chip where each entry stores a value and a mask. The hardware compares the destination address against <em>all</em> entries simultaneously (in a single clock cycle!), then picks the longest matching mask. This enables line-rate forwarding — a router can look up an address in nanoseconds.
+  </p>
+
+  <h3>Output Queueing vs. Input Queueing</h3>
+  <p>
+    Once the correct output port is known, the packet must be sent there. Two main architectures exist:
+  </p>
+  <p>
+    <strong>Output Queued (OQ) switches</strong> have a queue at each output port. All arriving packets are immediately switched to the correct output queue. This is the ideal — it's "work-conserving" (the output link is never idle when there's a packet waiting), maximizes throughput, and minimizes delay. But it requires the switch fabric to operate at N times the port rate (if N ports all send to the same output simultaneously), which becomes impractical at high speeds.
+  </p>
+  <p>
+    <strong>Input Queued (IQ) switches</strong> have queues at each input. The switch fabric only needs to run at line rate. However, they suffer from <strong>head-of-line (HOL) blocking</strong>: if the packet at the front of an input queue is destined for a busy output port, it blocks all packets behind it — even if those packets could go to idle output ports. HOL blocking limits throughput to about 58% of the theoretical maximum.
+  </p>
+  <p>
+    The solution is <strong>Virtual Output Queues (VOQs)</strong>: at each input port, maintain a separate queue for each output port. Now a slow output port can't block packets destined for faster ones. VOQ switches nearly match the throughput of output-queued switches at realistic loads.
+  </p>
+
+  <div class="takeaway">
+    <span class="label">Key Takeaway</span>
+    <p>Packet switches perform address lookup (exact match for Ethernet, longest-prefix match for IP) and then physically move the packet to the right output. Output queueing gives the best delay performance but is expensive at high speeds; input queueing with virtual output queues is the practical compromise used in high-speed routers.</p>
+  </div>
+</section>
+
+<!-- ── Section 08: Rate Guarantees ── -->
+<section id="rate">
+  <span class="eyebrow-label">Section 08</span>
+  <h2>Rate Guarantees: Giving Each Flow Its Fair Share</h2>
+
+  <p>
+    In a plain FIFO queue, every packet competes equally for the output link. A flow that sends aggressively gets more bandwidth; a well-behaved small flow can be squeezed out entirely. There's no way to promise any particular flow a minimum rate. This section explains how we fix that.
+  </p>
+
+  <h3>Strict Priority Queues</h3>
+  <p>
+    The simplest approach: replace the single FIFO queue with two queues, <strong>high-priority</strong> and <strong>low-priority</strong>. Packets are classified (e.g., based on the IP header's Type of Service field) into the appropriate queue. The server always empties the high-priority queue first; it only serves the low-priority queue when the high-priority queue is completely empty.
+  </p>
+  <p>
+    The result: high-priority traffic is completely unaffected by low-priority traffic — as if it has its own private network. This is great for control traffic or real-time video. The downside: if high-priority traffic is heavy, low-priority traffic may never get served (starvation).
+  </p>
+
+  <h3>Weighted Fair Queueing (WFQ)</h3>
+  <p>
+    Strict priority is all-or-nothing. Often we want something gentler: "Flow 1 gets twice the bandwidth of Flow 2, but both always get something." This is <strong>Weighted Fair Queueing</strong>.
+  </p>
+  <p>
+    Assign each queue a weight wᵢ. The share of the link given to flow i is:
+  </p>
+
+  <div class="formula">
+    rate_i = (wᵢ / Σwᵢ) × R
+  </div>
+
+  <p>
+    If packets were all the same length, we could simply serve packets in a round-robin fashion, serving wᵢ packets from queue i each round. But real packets have variable length. A naive weighted round-robin would unfairly advantage flows with large packets.
+  </p>
+  <p>
+    WFQ's elegant solution: <em>pretend</em> we serve bits rather than packets (bit-by-bit GPS — Generalized Processor Sharing). Compute, for each arriving packet, when it <em>would</em> have finished service under this ideal bit-by-bit scheduler. Then serve packets in the order of these computed finish times.
+  </p>
+
+  <div class="formula">
+    When packet k arrives to queue i:
+    F_k = max(F_{k-1}, now) + L_k / w_i
+    <br><br>
+    F_k  = finishing round (when it would finish under ideal scheduler)
+    L_k  = length of packet k (bits)
+    w_i  = weight of queue i
+    <br><br>
+    Serve packets in order of increasing F_k.
+  </div>
+
+  <div class="code-wrap">
+    <span class="code-label">WFQ finish-time calculation</span>
+    <pre><span class="kw">class</span> <span class="fn">WFQ_Queue</span>:
+    <span class="kw">def</span> <span class="fn">__init__</span>(self, weight):
+        self.weight = weight
+        self.last_finish = <span class="num">0</span>
+
+    <span class="kw">def</span> <span class="fn">enqueue</span>(self, packet, current_round):
+        start = <span class="fn">max</span>(self.last_finish, current_round)
+        packet.finish_round = start + packet.length / self.weight
+        self.last_finish = packet.finish_round
+        global_priority_queue.<span class="fn">insert</span>(packet)   <span class="cmt"># sorted by finish_round</span>
+
+<span class="cmt"># Scheduler always dequeues the packet with smallest finish_round</span>
+<span class="kw">def</span> <span class="fn">schedule</span>():
+    <span class="kw">return</span> global_priority_queue.<span class="fn">pop_min</span>()</pre>
+    <p class="code-desc"><em>Each queue computes a virtual finish time for new packets. The global scheduler always picks the packet with the smallest finish time across all queues — guaranteeing proportional rates over the long run regardless of packet sizes.</em></p>
+  </div>
+
+  <p>
+    Over the long run, WFQ guarantees each flow exactly its weighted share of the link rate. The departure order differs from the ideal by at most one maximum-sized packet — a small, bounded error.
+  </p>
+
+  <div class="takeaway">
+    <span class="label">Key Takeaway</span>
+    <p>A plain FIFO queue gives bandwidth to whoever sends the most. Weighted Fair Queueing assigns each flow a weight and guarantees it a proportional share of the link. By computing virtual finish times for variable-length packets, WFQ achieves fair, guaranteed rates without requiring all packets to be the same size.</p>
+  </div>
+</section>
+
+<!-- ── Section 09: Delay Guarantees ── -->
+<section id="delay-guarantees">
+  <span class="eyebrow-label">Section 09</span>
+  <h2>End-to-End Delay Guarantees</h2>
+
+  <p>
+    We now have all the pieces to understand how the network can <em>guarantee</em> a maximum end-to-end delay — a promise essential for real-time applications like video conferencing.
+  </p>
+
+  <h3>Bounded Delay in a Single Router</h3>
+  <p>
+    Consider a flow being served by a WFQ queue with rate rᵢ and a buffer of size B bits. Any packet that makes it into the buffer waits at most B/rᵢ seconds before being served (because bits drain from the buffer at rate rᵢ). If we know the maximum queueing delay at each router along the path, we can add them up to bound the end-to-end delay.
+  </p>
+
+  <h3>The Problem: Unbounded Arrivals</h3>
+  <p>
+    This only works if packets actually make it into the buffer without being dropped. If a misbehaving source bursts too much data, the buffer overflows and packets are lost. To provide a delay guarantee, we need to control the arrival process.
+  </p>
+
+  <h3>Traffic Shaping: The Leaky Bucket</h3>
+  <p>
+    A <strong>leaky bucket</strong> (or token bucket) constrains the traffic generated by a source. The idea: in any time interval T, the source may send at most B + ρ·T bits, where B is a burst allowance (the bucket size) and ρ is the long-term rate limit.
+  </p>
+
+  <div class="formula">
+    Traffic constraint:   A(t + T) − A(t) ≤ B + ρ·T    for all t, T ≥ 0
+    <br><br>
+    B = burst size (bits)    ρ = sustained rate (bits/second)
+  </div>
+
+  <p>
+    This is called a (σ, ρ)-constrained arrival process (sigma-rho). It allows short bursts up to B bits, but limits the long-term average rate to ρ. Think of it like a checking account with an overdraft limit: you can briefly exceed your balance (by B bits) but you must stay within your credit over time.
+  </p>
+
+  <h3>End-to-End Delay with WFQ + Leaky Bucket</h3>
+  <p>
+    Combine traffic shaping with WFQ scheduling at each router:
+  </p>
+  <p>
+    The source shapes its traffic with parameters (B, ρ). Each router puts the flow into a WFQ queue served at rate rᵢ = wᵢ/Σwᵢ × R. The buffer size at each router is set to B bits (matching the burst allowance). Because the arrival process is (B, ρ)-constrained and the service rate is rᵢ ≥ ρ, the queue never overflows — every packet is guaranteed to be served within B/rᵢ seconds.
+  </p>
+  <p>
+    The end-to-end delay bound becomes:
+  </p>
+
+  <div class="formula">
+    max_delay = Σᵢ (packetization_delay_i) + Σᵢ (propagation_delay_i) + Σᵢ (B / rᵢ)
+  </div>
+
+  <p>
+    This guarantee is enforced end-to-end by a protocol called <strong>RSVP</strong> (Resource Reservation Protocol, IETF RFC 2205), which signals the required rates and buffer sizes to every router along the path before the flow begins.
+  </p>
+
+  <h3>Worked Example</h3>
+  <p>
+    Two hosts are separated by three routers and four 250 km links running at 100 Mb/s. They send 1,500-byte packets at 15 Mb/s and need end-to-end delay under 10 ms.
+  </p>
+
+  <div class="code-wrap">
+    <span class="code-label">Delay guarantee calculation</span>
+    <pre><span class="cmt"># Given</span>
+link_rate     = <span class="num">100e6</span>    <span class="cmt"># 100 Mb/s</span>
+link_length   = <span class="num">250e3</span>    <span class="cmt"># 250 km in meters</span>
+prop_speed    = <span class="num">2e8</span>      <span class="cmt"># 2×10⁸ m/s</span>
+packet_size   = <span class="num">1500</span> * <span class="num">8</span> <span class="cmt"># 12,000 bits</span>
+n_links       = <span class="num">4</span>
+n_routers     = <span class="num">3</span>
+max_e2e_delay = <span class="num">10e-3</span>    <span class="cmt"># 10 ms</span>
+flow_rate     = <span class="num">15e6</span>     <span class="cmt"># 15 Mb/s (WFQ rate at each router)</span>
+
+<span class="cmt"># Fixed delay components</span>
+pack_delay  = n_links * (packet_size / link_rate)    <span class="cmt"># = 0.48 ms</span>
+prop_delay  = n_links * (link_length / prop_speed)   <span class="cmt"># = 5.00 ms</span>
+fixed_delay = pack_delay + prop_delay                <span class="cmt"># = 5.48 ms</span>
+
+<span class="cmt"># Available queueing budget</span>
+queue_budget = max_e2e_delay - fixed_delay           <span class="cmt"># = 4.52 ms</span>
+per_router   = queue_budget / n_routers              <span class="cmt"># = 1.507 ms each</span>
+
+<span class="cmt"># Buffer size needed at each router</span>
+buffer_bits  = flow_rate * per_router                <span class="cmt"># ≈ 22,605 bits</span>
+buffer_bytes = buffer_bits / <span class="num">8</span>                       <span class="cmt"># ≈ 2,826 bytes</span>
+<span class="cmt"># Round up to 2 packets = 3,000 bytes</span></pre>
+    <p class="code-desc"><em>The fixed delay (propagation + packetization) consumes 5.48 ms of the 10 ms budget. The remaining 4.52 ms is split equally among the three routers — about 1.5 ms of queueing delay per router, requiring roughly 2,826 bytes of buffer per router.</em></p>
+  </div>
+
+  <div class="takeaway">
+    <span class="label">Key Takeaway</span>
+    <p>End-to-end delay guarantees require two things working together: traffic shaping at the source (leaky bucket) to prevent buffer overflow, and WFQ scheduling at each router to ensure each flow gets its reserved rate. With both in place, every router's queueing delay is bounded, and the sum of all delays along the path can be guaranteed never to exceed a target.</p>
+  </div>
+</section>
+
+</div><!-- /.wrapper -->
+
+<!-- ═══════════════════════════════════════════════════
+     SUMMARY
+══════════════════════════════════════════════════════ -->
+<section id="summary">
+  <div class="wrapper">
+    <span class="eyebrow-label">Summary</span>
+    <h2>The Five Things to Remember</h2>
+    <ol>
+      <li>
+        <div>
+          <strong>Packet switching is the foundation of the Internet</strong>
+          <span>Rather than dedicating a circuit, data is broken into addressed packets that hop independently through shared links. This enables statistical multiplexing — efficient sharing — and robustness, but introduces variable queueing delay.</span>
+        </div>
+      </li>
+      <li>
+        <div>
+          <strong>End-to-end delay has three parts</strong>
+          <span>Propagation delay (light speed, link length), packetization delay (packet size ÷ link rate), and queueing delay. Only queueing delay is unpredictable — it depends on other users' traffic in shared buffers along the path.</span>
+        </div>
+      </li>
+      <li>
+        <div>
+          <strong>Streaming apps absorb variable delay with a playback buffer</strong>
+          <span>By pre-buffering content before playback begins, applications shield users from temporary network jitter. If the buffer empties, playback freezes — a rebuffering event. Buffer sizing is a deliberate engineering tradeoff between latency and resilience.</span>
+        </div>
+      </li>
+      <li>
+        <div>
+          <strong>Burstiness is the enemy; Little's Result is universal</strong>
+          <span>Bursty arrivals always produce higher average queueing delay than smooth arrivals at the same rate. Little's Law (L = λd) connects average queue occupancy, arrival rate, and delay for any stable queue — a powerful debugging and design tool.</span>
+        </div>
+      </li>
+      <li>
+        <div>
+          <strong>Rate and delay guarantees require WFQ + traffic shaping</strong>
+          <span>Weighted Fair Queueing gives each flow a guaranteed share of the link. A leaky bucket at the source caps the arrival rate, preventing buffer overflow. Together, they bound the queueing delay at each router and enable provable end-to-end delay guarantees for real-time applications.</span>
+        </div>
+      </li>
+    </ol>
+  </div>
+</section>
+
+<script>
+  // Highlight active nav link on scroll
+  const sections = document.querySelectorAll('section[id], .hero');
+  const navLinks = document.querySelectorAll('nav a[href^="#"]');
+  const navH = parseInt(getComputedStyle(document.documentElement).getPropertyValue('--nav-h'));
+
+  function updateNav() {
+    let current = '';
+    sections.forEach(sec => {
+      const top = sec.getBoundingClientRect().top;
+      if (top <= navH + 40) current = sec.id || 'top';
+    });
+    navLinks.forEach(a => {
+      a.classList.toggle('active', a.getAttribute('href') === '#' + current);
+    });
+  }
+
+  window.addEventListener('scroll', updateNav, { passive: true });
+  updateNav();
+</script>
+</body>
+</html>
