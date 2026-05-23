@@ -57,11 +57,16 @@ uint64_t unwrap(WrappingInt32 n, WrappingInt32 isn, uint64_t checkpoint) {
   // The nearest candidate might actually be: one cycle above or one cycle below
   // because offset may shift us across boundary.so must compare:
   // candidate / candidate + 2^32 / candidate - 2^32, and choose closest.
+  
+  // With unsigned integers: subtraction is MUCH more dangerous than addition.
   if(candidate +  TWO32/2 < checkpoint){
-    // if candidate move up half cycle is still less than checkpoint, 
+    // if candidate is more than half-cycle BELOW checkpoint
     // which means candidate move up one cycle will closer to checkpoint
     candidate  += TWO32;
-  }else if(candidate - TWO32/2 > checkpoint){
+  }else if(candidate > checkpoint+ TWO32/2 && candidate >= TWO32){
+    // if candidate is more than half-cycle ABOVE checkpoint
+    // candidate - TWO32/2 > checkpoint:  can subtraction underflow in uint64_t arithmetic,
+    // candidate >= TWO32, prevents illegal wrap.
     candidate -= TWO32;
   }
   return  candidate;
