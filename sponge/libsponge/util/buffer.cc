@@ -3,12 +3,20 @@
 
 using namespace std;
 
+
+
+
 void Buffer::remove_prefix(const size_t n) {
   if (n > str().size()) {
     throw out_of_range("Buffer::remove_prefix");
   }
   _starting_offset += n;
   if (_storage and _starting_offset == _storage->size()) {
+    // “We have consumed the ENTIRE underlying string.”
+    // This is a shared_ptr operation. means: “This Buffer no longer owns the string.” 
+    // Equivalent conceptual behavior: _storage = nullptr;
+
+_storage = nullptr;
     _storage.reset();
   }
 }

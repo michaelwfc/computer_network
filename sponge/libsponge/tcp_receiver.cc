@@ -5,11 +5,15 @@
 // For Lab 2, please replace with a real implementation that passes the
 // automated checks run by `make check_lab2`.
 
-template <typename... Targs> void DUMMY_CODE(Targs &&.../* unused */) {}
-
 using namespace std;
 
-void TCPReceiver::segment_received(const TCPSegment &seg) { DUMMY_CODE(seg); }
+//
+void TCPReceiver::segment_received(const TCPSegment &seg) { 
+    // keep track of the ISN of the first SYN segment we receive
+    if (seg.header().syn && !_isn.has_value()) {
+        _isn = seg.header().seqno;
+    }
+ }
 
 optional<WrappingInt32> TCPReceiver::ackno() const { return {}; }
 

@@ -28,16 +28,19 @@ In Lab 0, you used an Internet stream socket to fetch information from a website
 ### Architecture Overview
 
 
-![image](../../images/labs)
+![image](../../images/labs/Figure%201-The%20arrangement%20of%20modules%20and%20data.png)
 
 *Figure 1: The arrangement of modules and dataflow in your TCP implementation. The ByteStream was Lab 0. The job of TCP is to convey two ByteStreams (one in each direction) over an unreliable datagram network, so that bytes written to the socket on one side of the connection emerge as bytes that can be read at the peer, and vice versa. Lab 1 is the StreamReassembler, and in Labs 2, 3, and 4 you'll implement the TCPReceiver, TCPSender, and then the TCPConnection to tie it all together.*
 
 The lab assignments will ask you to build up a TCP implementation in a modular way. Remember the ByteStream you just implemented in Lab 0? In the next four labs, you'll end up convey two of them across the network: an "outbound" ByteStream, for data that a local application writes to a socket and that your TCP will send to the peer, and an "inbound" ByteStream for data coming from the peer that will be read by a local application. Figure 1 shows how the pieces fit together.
 
-1. **In Lab 1**, you'll implement a stream reassembler —a module that stitches small pieces of the byte stream (known as substrings, or segments) back into a contiguous stream of bytes in the correct sequence.
-2. **In Lab 2**, you'll implement the part of TCP that handles the inbound byte-stream: the TCPReceiver. This involves thinking about how TCP will represent each byte's place in the stream—known as a "sequence number." The TCPReceiver is responsible for telling the sender (a) how much of the inbound byte stream it's been able to assemble successfully (this is called "acknowledgment") and (b) how many more bytes the sender is allowed to send right now ("flow control").
-3. **In Lab 3**, you'll implement the part of TCP that handles the outbound byte-stream: the TCPSender. How should the sender react when it suspects that a segment it transmitted was lost along the way and never made it to the receiver? When should it try again and re-transmit a lost segment?
-4. **In Lab 4**, you'll combine your work from the previous to labs to create a working TCP implementation: a TCPConnection that contains a TCPSender and TCPReceiver. You'll use this to talk to real servers around the world.
+1. **In Lab 1**, you'll implement a `stream reassembler` — a module that stitches small pieces of the byte stream (known as substrings, or segments) back into a contiguous stream of bytes in the correct sequence.
+2. **In Lab 2**, you'll implement the part of TCP that handles the inbound byte-stream: the `TCPReceiver`. This involves thinking about how TCP will represent each byte's place in the stream—known as a "`sequence number`." 
+   The TCPReceiver is responsible for telling the sender 
+   (a) how much of the inbound byte stream it's been able to assemble successfully (this is called "`acknowledgment`") and 
+   (b) how many more bytes the sender is allowed to send right now ("`flow control`").
+3. **In Lab 3**, you'll implement the part of TCP that handles the outbound byte-stream: the `TCPSender`. How should the sender react when it suspects that a segment it transmitted was lost along the way and never made it to the receiver? When should it try again and re-transmit a lost segment?
+4. **In Lab 4**, you'll combine your work from the previous to labs to create a working TCP implementation: a `TCPConnection` that contains a TCPSender and TCPReceiver. You'll use this to talk to real servers around the world.
 
 ---
 
@@ -58,7 +61,7 @@ Your implementation of TCP will use the same Sponge library that you used in Lab
 In this and the next lab, you will implement a TCP receiver: 
 the module that receives `datagrams` and turns them into a reliable byte stream to be read from the socket by the application—just as your `webget` program read the byte stream from the webserver in Lab 0.
 
-The TCP sender is dividing its byte stream up into short segments (substrings no more than about 1,460 bytes a piece) so that they each fit inside a datagram. But the network might reorder these datagrams, or drop them, or deliver them more than once. The receiver must reassemble the segments into the contiguous stream of bytes that they started out as.
+The TCP sender is dividing its byte stream up into short `segments` (substrings no more than about 1,460 bytes a piece) so that they each fit inside a datagram. But the network might reorder these datagrams, or drop them, or deliver them more than once. The receiver must reassemble the segments into the contiguous stream of bytes that they started out as.
 
 In this lab you'll write the data structure that will be responsible for this reassembly: a `StreamReassembler`. It will receive substrings, consisting of a string of bytes, and the index of the first byte of that string within the larger stream. Each byte of the stream has its own unique index, starting from zero and counting upwards. The `StreamReassembler` will own a `ByteStream` for the output: as soon as the reassembler knows the next byte of the stream, it will write it into the `ByteStream`. The owner can access and read from the `ByteStream` whenever it wants.
 
