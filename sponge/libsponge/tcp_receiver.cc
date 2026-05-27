@@ -100,9 +100,13 @@ void TCPReceiver::segment_received(const TCPSegment &seg) {
 
 optional<WrappingInt32> TCPReceiver::ackno() const {
   if (_syn_received) {
+    // SYN received → we have a valid ACK number
     return _ackno;
   }
+  // std::nullopt is a special constant that represents "this optional has no value" — it's how you construct an empty std::optional
+  // no SYN yet → no meaningful ACK to send
+  return nullopt;
 }
 
 size_t TCPReceiver::window_size() const {
-    return _capacity - _reassembler.unassembled_bytes() - _reassembler.stream_out().buffer_size(); }
+    return _capacity -  _reassembler.stream_out().buffer_size(); }
