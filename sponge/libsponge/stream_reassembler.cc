@@ -37,15 +37,18 @@ void StreamReassembler::push_substring(const string &data, const size_t index,
   // acceptable window: [_first_unassembled_index, _first_unassembled_index +
   // remaining_capacity)]
 
-  // This capacity limits both the bytes that have been reassembled, and those
-  // that have not yet been reassembled. _output.buffer_size(): the bytes that
-  // have been reassembled
-  //  _buffer.size() : the bytes have not yet been reassembled.
+  // This capacity limits both the bytes that have been reassembled, and those  that have not yet been reassembled. 
+  // _output.buffer_size(): the bytes that  have been reassembled but not yet consumed by the reader.
+  //  _buffer.size() : the bytes have not yet been reassembled but buffered.
   size_t assembled_bytes_size = _output.buffer_size();
   size_t unassembled_bytes_size = _buffer.size();
   size_t remaining_capacity = _capacity - assembled_bytes_size - unassembled_bytes_size ;
+  
   size_t acceptable_window_start = max(index, _first_unassembled_index);
-  size_t acceptable_window_end =   min(index + data.size(), _first_unassembled_index + remaining_capacity);
+  // Fix: capacity window is relative to first_unassembled, 
+  // limited only by what ByteStream can hold (its own buffer_size)
+  size_t first_unacceptable_index = _first_unassembled_index + remaining_capacity+ unassembled_bytes_size;
+  size_t acceptable_window_end =   min(index + data.size(), first_unacceptable_index);
   if (acceptable_window_start < acceptable_window_end) {
 
     size_t offset = acceptable_window_start - index;

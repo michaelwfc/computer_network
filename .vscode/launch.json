@@ -23,7 +23,28 @@
     },
 
     {
-      "name": "Debug Lab1-StreamReassembler",
+      "name": "Debug Lab1-StreamReassembler-many",
+      "type": "cppdbg",
+      "request": "launch",
+      "program": "${workspaceFolder}/sponge/build/tests/fsm_stream_reassembler_many",
+      "args": [],
+      "stopAtEntry": true,
+      "cwd": "${workspaceFolder}/sponge/build",
+      "environment": [],
+      "externalConsole": false,
+      "MIMode": "gdb",
+      "setupCommands": [
+        {
+          "description": "Enable pretty-printing for gdb",
+          "text": "-enable-pretty-printing",
+          "ignoreFailures": true
+        }
+      ],
+      "preLaunchTask": "build cs144-sponge"
+    },
+
+    {
+      "name": "Debug Lab1-StreamReassembler-single",
       "type": "cppdbg",
       "request": "launch",
       "program": "${workspaceFolder}/sponge/build/tests/fsm_stream_reassembler_single",
