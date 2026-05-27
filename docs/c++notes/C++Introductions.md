@@ -229,6 +229,9 @@ C++ comes with built-in types:
 - bool: true or false
 - size_t: unsigned integer type used for sizes
 
+## std::string_view
+
+
 ## C++ is a statically typed language
 
 Why static typing?
@@ -241,6 +244,10 @@ Why static typing?
 ## Aside: Function Overloading
 
 Defining two functions with the same name but different parameters
+
+
+
+-----
 
 # std : The C++ Standard Library
 

@@ -65,7 +65,7 @@ Labs 0 and 1, with additional classes and tests. To get started:
        is the template for your lab writeup and will be included in your submission.
 
 
-## 3     Lab 2: The TCP Receiver
+# 3     Lab 2: The TCP Receiver
 TCP is a protocol that reliably conveys a pair of flow-controlled byte streams (one in each direction) over unreliable datagrams. Two parties participate in the TCP connection, and each party acts as both “sender” (of its own outgoing byte-stream) and “receiver” (of an incoming byte-stream) at the same time. The two parties are called the “endpoints” of the connection, or the “peers.”
 
 This week, you’ll implement the “receiver” part of TCP, responsible for receiving TCP segments (the actual datagram payloads), reassembling the byte stream (including its ending, when that occurs), and determining that signals that should be sent back to the sender for acknowledgment and flow control.
@@ -78,11 +78,11 @@ These signals are crucial to TCP’s ability to provide the service of a flow-co
 
 
 
-### 3.1 Translating between 64-bit indexes and 32-bit seqnos
+## 3.1 Translating between 64-bit indexes and 32-bit seqnos
 
 As a warmup, we’ll need to implement TCP’s way of representing indexes. Last week you created a StreamReassembler that reassembles substrings where each individual byte has `a 64-bit stream index`, with the first byte in the stream always having index zero. A 64-bit index is big enough that we can treat it as never overflowing.1 In the TCP headers, however, space is precious, and each byte’s index in the stream is represented not with a 64-bit index but with a 32-bit “`sequence number`,” or `“seqno`.”  
 This adds three complexities:
-(1 Transmitting at 100 gigabits/sec, it would take almost 50 years to reach 2^64 bytes. By contrast, it takes only a third of a second to reach 232 bytes.)
+(1 Transmitting at 100 gigabits/sec, it would take almost 50 years to reach 2^64 bytes. By contrast, it takes only a third of a second to reach 2^32 bytes.)
 
 1. Your implementation needs to plan for 32-bit integers to wrap around.
   Streams in TCP can be arbitrarily long—there’s no limit to the length of a ByteStream that can be sent over TCP. But 2^32 bytes is only 4 GiB, which is not so big. Once a 32-bit sequence number counts up to 2^32 − 1, the next byte in the stream will have the sequence number zero.
@@ -140,9 +140,41 @@ We’ve defined the type for you and provided some helper functions (see wrappin
 
 You can test your implementation by running the WrappingInt32 tests. From the build directory, run `ctest -R wrap` .
 
+## 3.1 solution: Absolute Seqno <--> Seqno
 
 
-### 3.2 Implementing the TCP receiver
+### Why TCP Uses Wrapping Seqnos
+
+TCP header space is precious. Using 64-bit seqno would double header size.
+Instead:
+- only send low 32 bits
+- receiver reconstructs nearby absolute value
+
+Elegant engineering tradeoff.
+
+
+
+### Test
+
+```bash
+cs144@cs144vm:~/computer_network/sponge/build$ ctest -R wrap .
+Test project /home/cs144/computer_network/sponge/build
+    Start 1: t_wrapping_ints_cmp
+1/4 Test #1: t_wrapping_ints_cmp ..............   Passed    0.01 sec
+    Start 2: t_wrapping_ints_unwrap
+2/4 Test #2: t_wrapping_ints_unwrap ...........***Failed    0.01 sec
+    Start 3: t_wrapping_ints_wrap
+3/4 Test #3: t_wrapping_ints_wrap .............   Passed    0.01 sec
+    Start 4: t_wrapping_ints_roundtrip
+4/4 Test #4: t_wrapping_ints_roundtrip ........   Passed    0.10 sec
+
+75% tests passed, 1 tests failed out of 4
+
+Total Test ti
+```
+
+
+## 3.2 Implementing the TCP receiver
 
 Congratulations on getting the wrapping and unwrapping logic right! We’d shake your hand if we could. In the rest of this lab, you’ll be implementing the TCPReceiver. It will 
 (1) receive segments from its peer, 
@@ -151,7 +183,6 @@ Congratulations on getting the wrapping and unwrapping logic right! We’d shake
 The ackno and window size will eventually be transmitted back to the peer in an outgoing segment.
 
 First, please review the format of a **TCP segment**. This is the message that the two endpoints send each other; it is the payload of the lower-level datagrams. The non-grayed-out fields represent the information that’s of interest in this lab: the sequence number, the payload, and the SYN and FIN flags. These are the fields that are written by the sender, and read and acted on by the receiver.
-
 
 
 
@@ -195,28 +226,30 @@ Next, let’s talk about the interface that your TCPReceiver will provide:
 The TCPReceiver is built around your StreamReassembler. We’ve implemented the constructor and the unassembled bytes and stream out methods for you in the .hh file. Here’s what you’ll have to do for the others:
 
 
-#### 3.2.1   segment received()
+### 3.2.1   segment received()
 
 This is the main workhorse method. `TCPReceiver::segment_received()` will be called each time a new segment is received from the peer.
 
 This method needs to:
 
-   • Set the Initial Sequence Number if necessary. The sequence number of the first-arriving segment that has the `SYN` flag set is the initial sequence number. You’ll want to keep track of that in order to keep converting between 32-bit wrapped seqnos/acknos and their absolute equivalents. (Note that the `SYN` flag is just one flag in the header. The same segment could also carry data and could even have the `FIN` flag set.)
-   • Push any data, or end-of-stream marker, to the StreamReassembler. If the `FIN` flag is set in a TCPSegment’s header, that means that the last byte of the payload is the last byte of the entire stream. Remember that the StreamReassembler expects stream indexes starting at zero; you will have to unwrap the seqnos to produce these.
+- Set the Initial Sequence Number if necessary. 
+  The sequence number of the first-arriving segment that has the `SYN` flag set is the initial sequence number. You’ll want to keep track of that in order to keep converting between 32-bit wrapped seqnos/acknos and their absolute equivalents. (Note that the `SYN` flag is just one flag in the header. The same segment could also carry data and could even have the `FIN` flag set.)
+- Push any data, or end-of-stream marker, to the `StreamReassembler`. 
+  If the `FIN` flag is set in a TCPSegment’s header, that means that the last byte of the payload is the last byte of the entire stream. Remember that the StreamReassembler expects stream indexes starting at zero; you will have to unwrap the `seqnos` to produce these.
 
-
-
-#### 3.2.2   ackno()
+### 3.2.2   ackno()
 
 Returns an optional<WrappingInt32> containing the sequence number of the first byte that the receiver doesn’t already know. This is the windows’s left edge: the first byte the receiver is interested in receiving. If the ISN hasn’t been set yet, return an empty optional.
 
-
-#### 3.2.3   window_size()
+### 3.2.3   window_size()
 
 Returns the distance between the “first unassembled” index (the index corresponding to the ackno) and the “first unacceptable” index.
 
 
-### 3.3     Evolution of the TCPReceiver over the life of the connection
+-----
+
+
+## 3.3     Evolution of the TCPReceiver over the life of the connection
 
 Over the course of a TCP connection, your TCPReceiver will evolve through a sequence of states: 
 - from waiting for a SYN (with empty ackno)
@@ -714,33 +747,203 @@ When set:
 ---
 
 
-## 3.1 solution: Absolute Seqno <--> Seqno
+# Test
 
-### Why TCP Uses Wrapping Seqnos
-
-TCP header space is precious. Using 64-bit seqno would double header size.
-Instead:
-- only send low 32 bits
-- receiver reconstructs nearby absolute value
-
-Elegant engineering tradeoff.
-
-
-
-### Test
-
+## Test for lab1
 ```bash
-cs144@cs144vm:~/computer_network/sponge/build$ ctest -R wrap .
+cs144@cs144vm:~/computer_network/sponge/build$ make check_lab1
+[100%] Testing the stream reassembler...
 Test project /home/cs144/computer_network/sponge/build
-    Start 1: t_wrapping_ints_cmp
-1/4 Test #1: t_wrapping_ints_cmp ..............   Passed    0.01 sec
-    Start 2: t_wrapping_ints_unwrap
-2/4 Test #2: t_wrapping_ints_unwrap ...........***Failed    0.01 sec
-    Start 3: t_wrapping_ints_wrap
-3/4 Test #3: t_wrapping_ints_wrap .............   Passed    0.01 sec
-    Start 4: t_wrapping_ints_roundtrip
-4/4 Test #4: t_wrapping_ints_roundtrip ........   Passed    0.10 sec
+      Start 18: t_strm_reassem_single
+ 1/16 Test #18: t_strm_reassem_single ............   Passed    0.00 sec
+      Start 19: t_strm_reassem_seq
+ 2/16 Test #19: t_strm_reassem_seq ...............   Passed    0.00 sec
+      Start 20: t_strm_reassem_dup
+ 3/16 Test #20: t_strm_reassem_dup ...............   Passed    0.01 sec
+      Start 21: t_strm_reassem_holes
+ 4/16 Test #21: t_strm_reassem_holes .............   Passed    0.00 sec
+      Start 22: t_strm_reassem_many
+ 5/16 Test #22: t_strm_reassem_many ..............***Failed    0.25 sec
+Exception: test 1 - number of bytes RX is incorrect
 
-75% tests passed, 1 tests failed out of 4
+      Start 23: t_strm_reassem_overlapping
+ 6/16 Test #23: t_strm_reassem_overlapping .......   Passed    0.00 sec
+      Start 24: t_strm_reassem_win
+ 7/16 Test #24: t_strm_reassem_win ...............***Failed    0.30 sec
+Exception: test 2 - number of RX bytes is incorrect
 
-Total Test ti
+      Start 25: t_strm_reassem_cap
+ 8/16 Test #25: t_strm_reassem_cap ...............   Passed    0.03 sec
+      Start 26: t_byte_stream_construction
+ 9/16 Test #26: t_byte_stream_construction .......   Passed    0.00 sec
+      Start 27: t_byte_stream_one_write
+10/16 Test #27: t_byte_stream_one_write ..........   Passed    0.01 sec
+      Start 28: t_byte_stream_two_writes
+11/16 Test #28: t_byte_stream_two_writes .........   Passed    0.00 sec
+      Start 29: t_byte_stream_capacity
+12/16 Test #29: t_byte_stream_capacity ...........   Passed    0.17 sec
+      Start 30: t_byte_stream_many_writes
+13/16 Test #30: t_byte_stream_many_writes ........   Passed    0.00 sec
+      Start 48: t_address_dt
+14/16 Test #48: t_address_dt .....................   Passed    0.06 sec
+      Start 49: t_parser_dt
+15/16 Test #49: t_parser_dt ......................   Passed    0.00 sec
+      Start 50: t_socket_dt
+16/16 Test #50: t_socket_dt ......................   Passed    0.00 sec
+
+88% tests passed, 2 tests failed out of 16
+
+Total Test time (real) =   0.87 sec
+
+The following tests FAILED:
+         22 - t_strm_reassem_many (Failed)
+         24 - t_strm_reassem_win (Failed)
+Errors while running CTest
+make[3]: *** [CMakeFiles/check_lab1.dir/build.make:71: CMakeFiles/check_lab1] Error 8
+make[2]: *** [CMakeFiles/Makefile2:7440: CMakeFiles/check_lab1.dir/all] Error 2
+make[1]: *** [CMakeFiles/Makefile2:7447: CMakeFiles/check_lab1.dir/rule] Error 2
+make: *** [Makefile:2773: check_lab1] Error 2
+```
+
+
+## test for lab3.2 
+```bash
+cs144@cs144vm:~/computer_network/sponge/build$ make check_lab2 
+Testing the TCP receiver...
+Test project /home/cs144/computer_network/sponge/build
+      Start  1: t_wrapping_ints_cmp
+ 1/26 Test  #1: t_wrapping_ints_cmp ..............   Passed    0.01 sec
+      Start  2: t_wrapping_ints_unwrap
+ 2/26 Test  #2: t_wrapping_ints_unwrap ...........   Passed    0.01 sec
+      Start  3: t_wrapping_ints_wrap
+ 3/26 Test  #3: t_wrapping_ints_wrap .............   Passed    0.01 sec
+      Start  4: t_wrapping_ints_roundtrip
+ 4/26 Test  #4: t_wrapping_ints_roundtrip ........   Passed    0.11 sec
+      Start  5: t_recv_connect
+ 5/26 Test  #5: t_recv_connect ...................   Passed    0.01 sec
+      Start  6: t_recv_transmit
+ 6/26 Test  #6: t_recv_transmit ..................   Passed    0.05 sec
+      Start  7: t_recv_window
+ 7/26 Test  #7: t_recv_window ....................***Failed    0.01 sec
+Test Failure on expectation:
+        Expectation: window 3996
+
+Failure message:
+        The TCPReceiver reported window `3992`, but it was expected to be `3996`
+
+List of steps that executed successfully:
+        Initialized with (capacity=4000)
+        Action:      segment arrives Header(flags=S,seqno=23452,ack=0,win=0)
+        Expectation: ackno 23453
+        Expectation: window 4000
+        Action:      segment arrives Header(flags=,seqno=23453,ack=0,win=0) with data "abcd"
+        Expectation: ackno 23457
+        Expectation: window 3996
+        Action:      segment arrives Header(flags=,seqno=23461,ack=0,win=0) with data "ijkl"
+        Expectation: ackno 23457
+
+The TCPReceiver reported window `3992`, but it was expected to be `3996`
+
+      Start  8: t_recv_reorder
+ 8/26 Test  #8: t_recv_reorder ...................   Passed    0.01 sec
+      Start  9: t_recv_close
+ 9/26 Test  #9: t_recv_close .....................   Passed    0.01 sec
+      Start 10: t_recv_special
+10/26 Test #10: t_recv_special ...................   Passed    0.01 sec
+      Start 18: t_strm_reassem_single
+11/26 Test #18: t_strm_reassem_single ............   Passed    0.01 sec
+      Start 19: t_strm_reassem_seq
+12/26 Test #19: t_strm_reassem_seq ...............   Passed    0.01 sec
+      Start 20: t_strm_reassem_dup
+13/26 Test #20: t_strm_reassem_dup ...............   Passed    0.01 sec
+      Start 21: t_strm_reassem_holes
+14/26 Test #21: t_strm_reassem_holes .............   Passed    0.01 sec
+      Start 22: t_strm_reassem_many
+15/26 Test #22: t_strm_reassem_many ..............   Passed    0.84 sec
+      Start 23: t_strm_reassem_overlapping
+16/26 Test #23: t_strm_reassem_overlapping .......   Passed    0.01 sec
+      Start 24: t_strm_reassem_win
+17/26 Test #24: t_strm_reassem_win ...............   Passed    1.05 sec
+      Start 25: t_strm_reassem_cap
+18/26 Test #25: t_strm_reassem_cap ...............   Passed    0.10 sec
+      Start 26: t_byte_stream_construction
+19/26 Test #26: t_byte_stream_construction .......   Passed    0.01 sec
+      Start 27: t_byte_stream_one_write
+20/26 Test #27: t_byte_stream_one_write ..........   Passed    0.01 sec
+      Start 28: t_byte_stream_two_writes
+21/26 Test #28: t_byte_stream_two_writes .........   Passed    0.01 sec
+      Start 29: t_byte_stream_capacity
+22/26 Test #29: t_byte_stream_capacity ...........   Passed    0.56 sec
+      Start 30: t_byte_stream_many_writes
+23/26 Test #30: t_byte_stream_many_writes ........   Passed    0.01 sec
+      Start 48: t_address_dt
+24/26 Test #48: t_address_dt .....................   Passed    0.37 sec
+      Start 49: t_parser_dt
+25/26 Test #49: t_parser_dt ......................   Passed    0.01 sec
+      Start 50: t_socket_dt
+26/26 Test #50: t_socket_dt ......................   Passed    0.01 sec
+
+96% tests passed, 1 tests failed out of 26
+
+Total Test time (real) =   3.32 sec
+
+The following tests FAILED:
+          7 - t_recv_window (Failed)
+Errors while running CTest
+make[3]: *** [CMakeFiles/check_lab2.dir/build.make:71: CMakeFiles/check_lab2] Error 8
+make[2]: *** [CMakeFiles/Makefile2:7472: CMakeFiles/check_lab2.dir/all] Error 2
+make[1]: *** [CMakeFiles/Makefile2:7479: CMakeFiles/check_lab2.dir/rule] Error 2
+make: *** [Makefile:2786: check_lab2] Error 2
+
+
+
+
+
+cs144@cs144vm:~/computer_network/sponge/build$ ctest -V -R t_recv_window
+UpdateCTestConfiguration  from :/home/cs144/computer_network/sponge/build/DartConfiguration.tcl
+UpdateCTestConfiguration  from :/home/cs144/computer_network/sponge/build/DartConfiguration.tcl
+Test project /home/cs144/computer_network/sponge/build
+Constructing a list of tests
+Done constructing a list of tests
+Updating test list for fixtures
+Added 0 tests to meet fixture requirements
+Checking test dependency graph...
+Checking test dependency graph end
+test 7
+    Start 7: t_recv_window
+
+7: Test command: /home/cs144/computer_network/sponge/build/tests/recv_window
+7: Working Directory: /home/cs144/computer_network/sponge/build
+7: Test timeout computed to be: 10000000
+7: Test Failure on expectation:
+7:      Expectation: window 3996
+7: 
+7: Failure message:
+7:      The TCPReceiver reported window `3992`, but it was expected to be `3996`
+7: 
+7: List of steps that executed successfully:
+7:      Initialized with (capacity=4000)
+7:      Action:      segment arrives Header(flags=S,seqno=23452,ack=0,win=0)
+7:      Expectation: ackno 23453
+7:      Expectation: window 4000
+7:      Action:      segment arrives Header(flags=,seqno=23453,ack=0,win=0) with data "abcd"
+7:      Expectation: ackno 23457
+7:      Expectation: window 3996
+7:      Action:      segment arrives Header(flags=,seqno=23461,ack=0,win=0) with data "ijkl"
+7:      Expectation: ackno 23457
+7: 
+7: The TCPReceiver reported window `3992`, but it was expected to be `3996`
+1/1 Test #7: t_recv_window ....................***Failed    0.02 sec
+
+0% tests passed, 1 tests failed out of 1
+
+Total Test time (real) =   0.03 sec
+
+The following tests FAILED:
+          7 - t_recv_window (Failed)
+Errors while running CTest
+Output from these tests are in: /home/cs144/computer_network/sponge/build/Testing/Temporary/LastTest.log
+Use "--rerun-failed --output-on-failure" to re-run the failed cases verbosely.
+
+
+```
