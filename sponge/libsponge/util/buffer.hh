@@ -16,12 +16,12 @@
 class Buffer {
 private:
   // shared ownership of actual byte storage. 
-  // Multiple Buffers can point to same string. The underlying string storage. Multiple Buffer objects can share the same
+  // Multiple Buffers can point to same string. The underlying string storage. 
+  // Multiple Buffer objects can share the same
   std::shared_ptr<std::string> _storage{};
 
   // where this Buffer's visible region begins. 
   // Multiple Buffer objects can share the same underlying string, but they can have different starting offsets and sizes.
-  
   size_t _starting_offset{}; 
 
 
@@ -121,6 +121,20 @@ public:
 //! + a payload. This allows us to prepend headers (e.g., to
 //! encapsulate a TCP payload in a TCPSegment, and then encapsulate
 //! the TCPSegment in an IPv4Datagram) without copying the payload.
+
+// Why do we need BufferList?  This is called: scatter/gather I/O
+// Suppose TCP segment: [TCP header][payload],Instead of copying them together into one big string: std::string combined = header + payload;which allocates + copies memory,
+// we can store:  Buffer(serialized_header) , Buffer(payload) inside:BufferList 
+// TCPHeader object
+//     ↓ serialize()
+// std::string of raw TCP bytes
+//     ↓ Buffer(...)
+// Buffer
+//     ↓ append()
+// BufferList
+
+
+
 class BufferList {
 private:
   std::deque<Buffer> _buffers{};
@@ -132,9 +146,11 @@ public:
   BufferList() = default;
 
   //! \brief Construct from a Buffer
+  // creates _buffers = [buffer]
   BufferList(Buffer buffer) : _buffers{buffer} {}
 
   //! \brief Construct by taking ownership of a std::string
+  // string -> Buffer -> BufferList,  without copying string contents.
   BufferList(std::string &&str) noexcept {
     Buffer buf{std::move(str)};
     append(buf);
@@ -197,6 +213,7 @@ public:
   //! \brief Convert to a vector of `iovec` structures
   //! \note used for system calls that write discontiguous buffers,
   //! e.g. [writev(2)](\ref man2::writev) and [sendmsg(2)](\ref man2::sendmsg)
+  // This directly prepares data for OS scatter/gather syscalls.
   std::vector<iovec> as_iovecs() const;
 };
 

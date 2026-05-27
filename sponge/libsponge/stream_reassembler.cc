@@ -17,6 +17,11 @@ StreamReassembler::StreamReassembler(const size_t capacity)
 //! \details This function accepts a substring (aka a segment) of bytes,
 //! possibly out-of-order, from the logical stream, and assembles any newly
 //! contiguous substrings and writes them into the output stream in order.
+// "These bytes belong starting at stream byte position index."
+// @param: index: 0-based byte-stream index
+// StreamReassembler Layer Responsible for ONLY: stream assembly
+// pure byte-stream index space, NOT TCP sequence-number space.
+// It knows NOTHING about: TCP,seqno, SYN,wapping, ACK
 void StreamReassembler::push_substring(const string &data, const size_t index,
                                        const bool eof) {
   // 0. if eof, remember the EOF position
@@ -25,16 +30,22 @@ void StreamReassembler::push_substring(const string &data, const size_t index,
     _eof_index = index + data.size(); // one-past-the-end position
   }
 
-  // 1. compute the acceptable window:
-  // Determine which incoming bytes fit inside the receiver’s currently
-  // available memory window. incoming substring: [index, index + data.size())]
+  // 1. compute the acceptable window: "I can only accept bytes that fit in
+  // memory." Determine which incoming bytes fit inside the receiver’s currently
+  // available memory window.
+  // incoming substring: [index, index + data.size())]
   // acceptable window: [_first_unassembled_index, _first_unassembled_index +
   // remaining_capacity)]
 
-  size_t remaining_capacity = _capacity - _output.buffer_size();
+  // This capacity limits both the bytes that have been reassembled, and those
+  // that have not yet been reassembled. _output.buffer_size(): the bytes that
+  // have been reassembled
+  //  _buffer.size() : the bytes have not yet been reassembled.
+  size_t assembled_bytes_size = _output.buffer_size();
+  size_t unassembled_bytes_size = _buffer.size();
+  size_t remaining_capacity = _capacity - assembled_bytes_size - unassembled_bytes_size ;
   size_t acceptable_window_start = max(index, _first_unassembled_index);
-  size_t acceptable_window_end =
-      min(index + data.size(), _first_unassembled_index + remaining_capacity);
+  size_t acceptable_window_end =   min(index + data.size(), _first_unassembled_index + remaining_capacity);
   if (acceptable_window_start < acceptable_window_end) {
 
     size_t offset = acceptable_window_start - index;
@@ -42,8 +53,10 @@ void StreamReassembler::push_substring(const string &data, const size_t index,
     // extract the substring contains Only acceptable bytes
     string substring = data.substr(offset, length);
 
-    // 2. Insert ALL valid bytes into buffer
-    // Byte-Level Loop Processing
+    // 2. unified-buffer design:
+    // all unassembled bytes live in _buffer,then: drain contiguous prefix into
+    // ByteStream 2.1. Insert ALL valid bytes into buffer Byte-Level Loop
+    // Processing
     for (size_t i = 0; i < substring.size(); i++) {
       size_t byte_index = acceptable_window_start + i;
       if (_buffer.count(byte_index)) {
@@ -63,26 +76,27 @@ void StreamReassembler::push_substring(const string &data, const size_t index,
       }
     }
 
-    // 3. Assemble contiguous bytes from buffer: 
+    // 2.2. Assemble contiguous bytes from buffer:
     // Single unified drain loop AFTER insertion.
     std::string assembled;
     // drain contiguous bytes from buffer
     while (_buffer.count(_first_unassembled_index)) {
-    // consume from buffer
-    char c = _buffer[_first_unassembled_index];
-    assembled += c;
-    _buffer.erase(_first_unassembled_index);
-    _first_unassembled_index++;
+      // consume from buffer
+      char c = _buffer[_first_unassembled_index];
+      assembled += c;
+      _buffer.erase(_first_unassembled_index);
+      _first_unassembled_index++;
     }
-    if(assembled.size() > 0){
-        _output.write(assembled);
+    if (assembled.size() > 0) {
+      _output.write(assembled);
     }
   }
 
   // 3. Handle EOF
-  // Then EOF logic below still executes even if incoming data is not acceptable, because EOF may arrive before all data.
-  // if EOF seen AND all bytes assembled: _output.end_input(), Now stream
-  // officially closed, no future bytes will EVER arrive
+  // Then EOF logic below still executes even if incoming data is not
+  // acceptable, because EOF may arrive before all data. if EOF seen AND all
+  // bytes assembled: _output.end_input(), Now stream officially closed, no
+  // future bytes will EVER arrive
   if (_eof_received && _first_unassembled_index == _eof_index) {
     _output.end_input();
   }

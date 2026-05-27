@@ -53,17 +53,37 @@ ParseResult TCPHeader::parse(NetParser &p) {
 //! Serialize the TCPHeader to a string (does not recompute the checksum)
 string TCPHeader::serialize() const {
   // sanity check
+  // TCP Header 里有一个 4-bit 字段：它不是以 byte 为单位, 而是以 4-byte words 为单位
+  // if doff=5, header size = 4 bytes * 5  =20 bytes
+  // 为什么最小是 5？因为TCP 基础头：20 bytes = 5 × 4 bytes
+  // Source Port      2
+  // Dest Port        2
+  // Seqno            4
+  // Ackno            4
+  // Flags            2
+  // Window           2
+  // Checksum         2
+  // Urgent Pointer   2
+  // -------------------
+  // Total           20 bytes
+
   if (doff < 5) {
+    // TCP header 至少 20 bytes
     throw runtime_error("TCP header too short");
   }
 
   string ret;
+  // TCP header 最终长度应该是：4 * doff bytes
+  //reserve() 的意思： 预分配 capacity, 避免 string 多次扩容,此时字符串仍为空：
   ret.reserve(4 * doff);
 
   NetUnparser::u16(ret, sport);             // source port
   NetUnparser::u16(ret, dport);             // destination port
   NetUnparser::u32(ret, seqno.raw_value()); // sequence number
   NetUnparser::u32(ret, ackno.raw_value()); // ack number
+
+  // TCP Header 里： | Data Offset | Reserved | 共享一个 byte
+  // Data Offset 占高4位：doff << 4 ,把 doff 放到高4位
   NetUnparser::u8(ret, doff << 4);          // data offset
 
   const uint8_t fl_b = (urg ? 0b0010'0000 : 0) | (ack ? 0b0001'0000 : 0) |
@@ -76,6 +96,7 @@ string TCPHeader::serialize() const {
 
   NetUnparser::u16(ret, uptr); // urgent pointer
 
+  //TCP header 不一定只有 20 bytes, TCP 可以带 options, 扩展 header 到 advertised size,多出来的 bytes 自动填 \0
   ret.resize(4 * doff); // expand header to advertised size
 
   return ret;

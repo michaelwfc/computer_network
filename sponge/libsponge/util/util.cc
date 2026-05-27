@@ -113,11 +113,13 @@ void InternetChecksum::add(std::string_view data) {
 
 uint16_t InternetChecksum::value() const {
   uint32_t ret = _sum;
-
+  // Exactly 1’s-complement addition with end-around carry
+  // The carry wraps around and gets added back in.
   while (ret > 0xffff) {
     ret = (ret >> 16) + (ret & 0xffff);
   }
-
+  // checksum = ~(1’s-complement sum)
+  // Bitwise operator NOT logical operator， It flips every bit.
   return ~ret;
 }
 
