@@ -2,10 +2,10 @@
   "version": "0.2.0",
   "configurations": [
      {
-      "name": "Debug Lab3-send_retx",
+      "name": "Debug Lab3-send_extra",
       "type": "cppdbg",
       "request": "launch",
-      "program": "${workspaceFolder}/sponge/build/tests/send_retx",
+      "program": "${workspaceFolder}/sponge/build/tests/send_extra",
       "args": [],
       "stopAtEntry": true,
       "cwd": "${workspaceFolder}/sponge/build",

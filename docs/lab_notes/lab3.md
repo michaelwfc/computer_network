@@ -606,7 +606,7 @@ make: *** [Makefile:2799: check_lab3] Error 2
 ```
 
 
-## Fix 1st Test
+## Fix 1st Test:t_send_connect 
 
 ```bash
 cs144@cs144vm:~/computer_network/sponge/build$ ctest -V -R t_send_connect
@@ -647,4 +647,103 @@ Errors while running CTest
 Output from these tests are in: /home/cs144/computer_network/sponge/build/Testing/Temporary/LastTest.log
 Use "--rerun-failed --output-on-failure" to re-run the failed cases verbosely.
 
+```
+
+
+## 2nd Test: t_send_retx
+
+```bash
+cs144@cs144vm:~/computer_network/sponge/build$ ctest -V -R t_send_retx
+UpdateCTestConfiguration  from :/home/cs144/computer_network/sponge/build/DartConfiguration.tcl
+UpdateCTestConfiguration  from :/home/cs144/computer_network/sponge/build/DartConfiguration.tcl
+Test project /home/cs144/computer_network/sponge/build
+Constructing a list of tests
+Done constructing a list of tests
+Updating test list for fixtures
+Added 0 tests to meet fixture requirements
+Checking test dependency graph...
+Checking test dependency graph end
+test 13
+    Start 13: t_send_retx
+
+13: Test command: /home/cs144/computer_network/sponge/build/tests/send_retx
+13: Working Directory: /home/cs144/computer_network/sponge/build
+13: Test timeout computed to be: 10000000
+13: Test Failure on expectation:
+13:     Expectation: segment sent with (A=0,R=0,S=1,F=0,seqno=148969286,payload_size=0,...)
+13: 
+13: Failure message:
+13:     The Sender should have produced a segment that existed, but it did not
+13: 
+13: List of steps that executed successfully:
+13:     Initialized with (retx-timeout=6649) and called fill_window()
+13:     Expectation: segment sent with (A=0,R=0,S=1,F=0,seqno=148969286,payload_size=0,...)
+13:     Expectation: no (more) segments
+13:     Expectation: in state `stream started but nothing acknowledged`
+13:     Action:      6648 ms pass
+13:     Expectation: no (more) segments
+13:     Action:      1 ms pass
+13: 
+13: The test "Retx SYN twice at the right times, then ack" failed
+1/1 Test #13: t_send_retx ......................***Failed    0.01 sec
+
+0% tests passed, 1 tests failed out of 1
+
+Total Test time (real) =   0.02 sec
+
+The following tests FAILED:
+         13 - t_send_retx (Failed)
+Errors while running CTest
+Output from these tests are in: /home/cs144/computer_network/sponge/build/Testing/Temporary/LastTest.log
+Use "--rerun-failed --output-on-failure" to re-run the failed cases verbosely.
+```
+
+
+## 3nd Test: t_send_extra
+
+```bash
+cs144@cs144vm:~/computer_network/sponge/build$ ctest -V -R t_send_extra
+UpdateCTestConfiguration  from :/home/cs144/computer_network/sponge/build/DartConfiguration.tcl
+UpdateCTestConfiguration  from :/home/cs144/computer_network/sponge/build/DartConfiguration.tcl
+Test project /home/cs144/computer_network/sponge/build
+Constructing a list of tests
+Done constructing a list of tests
+Updating test list for fixtures
+Added 0 tests to meet fixture requirements
+Checking test dependency graph...
+Checking test dependency graph end
+test 17
+    Start 17: t_send_extra
+
+17: Test command: /home/cs144/computer_network/sponge/build/tests/send_extra
+17: Working Directory: /home/cs144/computer_network/sponge/build
+17: Test timeout computed to be: 10000000
+17: Test Failure on expectation:
+17:     Expectation: no (more) segments
+17: 
+17: Failure message:
+17:     The TCPSender sent a segment, but should not have. Segment info:
+17:     Header(flags=F,seqno=264070489,ack=0,win=0) with 0 bytes
+17: 
+17: List of steps that executed successfully:
+17:     Initialized with (retx-timeout=9839) and called fill_window()
+17:     Expectation: segment sent with (A=0,R=0,S=1,F=0,seqno=264070485,payload_size=0,...)
+17:     Action:      write bytes: "abc" + EOF
+17:     Action:      ack 264070486 winsize 3
+17:     Expectation: in state `stream ongoing`
+17:     Expectation: segment sent with (A=0,R=0,S=0,F=0,seqno=264070486,payload_size=3,"abc",...)
+17:     Action:      ack 264070487 winsize 2
+17: 
+17: The test "Don't add FIN if this would make the segment exceed the receiver's window" failed
+1/1 Test #17: t_send_extra .....................***Failed    0.01 sec
+
+0% tests passed, 1 tests failed out of 1
+
+Total Test time (real) =   0.02 sec
+
+The following tests FAILED:
+         17 - t_send_extra (Failed)
+Errors while running CTest
+Output from these tests are in: /home/cs144/computer_network/sponge/build/Testing/Temporary/LastTest.log
+Use "--rerun-failed --output-on-failure" to re-run the failed cases verbosely.
 ```

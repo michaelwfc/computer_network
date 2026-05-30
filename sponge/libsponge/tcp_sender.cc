@@ -27,8 +27,8 @@ TCPSender::TCPSender(const size_t capacity, const uint16_t retx_timeout,
 // "Bytes in flight" means: sequence numbers you have sent but the receiver has
 // not yet acknowledged. They are "in flight" — somewhere between sender and
 // receiver, either still traveling through the network, lost, or received but
-// not yet ACK'd. 
-//Absolute sequence space: 
+// not yet ACK'd.
+// Absolute sequence space:
 // 0        recv_base        next_seqno
 // |             |                |
 // ▼             ▼                ▼
@@ -60,7 +60,8 @@ void TCPSender::fill_window() {
     // left:
 
     uint16_t avaiable_window_size = effective_window_size - bytes_in_flight();
-    // Your loop condition must allow the loop to run even when the stream is empty, because SYN and FIN don't come from the stream:
+    // Your loop condition must allow the loop to run even when the stream is
+    // empty, because SYN and FIN don't come from the stream:
     if (avaiable_window_size <= 0)
       break;
 
@@ -115,9 +116,11 @@ void TCPSender::fill_window() {
     // never by payload.size() alone
     _next_seqno += seg.length_in_sequence_space();
 
-    // Transmit the segment: enqueue the segment for transmission, and update internal state 
+    // Transmit the segment: enqueue the segment for transmission, and update
+    // internal state
     _segments_out.push(seg);
-    _outstanding_segments.push( seg); // keep copy of the sent segment for potential retransmission
+    _outstanding_segments.push(
+        seg); // keep copy of the sent segment for potential retransmission
 
     // Start timer when first segment sent
     // If the timer is not already running, start it. If it is already running,
@@ -182,15 +185,17 @@ void TCPSender::ack_received(const WrappingInt32 ackno,
       // fully acked, remove from queue
       _outstanding_segments.pop();
       acked_something = true;
-      _last_acked_seqno = seg_end_seqno_absolute; // update last acked
-
     } else {
       break;
     }
+
   }
 
   // 2. update window:
   _window_size = window_size;
+  // _last_acked_seqno must always be updated to the latest ackno, regardless of whether a full segment was removed:
+  _last_acked_seqno = ackno_absolute; 
+
 
   // 3. reset timer:  reset timer when new data acked
   if (acked_something) {
@@ -217,11 +222,11 @@ void TCPSender::ack_received(const WrappingInt32 ackno,
 //                                  if window>0: backoff, increment
 //                                  retransmissions reset timer elapsed
 void TCPSender::tick(const size_t ms_since_last_tick) {
-  
-  // _time_elapsed += ms_since_last_tick; 
-  // accumulates internally how much time has passed since the oldest outstanding segment was sent
-  _retransmission_timer.tick(
-      ms_since_last_tick); 
+
+  // _time_elapsed += ms_since_last_tick;
+  // accumulates internally how much time has passed since the oldest
+  // outstanding segment was sent
+  _retransmission_timer.tick(ms_since_last_tick);
   // _timer_running && _time_elapsed >= _initial_retransmission_timeout
   if (_retransmission_timer.expired()) {
     // Retransmit the oldest outstanding segment
