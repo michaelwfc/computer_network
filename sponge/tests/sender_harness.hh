@@ -18,9 +18,90 @@
 
 const unsigned int DEFAULT_TEST_WINDOW = 137;
 
+//The Inheritance Hierarchy
+// SenderTestStep                    (base: defines interface)
+//     │
+//     ├── SenderExpectation         (checks state — reads sender/segments)
+//     │       ├── ExpectState       → checks TCPState::state_summary()
+//     │       ├── ExpectNoSegment   → checks segments queue is empty
+//     │       ├── ExpectBytesInFlight → checks bytes_in_flight()
+//     │       └── ExpectSegment     → pops and validates a segment
+//     │
+//     └── SenderAction              (drives state — modifies sender)
+//             ├── WriteBytes        → writes to stream, calls fill_window()
+//             ├── Tick              → calls sender.tick(ms)
+//             ├── AckReceived       → calls ack_received(), fill_window()
+//             └── Close             → calls end_input(), fill_window()
+// Each subclass overrides execute() with its own behavior. The test harness calls them all through the same interface:
+// void execute(const SenderTestStep &step) {
+//     step.execute(sender, outbound_segments);  // virtual dispatch
+//     collect_output();
+// }
+
+
+
 struct SenderTestStep {
+
+  //It means: "when this object is used where a std::string is expected, call this function."
+  // SenderTestStep step;
+  // std::string s = step;        // calls operator std::string()
+  // std::string s2 = (std::string)step;  // same
+  // The virtual keyword means subclasses can override it:
   virtual operator std::string() const { return "SenderTestStep"; }
+
+  // virtual          → subclasses can override this method
+  // void             → returns nothing
+  // execute          → method name
+  // TCPSender &      → reference to the sender (unnamed parameter — not used in base,parameter exists but base class ignores it)
+  // std::queue<TCPSegment> &  → reference to outbound segment queue (also unnamed)
+  // const            → this method does not modify the object itself
+  // {}               → empty body — base class does nothing
   virtual void execute(TCPSender &, std::queue<TCPSegment> &) const {}
+
+  // This is a virtual destructor. It is essential whenever you have a class hierarchy where objects are deleted through a base class pointer.
+  // Why it matters: 
+  // SenderTestStep *step = new ExpectState{"SYN_SENT"};
+  // delete step;   // which destructor runs?
+  // Without virtual:
+  // delete step calls ~SenderTestStep() only ~ExpectState() never called → resource leak
+  // delete step:
+  // compiler sees: pointer type is SenderTestStep*
+  // calls: ~SenderTestStep() directly (static dispatch)
+  // ~ExpectState() NEVER called
+  // _state string NEVER destroyed
+  // heap memory leaked
+
+  // With virtual:
+  // delete step calls ~ExpectState() first then ~SenderTestStep()  → correct cleanup
+  // delete step:
+  // compiler sees: pointer type is SenderTestStep*
+  // vtable lookup: actual object is ExpectState
+  // calls: ~ExpectState() first
+  //   → destroys _state → heap freed
+  // then: ~SenderTestStep()
+  //   → base subobject cleaned up
+
+  // When you destroy a derived object, both destructors must run — derived first, then base. This is not optional. It is how C++ guarantees complete cleanup.
+  // Object in memory:
+
+  // ┌─────────────────────────────┐
+  // │  SenderTestStep part        │  ← base subobject
+  // │    (vtable pointer, etc.)   │
+  // ├─────────────────────────────┤
+  // │  ExpectState part           │  ← derived subobject
+  // │    std::string _state       │
+  // └─────────────────────────────┘
+
+  // When destroyed:
+  //   Step 1: ~ExpectState()      → cleans up _state (std::string)
+  //   Step 2: ~SenderTestStep()   → cleans up base subobject
+  // Every object is composed of its own data plus all base class data. Both layers must be cleaned up.
+
+  //   This one does nothing meaningful by itself in this case. But it must still run because:
+  // It is part of the destruction chain — C++ requires it
+  // In general, the base class might have its own members to clean up
+  // It is the mechanism that enables the derived destructor to be found via vtable
+
   virtual ~SenderTestStep() {}
 };
 
@@ -51,6 +132,8 @@ public:
 };
 
 struct SenderExpectation : public SenderTestStep {
+  // overrides base version
+  // So different step types produce different string descriptions in the log.
   operator std::string() const { return "Expectation: " + description(); }
   virtual std::string description() const { return "description missing"; }
   virtual void execute(TCPSender &, std::queue<TCPSegment> &) const {}
@@ -69,6 +152,21 @@ struct ExpectState : public SenderExpectation {
           "`, but it was expected to be in state `" + _state + "`");
     }
   }
+
+  // no explicit destructor written
+  // compiler generates one that destroys _state
+  // The compiler-generated ~ExpectState() destroys _state. A std::string owns heap memory internally:
+  // std::string _state = "stream started but nothing acknowledged"
+
+  // Memory:
+  //   _state.data ──► [heap: "stream started but nothing acknowledged\0"]
+  //   _state.size = 38
+  //   _state.capacity = ...
+
+  // ~ExpectState() runs:
+  //   → ~std::string() called on _state
+  //   → heap memory freed
+  // Without this running, the string's heap allocation leaks.
 };
 
 struct ExpectSeqno : public SenderExpectation {
@@ -149,6 +247,7 @@ struct WriteBytes : public SenderAction {
     return ss.str();
   }
 
+  // overrides base execute() — now uses the parameters
   void execute(TCPSender &sender, std::queue<TCPSegment> &) const {
     sender.stream_in().write(std::move(_bytes));
     if (_end_input) {
@@ -432,7 +531,9 @@ public:
       : outbound_segments(),
         sender(config.send_capacity, config.rt_timeout, config.fixed_isn),
         steps_executed(), name(name_) {
+    // triger fill_window() 
     sender.fill_window();
+    // ← drains _segments_out into outbound_segments
     collect_output();
     std::ostringstream ss;
     ss << "Initialized with ("

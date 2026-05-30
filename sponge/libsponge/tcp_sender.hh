@@ -43,7 +43,7 @@ class RetransmissionTimer {
      }
 
      bool expired() const {
-      return _running && _elapsed >- _rto;
+      return _running && _elapsed >= _rto;
      }
 
      bool running() const{return _running;}

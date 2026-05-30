@@ -33,7 +33,12 @@ int main() {
       test.execute(ExpectState{TCPSenderStateSummary::SYN_SENT});
       test.execute(Tick{retx_timeout - 1u});
       test.execute(ExpectNoSegment{});
+
       test.execute(Tick{1});
+      // tick(1) fires retransmission   → pushes retransmitted SYN to _segments_out
+      // collect_output() runs   → moves SYN from _segments_out to outbound_segments
+      // ExpectSegment checks outbound_segments   → should find SYN there
+
       test.execute(ExpectSegment{}
                        .with_no_flags()
                        .with_syn(true)

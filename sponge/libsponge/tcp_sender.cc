@@ -115,11 +115,9 @@ void TCPSender::fill_window() {
     // never by payload.size() alone
     _next_seqno += seg.length_in_sequence_space();
 
-    // Transmit the segment: enqueue the segment for transmission, and update
-    // internal state
+    // Transmit the segment: enqueue the segment for transmission, and update internal state 
     _segments_out.push(seg);
-    _outstanding_segments.push(
-        seg); // keep copy of the sent segment for potential retransmission
+    _outstanding_segments.push( seg); // keep copy of the sent segment for potential retransmission
 
     // Start timer when first segment sent
     // If the timer is not already running, start it. If it is already running,
@@ -219,10 +217,11 @@ void TCPSender::ack_received(const WrappingInt32 ackno,
 //                                  if window>0: backoff, increment
 //                                  retransmissions reset timer elapsed
 void TCPSender::tick(const size_t ms_since_last_tick) {
-
+  
+  // _time_elapsed += ms_since_last_tick; 
+  // accumulates internally how much time has passed since the oldest outstanding segment was sent
   _retransmission_timer.tick(
-      ms_since_last_tick); // _time_elapsed += ms_since_last_tick;
-
+      ms_since_last_tick); 
   // _timer_running && _time_elapsed >= _initial_retransmission_timeout
   if (_retransmission_timer.expired()) {
     // Retransmit the oldest outstanding segment
