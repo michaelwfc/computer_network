@@ -123,10 +123,10 @@ To test your code, the test suite will expect it to evolve through a series of s
 #### 3.4 FAQs and special cases
 
 - **How do I "send" a segment?**  
-  Push it on to the segments out queue. As far as your TCPSender is concerned, consider it sent as soon as you push it on to this queue. Soon the owner will come along and pop it (using the public segments out() accessor method) and really send it.
+  Push it on to the `_segments_out` queue. As far as your TCPSender is concerned, consider it sent as soon as you push it on to this queue. Soon the owner will come along and pop it (using the public `segments_out()` accessor method) and really send it.
 
 - **Wait, how do I both "send" a segment and also keep track of that same segment as being outstanding, so I know what to retransmit later? Don't I have to make a copy of each segment then? Is that wasteful?**  
-  When you send a segment that contains data, you'll probably want to push it on to the segments out queue and also keep a copy of it internally in a data structure that lets you keep track of outstanding segments for possible retransmission. This turns out not to be very wasteful because the segment's payload is stored as a reference-counted read-only string (a Buffer object). So don't worry about it—it's not actually copying the payload data.
+  When you send a segment that contains data, you'll probably want to push it on to the _segments_out queue and also keep a copy of it internally in a data structure that lets you keep track of outstanding segments for possible retransmission. This turns out not to be very wasteful because the segment's payload is stored as a reference-counted read-only string (a Buffer object). So don't worry about it—it's not actually copying the payload data.
 
 - **What should my TCPSender assume as the receiver's window size before I've gotten an ACK from the receiver?**  
   One byte.
@@ -147,7 +147,7 @@ To test your code, the test suite will expect it to evolve through a series of s
 
 ### 4. Development and debugging advice
 
-1. Implement the TCPSender's public interface (and any private methods or functions you'd like) in the file `tcp_sender.cc`. You may add any private members you like to the TCPSender class in tcp sender.hh.
+1. Implement the TCPSender's public interface (and any private methods or functions you'd like) in the file `tcp_sender.cc`. You may add any private members you like to the TCPSender class in `tcp_sender.hh`.
 
 2. You can test your code (after compiling it) with `make check_lab3`.
 
@@ -432,3 +432,219 @@ If this ever breaks, your outstanding tracking is wrong.
 ---
 
 Try sketching your implementation now, and share it when you're ready — we can walk through edge cases together.
+
+
+
+# Text
+
+## 1st Test
+```bash
+cs144@cs144vm:~/computer_network/sponge/build$ make check_lab3
+[100%] Testing the TCP sender...
+Test project /home/cs144/computer_network/sponge/build
+      Start  1: t_wrapping_ints_cmp
+ 1/33 Test  #1: t_wrapping_ints_cmp ..............   Passed    0.01 sec
+      Start  2: t_wrapping_ints_unwrap
+ 2/33 Test  #2: t_wrapping_ints_unwrap ...........   Passed    0.00 sec
+      Start  3: t_wrapping_ints_wrap
+ 3/33 Test  #3: t_wrapping_ints_wrap .............   Passed    0.01 sec
+      Start  4: t_wrapping_ints_roundtrip
+ 4/33 Test  #4: t_wrapping_ints_roundtrip ........   Passed    0.11 sec
+      Start  5: t_recv_connect
+ 5/33 Test  #5: t_recv_connect ...................   Passed    0.01 sec
+      Start  6: t_recv_transmit
+ 6/33 Test  #6: t_recv_transmit ..................   Passed    0.04 sec
+      Start  7: t_recv_window
+ 7/33 Test  #7: t_recv_window ....................   Passed    0.01 sec
+      Start  8: t_recv_reorder
+ 8/33 Test  #8: t_recv_reorder ...................   Passed    0.01 sec
+      Start  9: t_recv_close
+ 9/33 Test  #9: t_recv_close .....................   Passed    0.01 sec
+      Start 10: t_recv_special
+10/33 Test #10: t_recv_special ...................   Passed    0.01 sec
+      Start 11: t_send_connect
+11/33 Test #11: t_send_connect ...................***Failed    0.04 sec
+Test Failure on expectation:
+        Expectation: in state `stream started but nothing acknowledged`
+
+Failure message:
+        The TCPSender was in state `waiting for stream to begin (no SYN sent)`, but it was expected to be in state `stream started but nothing acknowledged`
+
+List of steps that executed successfully:
+        Initialized with (retx-timeout=1000) and called fill_window()
+
+The test "SYN sent test" failed
+
+      Start 12: t_send_transmit
+12/33 Test #12: t_send_transmit ..................***Failed    0.01 sec
+Test Failure on expectation:
+        Expectation: segment sent with (A=0,R=0,S=1,F=0,seqno=2505726283,payload_size=0,...)
+
+Failure message:
+        The Sender should have produced a segment that existed, but it did not
+
+List of steps that executed successfully:
+        Initialized with (retx-timeout=1000) and called fill_window()
+
+The test "Three short writes" failed
+
+      Start 13: t_send_retx
+13/33 Test #13: t_send_retx ......................***Failed    0.01 sec
+Test Failure on expectation:
+        Expectation: segment sent with (A=0,R=0,S=1,F=0,seqno=1333457604,payload_size=0,...)
+
+Failure message:
+        The Sender should have produced a segment that existed, but it did not
+
+List of steps that executed successfully:
+        Initialized with (retx-timeout=3625) and called fill_window()
+
+The test "Retx SYN twice at the right times, then ack" failed
+
+      Start 14: t_send_window
+14/33 Test #14: t_send_window ....................***Failed    0.01 sec
+Test Failure on expectation:
+        Expectation: segment sent with (A=0,R=0,S=1,F=0,seqno=1192812425,payload_size=0,...)
+
+Failure message:
+        The Sender should have produced a segment that existed, but it did not
+
+List of steps that executed successfully:
+        Initialized with (retx-timeout=1000) and called fill_window()
+
+The test "Initial receiver advertised window is respected" failed
+
+      Start 15: t_send_ack
+15/33 Test #15: t_send_ack .......................***Failed    0.01 sec
+Test Failure on expectation:
+        Expectation: segment sent with (A=0,R=0,S=1,F=0,seqno=4138286207,payload_size=0,...)
+
+Failure message:
+        The Sender should have produced a segment that existed, but it did not
+
+List of steps that executed successfully:
+        Initialized with (retx-timeout=1000) and called fill_window()
+
+The test "Repeat ACK is ignored" failed
+
+      Start 16: t_send_close
+16/33 Test #16: t_send_close .....................***Failed    0.01 sec
+Test Failure on expectation:
+        Expectation: segment sent with (A=0,R=0,S=1,F=0,seqno=1927445725,payload_size=0,...)
+
+Failure message:
+        The Sender should have produced a segment that existed, but it did not
+
+List of steps that executed successfully:
+        Initialized with (retx-timeout=1000) and called fill_window()
+
+The test "FIN sent test" failed
+
+      Start 17: t_send_extra
+17/33 Test #17: t_send_extra .....................***Failed    0.01 sec
+Test Failure on expectation:
+        Expectation: segment sent with (A=0,R=0,S=1,F=0,seqno=270928753,payload_size=0,...)
+
+Failure message:
+        The Sender should have produced a segment that existed, but it did not
+
+List of steps that executed successfully:
+        Initialized with (retx-timeout=5738) and called fill_window()
+
+The test "If already running, timer stays running when new segment sent" failed
+
+      Start 18: t_strm_reassem_single
+18/33 Test #18: t_strm_reassem_single ............   Passed    0.01 sec
+      Start 19: t_strm_reassem_seq
+19/33 Test #19: t_strm_reassem_seq ...............   Passed    0.01 sec
+      Start 20: t_strm_reassem_dup
+20/33 Test #20: t_strm_reassem_dup ...............   Passed    0.01 sec
+      Start 21: t_strm_reassem_holes
+21/33 Test #21: t_strm_reassem_holes .............   Passed    0.01 sec
+      Start 22: t_strm_reassem_many
+22/33 Test #22: t_strm_reassem_many ..............   Passed    0.92 sec
+      Start 23: t_strm_reassem_overlapping
+23/33 Test #23: t_strm_reassem_overlapping .......   Passed    0.02 sec
+      Start 24: t_strm_reassem_win
+24/33 Test #24: t_strm_reassem_win ...............   Passed    0.98 sec
+      Start 25: t_strm_reassem_cap
+25/33 Test #25: t_strm_reassem_cap ...............   Passed    0.10 sec
+      Start 26: t_byte_stream_construction
+26/33 Test #26: t_byte_stream_construction .......   Passed    0.01 sec
+      Start 27: t_byte_stream_one_write
+27/33 Test #27: t_byte_stream_one_write ..........   Passed    0.01 sec
+      Start 28: t_byte_stream_two_writes
+28/33 Test #28: t_byte_stream_two_writes .........   Passed    0.01 sec
+      Start 29: t_byte_stream_capacity
+29/33 Test #29: t_byte_stream_capacity ...........   Passed    0.50 sec
+      Start 30: t_byte_stream_many_writes
+30/33 Test #30: t_byte_stream_many_writes ........   Passed    0.01 sec
+      Start 48: t_address_dt
+31/33 Test #48: t_address_dt .....................   Passed    0.08 sec
+      Start 49: t_parser_dt
+32/33 Test #49: t_parser_dt ......................   Passed    0.00 sec
+      Start 50: t_socket_dt
+33/33 Test #50: t_socket_dt ......................   Passed    0.01 sec
+
+79% tests passed, 7 tests failed out of 33
+
+Total Test time (real) =   3.01 sec
+
+The following tests FAILED:
+         11 - t_send_connect (Failed)
+         12 - t_send_transmit (Failed)
+         13 - t_send_retx (Failed)
+         14 - t_send_window (Failed)
+         15 - t_send_ack (Failed)
+         16 - t_send_close (Failed)
+         17 - t_send_extra (Failed)
+Errors while running CTest
+make[3]: *** [CMakeFiles/check_lab3.dir/build.make:71: CMakeFiles/check_lab3] Error 8
+make[2]: *** [CMakeFiles/Makefile2:7504: CMakeFiles/check_lab3.dir/all] Error 2
+make[1]: *** [CMakeFiles/Makefile2:7511: CMakeFiles/check_lab3.dir/rule] Error 2
+make: *** [Makefile:2799: check_lab3] Error 2
+```
+
+
+## Fix 1st Test
+
+```bash
+cs144@cs144vm:~/computer_network/sponge/build$ ctest -V -R t_send_connect
+UpdateCTestConfiguration  from :/home/cs144/computer_network/sponge/build/DartConfiguration.tcl
+UpdateCTestConfiguration  from :/home/cs144/computer_network/sponge/build/DartConfiguration.tcl
+Test project /home/cs144/computer_network/sponge/build
+Constructing a list of tests
+Done constructing a list of tests
+Updating test list for fixtures
+Added 0 tests to meet fixture requirements
+Checking test dependency graph...
+Checking test dependency graph end
+test 11
+    Start 11: t_send_connect
+
+11: Test command: /home/cs144/computer_network/sponge/build/tests/send_connect
+11: Working Directory: /home/cs144/computer_network/sponge/build
+11: Test timeout computed to be: 10000000
+11: Test Failure on expectation:
+11:     Expectation: in state `stream started but nothing acknowledged`
+11: 
+11: Failure message:
+11:     The TCPSender was in state `waiting for stream to begin (no SYN sent)`, but it was expected to be in state `stream started but nothing acknowledged`
+11: 
+11: List of steps that executed successfully:
+11:     Initialized with (retx-timeout=1000) and called fill_window()
+11: 
+11: The test "SYN sent test" failed
+1/1 Test #11: t_send_connect ...................***Failed    0.01 sec
+
+0% tests passed, 1 tests failed out of 1
+
+Total Test time (real) =   0.02 sec
+
+The following tests FAILED:
+         11 - t_send_connect (Failed)
+Errors while running CTest
+Output from these tests are in: /home/cs144/computer_network/sponge/build/Testing/Temporary/LastTest.log
+Use "--rerun-failed --output-on-failure" to re-run the failed cases verbosely.
+
+```

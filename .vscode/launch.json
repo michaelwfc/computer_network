@@ -2,6 +2,27 @@
   "version": "0.2.0",
   "configurations": [
      {
+      "name": "Debug Lab3-send_connect",
+      "type": "cppdbg",
+      "request": "launch",
+      "program": "${workspaceFolder}/sponge/build/tests/send_connect",
+      "args": [],
+      "stopAtEntry": true,
+      "cwd": "${workspaceFolder}/sponge/build",
+      "environment": [],
+      "externalConsole": false,
+      "MIMode": "gdb",
+      "setupCommands": [
+        {
+          "description": "Enable pretty-printing for gdb",
+          "text": "-enable-pretty-printing",
+          "ignoreFailures": true
+        }
+      ],
+      "preLaunchTask": "build cs144-sponge"
+    },
+
+     {
       "name": "Debug Lab2-recv_window",
       "type": "cppdbg",
       "request": "launch",

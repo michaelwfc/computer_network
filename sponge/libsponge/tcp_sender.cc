@@ -60,7 +60,8 @@ void TCPSender::fill_window() {
     // left:
 
     uint16_t avaiable_window_size = effective_window_size - bytes_in_flight();
-    if (avaiable_window_size <= 0 || _stream.buffer_size() <= 0)
+    // Your loop condition must allow the loop to run even when the stream is empty, because SYN and FIN don't come from the stream:
+    if (avaiable_window_size <= 0)
       break;
 
     TCPSegment seg;
