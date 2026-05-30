@@ -93,7 +93,7 @@ void TCPReceiver::segment_received(const TCPSegment &seg) {
   // ACK absolute sequence number is: 1 for SYN + bytes_written + 1 if FIN assembled
   // Handle FIN:  FIN consumes one seqn, FIN is not data,But it still advances sequence numbers.
   // Suppose stream ended,Then ACK must advance one more.
-  assembled_size = _reassembler.stream_out().bytes_written(); //ecompute bytes_written
+  assembled_size = _reassembler.stream_out().bytes_written(); //recompute bytes_written
   uint64_t ack_absolute = 1 + assembled_size + _reassembler.stream_out().input_ended();
   _ackno = wrap(ack_absolute, _isn);
 }

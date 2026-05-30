@@ -5,9 +5,57 @@
 #include "tcp_config.hh"
 #include "tcp_segment.hh"
 #include "wrapping_integers.hh"
-
-#include <functional>
 #include <queue>
+
+
+// ─────────────────────────────────────────────
+// Helper class: Retransmission Timer
+// Defined here, used only by TCPSender
+// Purpose: Encapsulates the logic of the retransmission timer, so that TCPSender can focus on TCP logic.
+// "If I sent something and haven't heard back, retransmit it after RTO."
+// ─────────────────────────────────────────────
+class RetransmissionTimer {
+  private:
+    unsigned int _rto;
+    unsigned int _initial_rto;
+    size_t _elapsed{0}; // Time elapsed since the oldest outstanding segment was sent (in ms)
+    bool _running{false}; // Is the retransmission timer currently running?
+
+  public:
+    RetransmissionTimer(unsigned int initial_rto):
+      _rto(initial_rto), _initial_rto(initial_rto){};
+
+    void start(){
+      _running = true;
+      _elapsed = 0;
+    }
+
+    void stop(){
+      _running = false;
+      _elapsed = 0;
+    }
+     void reset(){
+      _elapsed = 0;
+     }
+
+     void tick(size_t ms){
+      if(_running)_elapsed += ms;
+     }
+
+     bool expired() const {
+      return _running && _elapsed >- _rto;
+     }
+
+     bool running() const{return _running;}
+
+     void double_rto(){
+      _rto *=2;
+     }
+     void reset_rto(){
+      _rto = _initial_rto;
+     }
+
+};
 
 //! \brief The "sender" part of a TCP implementation.
 
@@ -31,6 +79,39 @@ private:
 
   //! the (absolute) sequence number for the next byte to be sent
   uint64_t _next_seqno{0};
+
+  bool _syn_sent{false}; //!< Has the SYN segment been sent?
+  bool _fin_sent{false}; //!< Has the FIN segment been sent?
+
+
+  // the next sequence number the receiver expects (= latest ackno)
+  uint64_t _last_acked_seqno{0}; 
+
+  // the window size of the remote receiver, update by ack_received()
+  uint16_t _window_size{1}; 
+
+
+  // Number of consecutive retransmissions that have occurred in a row
+  // purpose   → tells TCPConnection when to give up and abort
+  // increment → inside tick(), when timer expires AND window > 0
+  // reset     → inside ack_received(), when new data is acked
+  unsigned int _consecutive_retransmissions{0}; 
+
+  // //!< Segments that have been sent but not yet acknowledged, along with the time they were sent (in ms)
+  // The outstanding segments data structure must answer these questions:
+  // 1. What is the earliest unacknowledged segment?  → for retransmission
+  // 2. Which segments can be removed?                → when ACK arrives
+  // 3. How many sequence numbers are in flight?      → for bytes_in_flight()
+  // Why std::queue Is the Right Choice? TCP retransmits the oldest outstanding segment first. 
+  // Segments are acknowledged in order (ACK is cumulative). 
+  std::queue<TCPSegment> _outstanding_segments{}; 
+
+  // bool _timer_running{false}; //!< Is the retransmission timer currently running?
+  // size_t _time_elapsed{0}; //!< Time elapsed since the oldest outstanding segment was sent (in ms)
+  RetransmissionTimer _retransmission_timer;
+
+  
+
 
 public:
   //! Initialize a TCPSender
