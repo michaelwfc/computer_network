@@ -89,11 +89,15 @@ void TCPReceiver::segment_received(const TCPSegment &seg) {
   _reassembler.push_substring( seg.payload().copy(), stream_index, eof);
 
   // 6. Compute ACK Number
+  // "I have successfully received and reassembled ALL bytes  up to but not including this sequence number. 
+  //  Please send me bytes starting from here next."
   // ACK means: first unassembled stream index, next byte receiver wants, NOT last byte received
-  // ACK absolute sequence number is: 1 for SYN + bytes_written + 1 if FIN assembled
-  // Handle FIN:  FIN consumes one seqn, FIN is not data,But it still advances sequence numbers.
-  // Suppose stream ended,Then ACK must advance one more.
-  assembled_size = _reassembler.stream_out().bytes_written(); //recompute bytes_written
+  // ACK absolute sequence number formula:  
+  // +1:  for SYN consuming one sequence space
+  // +assembled_size(bytes_written): for all payload bytes received in order , 1 per byte
+  // + 1 if FIN has been fully assembled,  Suppose stream ended,Then ACK must advance one more,  FIN consumes one seqn, 
+  // FIN is not data,But it still advances sequence numbers.
+  assembled_size = _reassembler.stream_out().bytes_written(); //recompute bytes_written after pushing new segment
   uint64_t ack_absolute = 1 + assembled_size + _reassembler.stream_out().input_ended();
   _ackno = wrap(ack_absolute, _isn);
 }

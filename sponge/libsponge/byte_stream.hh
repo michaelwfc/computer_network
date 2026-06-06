@@ -27,6 +27,7 @@ private:
   size_t _bytes_written{0};       // Total number of bytes written
   size_t _bytes_read{0};
   bool _input_ended{false};          // Has writer called end_input()?
+
   bool _error{false}; //!< Flag indicating that the stream suffered an error.
 
 public:
@@ -47,9 +48,8 @@ public:
   //! Signal that the byte stream has reached its ending
   void end_input();
 
-  //! Indicate that the stream suffered an error.
-  void set_error() { _error = true; }
-  //!@}
+
+
 
   //! \name "Output" interface for the reader
   //!@{
@@ -67,6 +67,20 @@ public:
 
   //! \returns `true` if the stream input has ended
   bool input_ended() const;
+
+  //! Indicate that the stream suffered an error.
+  /*
+  "Something went catastrophically wrong.  This stream is permanently broken.  No more reading or writing is meaningful."
+  Once set, it never clears. The stream is dead.
+  What Triggers the Error State?
+  Only one thing in TCP sets the error state: receiving or sending an RST segment.
+  RST = Reset
+    = "Something is badly wrong, abort immediately"
+    = the TCP equivalent of slamming down the phone
+  */ 
+  
+
+  void set_error() { _error = true; }
 
   //! \returns `true` if the stream has suffered an error
   bool error() const { return _error; }

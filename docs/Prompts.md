@@ -1,4 +1,15 @@
 
+# Convert pdf to markdown
+
+convert docs/lab_handouts-2020/lab4.pdf to docs/lab_notes/lab4.md as markdown format,
+and refine the format of markdown file
+- add the headers accroding to pdf, connect the lines if the next line is the same line or in the same paragraph
+- if the original text has char "_" to connect two words , you should keep it
+- if the original text is capital , you should keep it capital
+- if the original text is bold, you should keep it bold
+
+
+
 # Meta prompt
 write a prompt for Convert the computer network PDF slide from CS 144: Introduction to Computer Networking to HTML tutorial, and convert  HTML to a markdown file
 

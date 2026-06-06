@@ -17,7 +17,6 @@ Template allows you to write generic code that works with different types:
 - You'll remove all DUMMY_CODE calls when implementing real functionality
 
 */
-template <typename... Targs> void DUMMY_CODE(Targs &&.../* unused */) {}
 
 using namespace std;
 

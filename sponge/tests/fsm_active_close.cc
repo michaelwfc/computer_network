@@ -9,6 +9,8 @@
 #include <iostream>
 #include <stdexcept>
 #include <string>
+#include <execinfo.h>
+#include <unistd.h>
 
 using namespace std;
 using State = TCPTestHarness::State;
@@ -201,6 +203,12 @@ int main() {
     }
   } catch (const exception &e) {
     cerr << e.what() << endl;
+    
+    void *array[20];
+    size_t size = backtrace(array, 20);
+
+    backtrace_symbols_fd(array, size, STDERR_FILENO);
+
     return EXIT_FAILURE;
   }
 

@@ -7,13 +7,16 @@
 #include "tcp_state.hh"
 
 //! \brief A complete endpoint of a TCP connection
+
+
+
 class TCPConnection {
 private:
   TCPConfig _cfg;
   TCPReceiver _receiver{_cfg.recv_capacity};
   TCPSender _sender{_cfg.send_capacity, _cfg.rt_timeout, _cfg.fixed_isn};
 
-  //! outbound queue of segments that the TCPConnection wants sent
+  //! outbound queue(the network queue) of segments that the TCPConnection wants sent，the network queue
   std::queue<TCPSegment> _segments_out{};
 
   //! Should the TCPConnection stay active (and keep ACKing)
@@ -21,6 +24,13 @@ private:
   //! in case the remote TCPConnection doesn't know we've received its whole
   //! stream?
   bool _linger_after_streams_finish{true};
+
+  // is the connection still alive: RST sent or received
+  bool _active{true};
+  size_t  _time_since_last_segment_received{0};
+
+
+
 
 public:
   //! \name "Input" interface for the writer
@@ -70,6 +80,10 @@ public:
 
   //! Called when a new segment has been received from the network
   void segment_received(const TCPSegment &seg);
+  
+  // add a helper function to push segments from sender's _segments_out to connection's _segments_out, 
+  // so that TCPConnection can send them out on the wire
+  void push_segments_out();
 
   //! Called periodically when time elapses
   void tick(const size_t ms_since_last_tick);
@@ -86,6 +100,9 @@ public:
   //! from the peer)
   bool active() const;
   //!@}
+
+  // send RST 
+  void send_rst();
 
   //! Construct a new connection from a configuration
   explicit TCPConnection(const TCPConfig &cfg) : _cfg{cfg} {}

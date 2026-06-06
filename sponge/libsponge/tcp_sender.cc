@@ -35,11 +35,12 @@ TCPSender::TCPSender(const size_t capacity, const uint16_t retx_timeout,
 // [  ACK'd  ][  IN FLIGHT  ][  not sent yet  ]
 //             ^^^^^^^^^^^
 //             bytes_in_flight()
-// The Formula： bytes_in_flight() = _next_seqno - _last_acked_seqno
+// The Formula： bytes_in_flight() = _next_seqno - _last_acked_seqno/recv_base
 uint64_t TCPSender::bytes_in_flight() const {
   return _next_seqno - _last_acked_seqno;
 }
 
+// fill_window() produces SYN/data/FIN segments
 // A loop to reads bytes from outgoing ByteStream and seands as many bytes as
 // possible in the form of TCP segements, until the window is full or there are
 // no more bytes to send. Sender must not send beyond what receiver announced.
@@ -54,10 +55,8 @@ void TCPSender::fill_window() {
 
   while (true) {
     // Recompute available space each iteration
-    // After each segment is sent, _next_seqno advances, so bytes_in_flight()
-    // increases.
-    // bytes_in_flight() is directly used to compute how much window space is
-    // left:
+    // After each segment is sent, _next_seqno advances, so bytes_in_flight() increases.
+    // bytes_in_flight() is directly used to compute how much window space is  left:
 
     uint16_t avaiable_window_size = effective_window_size - bytes_in_flight();
     // Your loop condition must allow the loop to run even when the stream is
@@ -67,12 +66,12 @@ void TCPSender::fill_window() {
 
     TCPSegment seg;
     // when window has space and something to send, build and send one segment
-    // Let me walk through what building one segment looks like at each stage of
-    // the connection: Stage 1: _next_seqno == 0          → must send SYN (no
-    // payload yet) Stage 2: SYN sent, stream has data → send payload segments
+    // Let me walk through what building one segment looks like at each stage of the connection: 
+    // Stage 1: _syn_sent == false        → must send SYN (no  payload yet) 
+    // Stage 2: SYN sent, stream has data → send payload segments
     // Stage 3: stream EOF reached        → attach FIN to last segment
 
-    // Stage 1: _next_seqno == 0          → must send SYN (no payload yet)
+    // Stage 1: _syn_sent == false          → must send SYN (no payload yet)
     // SYN : Must be the very first thing sent, occupies 1 seq space
     if (!_syn_sent) {
       seg.header().syn = true;
@@ -101,8 +100,7 @@ void TCPSender::fill_window() {
 
     // --- Guard: nothing to send ---
     // If segment occupies zero sequence space, stop looping
-    // This prevents infinite loop when stream is empty and SYN/FIN
-    // already sent
+    // This prevents infinite loop when stream is empty and SYN/FIN  already sent
     if (seg.length_in_sequence_space() == 0) {
       break;
     }
@@ -135,8 +133,8 @@ void TCPSender::fill_window() {
       _retransmission_timer.start();
     }
 
-    // Stop condition: loop until window is full or no more bytes to send
-    if (_stream.buffer_empty() && _fin_sent) {
+    // Stop condition: loop stop until window is full or no more bytes to send
+    if (_stream.buffer_empty() || _fin_sent) {
       break;
     }
   }
@@ -229,16 +227,17 @@ void TCPSender::tick(const size_t ms_since_last_tick) {
   _retransmission_timer.tick(ms_since_last_tick);
   // _timer_running && _time_elapsed >= _initial_retransmission_timeout
   if (_retransmission_timer.expired()) {
-    // Retransmit the oldest outstanding segment
+    
     if (!_outstanding_segments.empty()) {
+      // Retransmit the oldest outstanding segment
+      // produces segment
       TCPSegment seg = _outstanding_segments.front();
       _segments_out.push(seg); // Enqueue for retransmission
 
       // If the window size is greater than 0, perform backoff and increment
-      // retransmissions Why Only Increment When window_size > 0? When the
-      // receiver's window is zero, the sender is doing a zero-window probe —
-      // sending a single byte just to check if the window reopened. This is
-      // expected behavior, not a sign of network trouble. So:
+      // retransmissions Why Only Increment When window_size > 0? 
+      // When the receiver's window is zero, the sender is doing a zero-window probe —
+      // sending a single byte just to check if the window reopened. This is expected behavior, not a sign of network trouble.
       if (_window_size > 0) {
         // exponential Backoff: double the retransmission timeout
         _retransmission_timer.double_rto(); // _rto *= 2;
@@ -264,18 +263,17 @@ unsigned int TCPSender::consecutive_retransmissions() const {
   return _consecutive_retransmissions;
 }
 
-// Sometimes TCPConnection needs to send a segment that carries no data and
-// occupies no sequence space — purely to transmit an ACK back to the remote
-// peer. Receiver sends data to you → your TCPReceiver processes it →
-// TCPConnection needs to ACK it → but TCPSender has nothing to send right now
-// → solution: send_empty_segment() generates a bare ACK carrier
+// send_empty_segment() generates a bare ACK segment
+// if received segment occupied sequence space (e.g. not pure ACK), 
+// TCPConnection needs to send a segment that carries no data and occupies no sequence space 
+// — purely to transmit an ACK back to the remote peer. 
+// Receiver sends data to you → your TCPReceiver processes it → TCPConnection needs to ACK it → but TCPSender has nothing to send right now
 // Normal segment:    [seqno][SYN?][payload][FIN?]   occupies sequence space
-// Empty segment:     [seqno][no SYN][no payload][no FIN]   occupies ZERO
-// sequence space
+// Empty segment:     [seqno][no SYN][no payload][no FIN]   occupies ZERO sequence space(which means doesn't need to be ACKed by the receiver)
+
 void TCPSender::send_empty_segment() {
   TCPSegment seg;
-  // seqno should be next_seqno
-  // no SYN, no FIN, no payload
+  // seqno should be next_seqno, no SYN, no FIN, no payload
   // length_in_sequence_space() == 0
   seg.header().seqno = wrap(_next_seqno, _isn);
 
