@@ -2747,7 +2747,7 @@ make: *** [Makefile:2812: check_lab4] Error 2
 ```
 
 
-## fix: t_active_close
+## fix 1: t_active_close
 
 ```bash
 ctest -V -R t_active_close
@@ -2907,133 +2907,7 @@ throw SomeException(...);
 126           allocate(size_type __n, const void* = static_cast<const void*>(0))
 127           {
 128     #if __cplusplus >= 201103L
-(gdb) 
-129             // _GLIBCXX_RESOLVE_LIB_DEFECTS
-130             // 3308. std::allocator<void>().allocate(n)
-131             static_assert(sizeof(_Tp) != 0, "cannot allocate incomplete types");
-132     #endif
-133
-134             if (__builtin_expect(__n > this->_M_max_size(), false))
-135               {
-136                 // _GLIBCXX_RESOLVE_LIB_DEFECTS
-137                 // 3190. allocator::allocate sometimes returns too little storage
-138                 if (__n > (std::size_t(-1) / sizeof(_Tp)))
-(gdb) 
-139                   std::__throw_bad_array_new_length();
-140                 std::__throw_bad_alloc();
-141               }
-142
-143     #if __cpp_aligned_new && __cplusplus >= 201103L
-144             if (alignof(_Tp) > __STDCPP_DEFAULT_NEW_ALIGNMENT__)
-145               {
-146                 std::align_val_t __al = std::align_val_t(alignof(_Tp));
-147                 return static_cast<_Tp*>(_GLIBCXX_OPERATOR_NEW(__n * sizeof(_Tp),
-148                                                                __al));
-(gdb) 
-149               }
-150     #endif
-151             return static_cast<_Tp*>(_GLIBCXX_OPERATOR_NEW(__n * sizeof(_Tp)));
-152           }
-153
-154           // __p is not permitted to be a null pointer.
-155           void
-156           deallocate(_Tp* __p, size_type __n __attribute__ ((__unused__)))
-157           {
-158     #if __cpp_sized_deallocation
-(gdb) 
-159     # define _GLIBCXX_SIZED_DEALLOC(p, n) (p), (n) * sizeof(_Tp)
-160     #else
-161     # define _GLIBCXX_SIZED_DEALLOC(p, n) (p)
-162     #endif
-163
-164     #if __cpp_aligned_new && __cplusplus >= 201103L
-165             if (alignof(_Tp) > __STDCPP_DEFAULT_NEW_ALIGNMENT__)
-166               {
-167                 _GLIBCXX_OPERATOR_DELETE(_GLIBCXX_SIZED_DEALLOC(__p, __n),
-168                                          std::align_val_t(alignof(_Tp)));
-(gdb) 
-169                 return;
-170               }
-171     #endif
-172             _GLIBCXX_OPERATOR_DELETE(_GLIBCXX_SIZED_DEALLOC(__p, __n));
-173           }
-174
-175     #undef _GLIBCXX_SIZED_DEALLOC
-176     #undef _GLIBCXX_OPERATOR_DELETE
-177     #undef _GLIBCXX_OPERATOR_NEW
-178
-(gdb) 
-179     #if __cplusplus <= 201703L
-180           __attribute__((__always_inline__))
-181           size_type
-182           max_size() const _GLIBCXX_USE_NOEXCEPT
-183           { return _M_max_size(); }
-184
-185     #if __cplusplus >= 201103L
-186           template<typename _Up, typename... _Args>
-187             __attribute__((__always_inline__))
-188             void
-(gdb) 
-189             construct(_Up* __p, _Args&&... __args)
-190             noexcept(__is_nothrow_new_constructible<_Up, _Args...>)
-191             { ::new((void *)__p) _Up(std::forward<_Args>(__args)...); }
-192
-193           template<typename _Up>
-194             __attribute__((__always_inline__))
-195             void
-196             destroy(_Up* __p)
-197             noexcept(std::is_nothrow_destructible<_Up>::value)
-198             { __p->~_Up(); }
-(gdb) 
-199     #else
-200           // _GLIBCXX_RESOLVE_LIB_DEFECTS
-201           // 402. wrong new expression in [some_] allocator::construct
-202           __attribute__((__always_inline__))
-203           void
-204           construct(pointer __p, const _Tp& __val)
-205           { ::new((void *)__p) _Tp(__val); }
-206
-207           __attribute__((__always_inline__))
-208           void
-(gdb) 
-209           destroy(pointer __p) { __p->~_Tp(); }
-210     #endif
-211     #endif // ! C++20
-212
-213           template<typename _Up>
-214             friend __attribute__((__always_inline__)) _GLIBCXX20_CONSTEXPR bool
-215             operator==(const __new_allocator&, const __new_allocator<_Up>&)
-216             _GLIBCXX_NOTHROW
-217             { return true; }
-218
-(gdb) 
-219     #if __cpp_impl_three_way_comparison < 201907L
-220           template<typename _Up>
-221             friend __attribute__((__always_inline__)) _GLIBCXX20_CONSTEXPR bool
-222             operator!=(const __new_allocator&, const __new_allocator<_Up>&)
-223             _GLIBCXX_NOTHROW
-224             { return false; }
-225     #endif
-226
-227         private:
-228           __attribute__((__always_inline__))
-(gdb) 
-229           _GLIBCXX_CONSTEXPR size_type
-230           _M_max_size() const _GLIBCXX_USE_NOEXCEPT
-231           {
-232     #if __PTRDIFF_MAX__ < __SIZE_MAX__
-233             return std::size_t(__PTRDIFF_MAX__) / sizeof(_Tp);
-234     #else
-235             return std::size_t(-1) / sizeof(_Tp);
-236     #endif
-237           }
-238         };
-(gdb) 
-239
-240     _GLIBCXX_END_NAMESPACE_VERSION
-241     } // namespace
-242
-243     #endif
+
 
 
 # 切换到调用当前函数的那个 frame
@@ -3081,15 +2955,228 @@ throw SomeException(...);
 321         o << "TCP in state ";
 ```
 
-### 重新编译：
+### recompile with Debug mode ：
 ```bash
-cmake .. -DCMAKE_CXX_FLAGS="-O0 -g"
-make -j8
+# CS144 的 CMakeLists 默认类似这样：
+# set(CMAKE_CXX_FLAGS_RELEASE "-O3 -DNDEBUG")
+# 如果 cmake .. -DCMAKE_CXX_FLAGS="-O0 -g"
+# 结果变成：CMAKE_CXX_FLAGS + CMAKE_CXX_FLAGS_RELEASE
+# 最终：-O0 -g -O3 -DNDEBUG 后面的 O3 赢了。
 
+# 当前实际上是在 Release 模式 下编译，所以 GDB 出现 <optimized out> 完全正常。
+cs144@cs144vm:~/computer_network/sponge/build$ grep CMAKE_BUILD_TYPE CMakeCache.txt
+CMAKE_BUILD_TYPE:STRING=Release
+CMAKE_BUILD_TYPE_SHADOW:STRING=Release
+
+
+# -O0   完全不优化
+# -Og   保留调试体验，同时做少量优化
+# -O1
+# -O2
+# -O3
+cmake .. -DCMAKE_BUILD_TYPE=Debug   -DCMAKE_CXX_FLAGS_DEBUG="-O0 -g"
+
+cs144@cs144vm:~/computer_network/sponge/build$ grep CMAKE_BUILD_TYPE CMakeCache.txt
+CMAKE_BUILD_TYPE:STRING=Debug
+CMAKE_BUILD_TYPE_SHADOW:STRING=Debug
+
+make -j8
 
 gdb ./tests/fsm_active_close
 
 (gdb) catch throw
 (gdb) run
+
+```
+
+
+### debug for test #1
+
+```bash
+cs144@cs144vm:~/computer_network/sponge/build$ ctest -V -R t_active_close
+UpdateCTestConfiguration  from :/home/cs144/computer_network/sponge/build/DartConfiguration.tcl
+UpdateCTestConfiguration  from :/home/cs144/computer_network/sponge/build/DartConfiguration.tcl
+Test project /home/cs144/computer_network/sponge/build
+Constructing a list of tests
+Done constructing a list of tests
+Updating test list for fixtures
+Added 0 tests to meet fixture requirements
+Checking test dependency graph...
+Checking test dependency graph end
+test 36
+    Start 36: t_active_close
+
+36: Test command: /home/cs144/computer_network/sponge/build/tests/fsm_active_close
+36: Working Directory: /home/cs144/computer_network/sponge/build
+36: Test timeout computed to be: 10000000
+36: Test Failure on expectation:
+36:     Expectation: TCP **not** in state sender=`stream finished and fully acknowledged`, receiver=`input to stream has ended`, active=1, linger_after_streams_finish=1
+36: 
+36: Failure message:
+36:     The TCP has `state = sender=`stream finished and fully acknowledged`, receiver=`input to stream has ended`, active=1, linger_after_streams_finish=1`, but state was expected to **not** be `sender=`stream finished and fully acknowledged`, receiver=`input to stream has ended`, active=1, linger_after_streams_finish=1`
+36: 
+36: List of steps that executed successfully:
+36:     Action:      connect
+36:     Expectation: exactly one segment sent with (A=0,R=0,S=1,F=0,seqno=0,payload_size=0,)
+36:     Action:      packet arrives: Header(flags=SA,seqno=0,ack=1,win=137) with no payload
+36:     Expectation: exactly one segment sent with (A=1,R=0,S=0,F=0,ackno=1,payload_size=0,)
+36:     Action:      close
+36:     Expectation: exactly one segment sent with (A=1,R=0,S=0,F=1,ackno=1,seqno=1,)
+36:     Action:      packet arrives: Header(flags=AF,seqno=1,ack=2,win=137) with no payload
+36:     Expectation: exactly one segment sent with (A=1,R=0,S=0,F=0,ackno=2,)
+36:     Action:      9999ms pass
+36:     Expectation: TCP in state sender=`stream finished and fully acknowledged`, receiver=`input to stream has ended`, active=1, linger_after_streams_finish=1
+36:     Action:      1ms pass
+36: 
+36: Warning: Unclean shutdown of TCPConnection
+36: The TCP has `state = sender=`stream finished and fully acknowledged`, receiver=`input to stream has ended`, active=1, linger_after_streams_finish=1`, but state was expected to **not** be `sender=`stream finished and fully acknowledged`, receiver=`input to stream has ended`, active=1, linger_after_streams_finish=1`
+36: /home/cs144/computer_network/sponge/build/tests/fsm_active_close(+0xbe6b) [0x5a7d44b92e6b]
+36: /lib/x86_64-linux-gnu/libc.so.6(+0x2a578) [0x742c69c2a578]
+36: /lib/x86_64-linux-gnu/libc.so.6(__libc_start_main+0x8b) [0x742c69c2a63b]
+36: /home/cs144/computer_network/sponge/build/tests/fsm_active_close(_start+0x25) [0x5a7d44b98ef5]
+1/1 Test #36: t_active_close ...................***Failed    0.02 sec
+
+0% tests passed, 1 tests failed out of 1
+
+Total Test time (real) =   0.03 sec
+
+The following tests FAILED:
+         36 - t_active_close (Failed)
+Errors while running CTest
+Output from these tests are in: /home/cs144/computer_network/sponge/build/Testing/Temporary/LastTest.log
+Use "--rerun-failed --output-on-failure" to re-run the failed cases verbosely.
+```
+
+
+### Test for test#2
+
+```bash
+cs144@cs144vm:~/computer_network/sponge/build$ ctest -V -R t_active_close
+UpdateCTestConfiguration  from :/home/cs144/computer_network/sponge/build/DartConfiguration.tcl
+UpdateCTestConfiguration  from :/home/cs144/computer_network/sponge/build/DartConfiguration.tcl
+Test project /home/cs144/computer_network/sponge/build
+Constructing a list of tests
+Done constructing a list of tests
+Updating test list for fixtures
+Added 0 tests to meet fixture requirements
+Checking test dependency graph...
+Checking test dependency graph end
+test 36
+    Start 36: t_active_close
+
+36: Test command: /home/cs144/computer_network/sponge/build/tests/fsm_active_close
+36: Working Directory: /home/cs144/computer_network/sponge/build
+36: Test timeout computed to be: 10000000
+36: Test Failure on expectation:
+36:     Expectation: TCP in state sender=`stream finished (FIN sent) but not fully acknowledged`, receiver=`input to stream has ended`, active=1, linger_after_streams_finish=1
+36: 
+36: Failure message:
+36:     The TCP was in state `sender=`stream finished (FIN sent) but not fully acknowledged`, receiver=`input to stream has ended`, active=0, linger_after_streams_finish=0`, but it was expected to be in state `sender=`stream finished (FIN sent) but not fully acknowledged`, receiver=`input to stream has ended`, active=1, linger_after_streams_finish=1`
+36: 
+36: List of steps that executed successfully:
+36:     Action:      connect
+36:     Expectation: exactly one segment sent with (A=0,R=0,S=1,F=0,seqno=0,payload_size=0,)
+36:     Action:      packet arrives: Header(flags=SA,seqno=0,ack=1,win=137) with no payload
+36:     Expectation: exactly one segment sent with (A=1,R=0,S=0,F=0,ackno=1,payload_size=0,)
+36:     Action:      close
+36:     Expectation: exactly one segment sent with (A=1,R=0,S=0,F=1,ackno=1,seqno=1,)
+36:     Action:      packet arrives: Header(flags=AF,seqno=1,ack=1,win=137) with no payload
+36:     Expectation: exactly one segment sent with (A=1,R=0,S=0,F=0,ackno=2,)
+36:     Action:      4000ms pass
+36:     Expectation: exactly one segment sent with (F=1,)
+36: 
+36: The TCP was in state `sender=`stream finished (FIN sent) but not fully acknowledged`, receiver=`input to stream has ended`, active=0, linger_after_streams_finish=0`, but it was expected to be in state `sender=`stream finished (FIN sent) but not fully acknowledged`, receiver=`input to stream has ended`, active=1, linger_after_streams_finish=1`
+36: /home/cs144/computer_network/sponge/build/tests/fsm_active_close(+0xbe6b) [0x6429fcd7ce6b]
+36: /lib/x86_64-linux-gnu/libc.so.6(+0x2a578) [0x7c124242a578]
+36: /lib/x86_64-linux-gnu/libc.so.6(__libc_start_main+0x8b) [0x7c124242a63b]
+36: /home/cs144/computer_network/sponge/build/tests/fsm_active_close(_start+0x25) [0x6429fcd82ef5]
+1/1 Test #36: t_active_close ...................***Failed    0.01 sec
+
+0% tests passed, 1 tests failed out of 1
+
+Total Test time (real) =   0.02 sec
+
+The following tests FAILED:
+         36 - t_active_close (Failed)
+Errors while running CTest
+Output from these tests are in: /home/cs144/computer_network/sponge/build/Testing/Temporary/LastTest.log
+Use "--rerun-failed --output-on-failure" to re-run the failed cases verbosely.
+```
+
+#### Debug test#2 with gdb
+```bash
+# Launch GDB
+gdb ./tests/fsm_active_close
+
+#  catch any exception
+(gdb) catch throw
+Catchpoint 1 (throw)
+
+#  or break whenever TCPExpectationViolation is thrown
+(gdb) catch throw TCPExpectationViolation
+
+#  or break when a specific expectation is checked
+(gdb) break TCPExpectationViolation::TCPExpectationViolation
+
+# run后会出现： Catch point 1 (exception thrown)
+# This stops at the exact line that throws, before the catch block unwinds the stack.
+(gdb) run
+
+(gdb) catch throw
+
+(gdb) run
+Starting program: /home/cs144/computer_network/sponge/build/tests/fsm_active_close 
+
+This GDB supports auto-downloading debuginfo from the following URLs:
+  <https://debuginfod.ubuntu.com>
+Enable debuginfod for this session? (y or [n]) y
+Debuginfod has been enabled.
+To make this setting permanent, add 'set debuginfod enabled on' to .gdbinit.
+Function(s) ^std::(move|forward|as_const|(__)?addressof) will be skipped when stepping.
+Function(s) ^std::(shared|unique)_ptr<.*>::(get|operator) will be skipped when stepping.
+Function(s) ^std::(basic_string|vector|array|deque|(forward_)?list|(unordered_|flat_)?(multi)?(map|set)|span)<.*>::(c?r?(begin|end)|front|back|data|size|empty) will be skipped when stepping.
+Function(s) ^std::(basic_string|vector|array|deque|span)<.*>::operator.] will be skipped when stepping.
+[Thread debugging using libthread_db enabled]
+Using host libthread_db library "/lib/x86_64-linux-gnu/libthread_db.so.1".
+
+Catchpoint 1 (exception thrown), 0x00007ffff7cc132a in __cxa_throw () from /lib/x86_64-linux-gnu/libstdc++.so.6
+(gdb) bt
+#0  0x00007ffff7cc132a in __cxa_throw () from /lib/x86_64-linux-gnu/libstdc++.so.6
+#1  0x000055555556c1e4 in ExpectState::execute (this=<optimized out>, harness=...) at /home/cs144/computer_network/sponge/tests/tcp_expectation.hh:329
+#2  0x000055555556f5f5 in TCPTestHarness::execute (this=this@entry=0x7fffffffd760, step=..., note="") at /home/cs144/computer_network/sponge/tests/tcp_fsm_test_harness.cc:168
+#3  0x000055555556744c in main () at /home/cs144/computer_network/sponge/tests/fsm_active_close.cc:51
+(gdb) frame 2
+#2  0x000055555556f5f5 in TCPTestHarness::execute (this=this@entry=0x7fffffffd760, step=..., note="") at /home/cs144/computer_network/sponge/tests/tcp_fsm_test_harness.cc:168
+168         step.execute(*this);
+(gdb) list
+163                   .with_win(DEFAULT_TEST_WINDOW));
+164     }
+165
+166     void TCPTestHarness::execute(const TCPTestStep &step, std::string note) {
+167       try {
+168         step.execute(*this);
+169         while (not _fsm.segments_out().empty()) {
+170           _flt.write(_fsm.segments_out().front());
+171           _fsm.segments_out().pop();
+172         }
+(gdb) frame 1
+#1  0x000055555556c1e4 in ExpectState::execute (this=<optimized out>, harness=...) at /home/cs144/computer_network/sponge/tests/tcp_expectation.hh:329
+329           throw StateExpectationViolation{state, actual_state};
+(gdb) list
+324       }
+325
+326       void execute(TCPTestHarness &harness) const {
+327         TCPState actual_state = harness._fsm.state();
+328         if (actual_state != state) {
+329           throw StateExpectationViolation{state, actual_state};
+330         }
+331       }
+332     };
+333
+(gdb) p state
+value has been optimized out
+(gdb) p actual_state
+$1 = {_sender = "stream finished (FIN sent) but not fully acknowledged", _receiver = "input to stream has ended", _active = false, _linger_after_streams_finish = false}
+(gdb) 
 
 ```

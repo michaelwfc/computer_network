@@ -37,10 +37,24 @@ int main() {
     }
 
     // test #2: start in CLOSING, send ack, time out
+    // CLOSING state in TCP means:
+    // Both sides have sent FIN.
+    // We are waiting for remote to ACK our FIN.
+    // Remote's FIN already received and ACKed.
+
+    // Prereq 1: inbound stream ended          ✓
+    // Prereq 2: our FIN sent                  ✓
+    // Prereq 3: our FIN NOT yet ACKed         ✗ (still waiting)
+    // → should still be active, in CLOSING
     {
       TCPTestHarness test_2 = TCPTestHarness::in_closing(cfg);
 
       test_2.execute(Tick(4 * cfg.rt_timeout));
+      
+      // ExpectOneSegment{}.with_fin(true): This is C++ temporary-object syntax.
+      // static type  = TCPTestStep&
+      // dynamic type = ExpectOneSegment
+      // This is classic runtime polymorphism.
       test_2.execute(ExpectOneSegment{}.with_fin(true));
 
       test_2.execute(ExpectState{State::CLOSING});

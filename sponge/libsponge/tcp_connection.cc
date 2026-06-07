@@ -143,7 +143,10 @@ void TCPConnection::push_segments_out() {
 //! \param[in] ms_since_last_tick number of milliseconds since the last call to
 //! this method
 void TCPConnection::tick(const size_t ms_since_last_tick) {
+
   // advance timers
+  _time_since_last_segment_received += ms_since_last_tick;
+  
   _sender.tick(ms_since_last_tick);
 
   // Unclean shutdown
@@ -263,7 +266,7 @@ bool TCPConnection::active() const {
 
   // not all prereqs met -> still alive
   if (!prereq1 || !prereq2 || !prereq3) {
-    return false;
+    return true;
   }
 
   // ── PREREQS 1-3 MET: check prereq 4 ─────────────────────────
