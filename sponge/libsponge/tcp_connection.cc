@@ -56,7 +56,6 @@ void TCPConnection::segment_received(const TCPSegment &seg) {
   // reset linger time
   _time_since_last_segment_received = 0;
 
-
   // Normal processing
   // 1. Pass the segment to the receiver, which will process it and update its
   // ACK state.
@@ -65,34 +64,50 @@ void TCPConnection::segment_received(const TCPSegment &seg) {
   // 2. If the incoming segment has a valid ACK, pass the ACK information to the
   // sender, which will update its state and possibly send new segments.
   if (seg.header().ack) {
-    _sender.ack_received(seg.header().ackno, seg.header().win);
+    // guard: only process ACK if we have actually sent something in LISTEN state sender has never sent → ignore ACK
+    // This checks whether the sender has ever sent anything:
+    // next_seqno_absolute == 0  →  sender never sent SYN yet   →  connection is in LISTEN state  →  we have not initiated anything 
+    // next_seqno_absolute >  0   →  sender has sent at least SYN→  connection is active →  ACK is meaningful
+    if (_sender.next_seqno_absolute() > 0) {
+      _sender.ack_received(seg.header().ackno, seg.header().win);
+    }
   }
 
   // ── LINGER FLAG UPDATE ────────────────────────────────────────
   // If inbound stream just ended AND we have not sent FIN yet
   // → remote closed first → passive close → no linger needed
-  // _receiver.stream_out().input_ended()： 
-  // The inbound stream has been fully reassembled AND the FIN has been processed.
-  //In other words: remote peer sent FIN， we received it，reassembler delivered it to the byte stream，  → remote has no more data to send to us
-  // !_sender.fin_sent()： 
+  // _receiver.stream_out().input_ended()：
+  // The inbound stream has been fully reassembled AND the FIN has been
+  // processed.
+  // In other words: remote peer sent FIN， we received it，reassembler
+  // delivered it to the byte stream，  → remote has no more data to send to us
+  // !_sender.fin_sent()：
   // We have NOT yet sent our own FIN.
-  // In other words: local application has NOT yet called end_input_stream()， OR end_input_stream() was called but FIN not yet transmitted， 
-  // → we have not committed to closing our outbound stream yet
-  // if (remote's FIN arrived) AND (we haven't sent our FIN yet)
-  // → remote closed their outbound stream BEFORE we closed ours
-  // → remote was the FIRST to initiate closing
-  // → this is PASSIVE CLOSE from our perspective
+  // In other words: local application has NOT yet called end_input_stream()，
+  // OR end_input_stream() was called but FIN not yet transmitted， → we have
+  // not committed to closing our outbound stream yet if (remote's FIN arrived)
+  // AND (we haven't sent our FIN yet) → remote closed their outbound stream
+  // BEFORE we closed ours → remote was the FIRST to initiate closing → this is
+  // PASSIVE CLOSE from our perspective
 
   if (_receiver.stream_out().input_ended() && !_sender.fin_sent()) {
-  
-        _linger_after_streams_finish = false;
-    }
 
+    _linger_after_streams_finish = false;
+  }
 
   // ── MUST REPLY RULE ───────────────────────────────────────────
-  // [3] always try to fill window
+  // [3] fill window only if connection is past LISTEN state
   // This is what produces the server's SYN on the first call
-  _sender.fill_window();
+  // _receiver.ackno().has_value() means:   receiver has seen a SYN from remote → passive open started 
+  // _sender.next_seqno_absolute() > 0 means:  sender has sent SYN → active open started 
+  // Either condition means we are past LISTEN
+  if (_receiver.ackno().has_value() || _sender.next_seqno_absolute() > 0) {
+    // we have started a connection (active or passive), so we should reply to
+    // the peer's segment and try to fill the window fill_window() may produce
+    // new segments in sender.segments_out, which will be enriched and sent out
+    // by push_segments_out() below
+    _sender.fill_window();
+  }
 
   // 4. if received segment occupied sequence space (e.g. not pure ACK),
   // TCPConnection must ensure at least one segment goes out:
@@ -118,7 +133,8 @@ void TCPConnection::segment_received(const TCPSegment &seg) {
 // The receiver only computes: ackno, window_size.
 // TCPConnection merges them in push_segments_out().
 // enriched with ackno/window, moved to _segments_out, sent to network
-// Every place that might cause _sender to produce segments must be followed by push_segments_out().
+// Every place that might cause _sender to produce segments must be followed by
+// push_segments_out().
 void TCPConnection::push_segments_out() {
   while (!_sender.segments_out().empty()) {
     TCPSegment seg = _sender.segments_out().front();
@@ -146,7 +162,7 @@ void TCPConnection::tick(const size_t ms_since_last_tick) {
 
   // advance timers
   _time_since_last_segment_received += ms_since_last_tick;
-  
+
   _sender.tick(ms_since_last_tick);
 
   // Unclean shutdown
@@ -156,15 +172,16 @@ void TCPConnection::tick(const size_t ms_since_last_tick) {
     return;
   }
 
-  // _sender.tick() may produce retransmitted segments sitting in _sender.segments_out
-  push_segments_out(); 
+  // _sender.tick() may produce retransmitted segments sitting in
+  // _sender.segments_out
+  push_segments_out();
 
-  // active() reads _time_since_last_segment_received and all prereqs nothing extra needed here — active() handles the logic
-
+  // active() reads _time_since_last_segment_received and all prereqs nothing
+  // extra needed here — active() handles the logic
 }
 
 // The RST Helper: Used by tick() and destructor
-void TCPConnection::send_rst(){
+void TCPConnection::send_rst() {
   // get a segment with correct seqno
   _sender.send_empty_segment();
 
@@ -174,21 +191,17 @@ void TCPConnection::send_rst(){
   seg.header().rst = true;
 
   // add ack if receiver has valid ackno
-  if(_receiver.ackno().has_value()){
-    seg.header().ack=true;
+  if (_receiver.ackno().has_value()) {
+    seg.header().ack = true;
     seg.header().ackno = _receiver.ackno().value();
   }
 
   _segments_out.push(seg);
 
-
   // kill both stream
   _sender.stream_in().set_error();
   _receiver.stream_out().set_error();
   _active = false;
-
-
-
 }
 
 // Hands bytes from the application into the outbound ByteStream (which lives
@@ -272,10 +285,11 @@ bool TCPConnection::active() const {
   // ── PREREQS 1-3 MET: check prereq 4 ─────────────────────────
   // Prereq 4: remote peer KNOWS we received everything
   // Option B: passive close → no linger → done immediately
-  if(!_linger_after_streams_finish) return false;
+  if (!_linger_after_streams_finish)
+    return false;
 
   // Option A: active close → must linger 10 × rt_timeout
-  return (_time_since_last_segment_received < 10*_cfg.rt_timeout);
+  return (_time_since_last_segment_received < 10 * _cfg.rt_timeout);
 }
 
 TCPConnection::~TCPConnection() {

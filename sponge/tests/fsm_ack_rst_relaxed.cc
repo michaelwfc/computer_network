@@ -20,8 +20,9 @@ static void ack_listen_test(const TCPConfig &cfg, const WrappingInt32 seqno,
 
     // any ACK should result in a RST
     test.send_ack(seqno, ackno);
-
+    // connection must STAY in LISTEN — ACK in LISTEN should be IGNORED
     test.execute(ExpectState{State::LISTEN});
+    // must NOT send RST or anything
     test.execute(ExpectNoSegment{},
                  "test 3 failed: ACKs in LISTEN should be ignored");
   } catch (const exception &e) {

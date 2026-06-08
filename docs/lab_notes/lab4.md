@@ -1783,7 +1783,7 @@ The elegance of TCP teardown is that it handles an impossible problem (Two Gener
 
 # Test
 
-## 1st Test
+## Start Test
 
 ```bash
 chmod +x /home/cs144/computer_network/sponge/tun.sh
@@ -2749,6 +2749,7 @@ make: *** [Makefile:2812: check_lab4] Error 2
 
 ## fix 1: t_active_close
 
+### ctest for t_active_close
 ```bash
 ctest -V -R t_active_close
 
@@ -2798,7 +2799,7 @@ cs144@cs144vm:~/computer_network/sponge/build$
 
 
 
-### Track the exception of the error: gdb + catch throw
+### GDB debug for fsm_active_close
 
 ```bash
 gdb ./tests/fsm_active_close
@@ -2990,7 +2991,7 @@ gdb ./tests/fsm_active_close
 ```
 
 
-### debug for test #1
+### ctest for test #1 of t_active_close
 
 ```bash
 cs144@cs144vm:~/computer_network/sponge/build$ ctest -V -R t_active_close
@@ -3048,7 +3049,7 @@ Use "--rerun-failed --output-on-failure" to re-run the failed cases verbosely.
 ```
 
 
-### Test for test#2
+### ctest for test #2 of t_active_close
 
 ```bash
 cs144@cs144vm:~/computer_network/sponge/build$ ctest -V -R t_active_close
@@ -3103,7 +3104,7 @@ Output from these tests are in: /home/cs144/computer_network/sponge/build/Testin
 Use "--rerun-failed --output-on-failure" to re-run the failed cases verbosely.
 ```
 
-#### Debug test#2 with gdb
+#### GDB Debug test #2
 ```bash
 # Launch GDB
 gdb ./tests/fsm_active_close
@@ -3178,5 +3179,102 @@ value has been optimized out
 (gdb) p actual_state
 $1 = {_sender = "stream finished (FIN sent) but not fully acknowledged", _receiver = "input to stream has ended", _active = false, _linger_after_streams_finish = false}
 (gdb) 
+
+```
+
+
+## fix2: t_ack_rst
+
+### ctest for t_ack_rst
+
+```bash
+cs144@cs144vm:~/computer_network/sponge/build$ ctest -V -R t_ack_rst
+UpdateCTestConfiguration  from :/home/cs144/computer_network/sponge/build/DartConfiguration.tcl
+UpdateCTestConfiguration  from :/home/cs144/computer_network/sponge/build/DartConfiguration.tcl
+Test project /home/cs144/computer_network/sponge/build
+Constructing a list of tests
+Done constructing a list of tests
+Updating test list for fixtures
+Added 0 tests to meet fixture requirements
+Checking test dependency graph...
+Checking test dependency graph end
+test 38
+    Start 38: t_ack_rst
+
+38: Test command: /home/cs144/computer_network/sponge/build/tests/fsm_ack_rst_relaxed
+38: Working Directory: /home/cs144/computer_network/sponge/build
+38: Test timeout computed to be: 10000000
+38: Test 1
+38: Test 2
+38: Test 3
+38: Test Failure on expectation:
+38:     Expectation: TCP in state sender=`waiting for stream to begin (no SYN sent)`, receiver=`waiting for SYN: ackno is empty`, active=1, linger_after_streams_finish=1
+38: 
+38: Failure message:
+38:     The TCP was in state `sender=`stream started but nothing acknowledged`, receiver=`waiting for SYN: ackno is empty`, active=1, linger_after_streams_finish=1`, but it was expected to be in state `sender=`waiting for stream to begin (no SYN sent)`, receiver=`waiting for SYN: ackno is empty`, active=1, linger_after_streams_finish=1`
+38: 
+38: List of steps that executed successfully:
+38:     Action:      listen
+38:     Action:      packet arrives: Header(flags=A,seqno=2147483648,ack=2147483648,win=137) with no payload
+38: 
+38: Warning: Unclean shutdown of TCPConnection
+38: The TCP was in state `sender=`stream started but nothing acknowledged`, receiver=`waiting for SYN: ackno is empty`, active=1, linger_after_streams_finish=1`, but it was expected to be in state `sender=`waiting for stream to begin (no SYN sent)`, receiver=`waiting for SYN: ackno is empty`, active=1, linger_after_streams_finish=1` (ack_listen_test called from line 131)
+1/2 Test #38: t_ack_rst ........................***Failed    0.01 sec
+test 39
+    Start 39: t_ack_rst_win
+
+39: Test command: /home/cs144/computer_network/sponge/build/tests/fsm_ack_rst_win_relaxed
+39: Working Directory: /home/cs144/computer_network/sponge/build
+39: Test timeout computed to be: 10000000
+2/2 Test #39: t_ack_rst_win ....................   Passed    0.01 sec
+
+The following tests passed:
+        t_ack_rst_win
+
+50% tests passed, 1 tests failed out of 2
+
+Total Test time (real) =   0.04 sec
+
+The following tests FAILED:
+         38 - t_ack_rst (Failed)
+Errors while running CTest
+Output from these tests are in: /home/cs144/computer_network/sponge/build/Testing/Temporary/LastTest.log
+Use "--rerun-failed --output-on-failure" to re-run the failed cases verbosely.
+```
+
+### Vscode debug for t_ack_rst
+
+
+### GDB Debug for t_ack_rst
+
+```bash
+cmake .. -DCMAKE_BUILD_TYPE=Debug   -DCMAKE_CXX_FLAGS_DEBUG="-O0 -g -fno-inline -fno-omit-frame-pointer"
+# -O0                     disable all optimization
+# -g                      full debug symbols
+# -fno-inline             prevent function inlining
+# -fno-omit-frame-pointer keep frame pointers for clean backtraces
+
+make -j8
+
+gdb ./tests/fsm_ack_rst_relaxed
+
+(gdb) catch throw
+
+(gdb) b fsm_ack_rst_relaxed.cc:24
+
+(gdb) run
+
+# When It Stops at Line 24
+# confirm where you are
+list
+
+# check the harness state BEFORE execute() is called
+print harness._fsm._active
+print harness._fsm._linger_after_streams_finish
+print harness._fsm._sender._syn_sent
+print harness._fsm._sender._fin_sent
+print harness._fsm._receiver._syn_received
+
+# Step Into ExpectState::execute()
 
 ```
