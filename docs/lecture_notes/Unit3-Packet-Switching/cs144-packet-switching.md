@@ -2387,11 +2387,13 @@ The progression OQ → IQ → VOQ is a beautiful example of **identifying the ro
 
 ### What is rate guarantee ?
 
-A rate guarantee means: 
-A flow is guaranteed at least a certain bandwidth.
+A rate guarantee(also called a bandwidth guarantee)  means: 
+A flow is guaranteed at least a certain bandwidth,at least R bits/second regardless of what other flows are doing.
 
 The key idea is:
 The router must distinguish flows and schedule them intelligently.
+
+The classic mechanism for this is Weighted Fair Queueing (WFQ)
 
 #### Link Capacity / Link Rate / Line Rate
 

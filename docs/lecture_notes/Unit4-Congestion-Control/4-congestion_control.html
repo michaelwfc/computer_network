@@ -1,0 +1,1323 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>TCP Congestion Control — CS144 Tutorial</title>
+<style>
+  /* ── Design tokens ───────────────────────────────────────────────── */
+  :root {
+    --bg:        #0d1117;
+    --surface:   #161b22;
+    --surface2:  #1f2937;
+    --border:    #30363d;
+    --text:      #e6edf3;
+    --muted:     #8b949e;
+    --accent:    #58a6ff;
+    --accent2:   #f78166;
+    --accent3:   #56d364;
+    --accent4:   #d2a8ff;
+    --warn:      #e3b341;
+    --mono:      'JetBrains Mono', 'Fira Code', 'Consolas', monospace;
+    --sans:      'Inter', system-ui, sans-serif;
+  }
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  html { scroll-behavior: smooth; font-size: 16px; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--sans);
+    line-height: 1.7;
+    display: grid;
+    grid-template-columns: 260px 1fr;
+    min-height: 100vh;
+  }
+
+  /* ── Sidebar ─────────────────────────────────────────────────────── */
+  nav#sidebar {
+    position: sticky;
+    top: 0;
+    height: 100vh;
+    overflow-y: auto;
+    background: var(--surface);
+    border-right: 1px solid var(--border);
+    padding: 2rem 1rem;
+    font-size: 0.8rem;
+  }
+
+  nav#sidebar .logo {
+    font-family: var(--mono);
+    font-size: 0.7rem;
+    color: var(--accent);
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    margin-bottom: 0.25rem;
+  }
+
+  nav#sidebar h2 {
+    font-size: 0.95rem;
+    font-weight: 700;
+    color: var(--text);
+    margin-bottom: 1.5rem;
+    line-height: 1.3;
+  }
+
+  nav#sidebar ul { list-style: none; }
+  nav#sidebar li { margin: 0.15rem 0; }
+
+  nav#sidebar a {
+    display: block;
+    padding: 0.3rem 0.6rem;
+    border-radius: 6px;
+    color: var(--muted);
+    text-decoration: none;
+    transition: all 0.15s;
+    line-height: 1.4;
+  }
+
+  nav#sidebar a:hover, nav#sidebar a.active {
+    color: var(--text);
+    background: var(--surface2);
+  }
+
+  nav#sidebar a.active { color: var(--accent); }
+
+  nav#sidebar .section-num {
+    display: inline-block;
+    width: 1.4rem;
+    font-family: var(--mono);
+    font-size: 0.7rem;
+    color: var(--muted);
+    flex-shrink: 0;
+  }
+
+  /* ── Main content ────────────────────────────────────────────────── */
+  main {
+    padding: 3rem 3.5rem;
+    max-width: 900px;
+  }
+
+  /* ── Hero ────────────────────────────────────────────────────────── */
+  .hero {
+    border-bottom: 1px solid var(--border);
+    padding-bottom: 2.5rem;
+    margin-bottom: 3rem;
+  }
+
+  .hero .eyebrow {
+    font-family: var(--mono);
+    font-size: 0.75rem;
+    color: var(--accent);
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    margin-bottom: 0.75rem;
+  }
+
+  .hero h1 {
+    font-size: 2.6rem;
+    font-weight: 800;
+    line-height: 1.15;
+    letter-spacing: -0.03em;
+    background: linear-gradient(135deg, var(--text) 0%, var(--accent) 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    margin-bottom: 1rem;
+  }
+
+  .hero p {
+    color: var(--muted);
+    font-size: 1.05rem;
+    max-width: 600px;
+  }
+
+  .hero .tags {
+    display: flex;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+    margin-top: 1.25rem;
+  }
+
+  .tag {
+    font-family: var(--mono);
+    font-size: 0.7rem;
+    padding: 0.2rem 0.6rem;
+    border-radius: 4px;
+    border: 1px solid var(--border);
+    color: var(--muted);
+  }
+
+  .tag.green  { border-color: var(--accent3); color: var(--accent3); }
+  .tag.blue   { border-color: var(--accent);  color: var(--accent); }
+  .tag.purple { border-color: var(--accent4); color: var(--accent4); }
+  .tag.orange { border-color: var(--warn);    color: var(--warn); }
+
+  /* ── Sections ────────────────────────────────────────────────────── */
+  section {
+    margin-bottom: 4rem;
+    scroll-margin-top: 2rem;
+  }
+
+  section h2 {
+    font-size: 1.5rem;
+    font-weight: 700;
+    letter-spacing: -0.02em;
+    color: var(--text);
+    margin-bottom: 1.25rem;
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+  }
+
+  section h2 .num {
+    font-family: var(--mono);
+    font-size: 0.8rem;
+    color: var(--accent);
+    background: rgba(88, 166, 255, 0.1);
+    border: 1px solid rgba(88, 166, 255, 0.3);
+    padding: 0.15rem 0.5rem;
+    border-radius: 4px;
+    flex-shrink: 0;
+  }
+
+  section h3 {
+    font-size: 1.05rem;
+    font-weight: 600;
+    color: var(--accent4);
+    margin: 1.75rem 0 0.75rem;
+  }
+
+  p { margin-bottom: 1rem; color: var(--text); }
+
+  /* ── Code / Diagram blocks ───────────────────────────────────────── */
+  pre {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-left: 3px solid var(--accent);
+    border-radius: 8px;
+    padding: 1.25rem 1.5rem;
+    overflow-x: auto;
+    font-family: var(--mono);
+    font-size: 0.8rem;
+    line-height: 1.65;
+    color: #c9d1d9;
+    margin: 1.25rem 0;
+  }
+
+  code {
+    font-family: var(--mono);
+    font-size: 0.85em;
+    background: rgba(88, 166, 255, 0.1);
+    border: 1px solid rgba(88, 166, 255, 0.2);
+    padding: 0.1em 0.35em;
+    border-radius: 4px;
+    color: var(--accent);
+  }
+
+  pre code {
+    background: none;
+    border: none;
+    padding: 0;
+    color: inherit;
+    font-size: inherit;
+  }
+
+  /* ── Tables ──────────────────────────────────────────────────────── */
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 1.25rem 0;
+    font-size: 0.875rem;
+  }
+
+  th {
+    background: var(--surface);
+    color: var(--accent);
+    font-family: var(--mono);
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    padding: 0.6rem 0.9rem;
+    border: 1px solid var(--border);
+    text-align: left;
+    font-weight: 600;
+  }
+
+  td {
+    padding: 0.55rem 0.9rem;
+    border: 1px solid var(--border);
+    color: var(--muted);
+    vertical-align: top;
+  }
+
+  tr:nth-child(even) td { background: rgba(255,255,255,0.02); }
+
+  td strong { color: var(--text); }
+
+  /* ── Callout boxes ───────────────────────────────────────────────── */
+  .callout {
+    border-radius: 8px;
+    padding: 1rem 1.25rem;
+    margin: 1.25rem 0;
+    border-left: 4px solid;
+    font-size: 0.9rem;
+  }
+
+  .callout.info  { background: rgba(88,166,255,0.07); border-color: var(--accent);  }
+  .callout.warn  { background: rgba(227,179,65,0.08); border-color: var(--warn);   }
+  .callout.good  { background: rgba(86,211,100,0.07); border-color: var(--accent3); }
+  .callout.bad   { background: rgba(247,129,102,0.08); border-color: var(--accent2); }
+
+  .callout strong { display: block; margin-bottom: 0.3rem; }
+  .callout.info  strong { color: var(--accent); }
+  .callout.warn  strong { color: var(--warn); }
+  .callout.good  strong { color: var(--accent3); }
+  .callout.bad   strong { color: var(--accent2); }
+
+  /* ── AIMD Animation ──────────────────────────────────────────────── */
+  #aimd-canvas-wrap {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 1.25rem;
+    margin: 1.25rem 0;
+  }
+
+  #aimd-canvas-wrap h4 {
+    font-family: var(--mono);
+    font-size: 0.75rem;
+    color: var(--muted);
+    letter-spacing: 0.05em;
+    margin-bottom: 0.75rem;
+  }
+
+  canvas#aimd {
+    display: block;
+    width: 100%;
+    height: 200px;
+    border-radius: 4px;
+  }
+
+  .btn-row {
+    display: flex;
+    gap: 0.6rem;
+    margin-top: 0.75rem;
+  }
+
+  button.btn {
+    font-family: var(--mono);
+    font-size: 0.75rem;
+    padding: 0.4rem 1rem;
+    border-radius: 6px;
+    border: 1px solid var(--border);
+    background: var(--surface2);
+    color: var(--text);
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+
+  button.btn:hover { border-color: var(--accent); color: var(--accent); }
+  button.btn.danger:hover { border-color: var(--accent2); color: var(--accent2); }
+
+  /* ── RTO Calculator ──────────────────────────────────────────────── */
+  .calc-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1rem;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 1.25rem;
+    margin: 1.25rem 0;
+  }
+
+  .calc-field label {
+    display: block;
+    font-family: var(--mono);
+    font-size: 0.7rem;
+    color: var(--muted);
+    letter-spacing: 0.05em;
+    margin-bottom: 0.35rem;
+  }
+
+  .calc-field input[type=range] {
+    width: 100%;
+    accent-color: var(--accent);
+  }
+
+  .calc-field .val {
+    font-family: var(--mono);
+    font-size: 0.85rem;
+    color: var(--accent);
+    margin-top: 0.2rem;
+  }
+
+  .calc-result {
+    grid-column: 1 / -1;
+    background: var(--surface2);
+    border-radius: 6px;
+    padding: 0.75rem 1rem;
+    font-family: var(--mono);
+    font-size: 0.85rem;
+    color: var(--text);
+  }
+
+  .calc-result span { color: var(--accent3); font-weight: bold; }
+
+  /* ── FSM Diagram ─────────────────────────────────────────────────── */
+  .fsm-wrap {
+    overflow-x: auto;
+    margin: 1.25rem 0;
+  }
+
+  /* ── Throughput equation display ─────────────────────────────────── */
+  .equation {
+    text-align: center;
+    padding: 1.5rem;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    margin: 1.25rem 0;
+    font-family: var(--mono);
+    font-size: 1rem;
+    color: var(--text);
+  }
+
+  .equation .eq-main { font-size: 1.3rem; color: var(--accent); margin: 0.5rem 0; }
+  .equation .eq-legend { font-size: 0.75rem; color: var(--muted); margin-top: 0.75rem; line-height: 2; }
+
+  /* ── Worked example steps ────────────────────────────────────────── */
+  .example-step {
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    margin: 0.75rem 0;
+    overflow: hidden;
+  }
+
+  .example-step summary {
+    padding: 0.8rem 1.1rem;
+    cursor: pointer;
+    background: var(--surface);
+    font-weight: 600;
+    font-size: 0.9rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    list-style: none;
+    user-select: none;
+  }
+
+  .example-step summary:hover { background: var(--surface2); }
+
+  .example-step summary::after {
+    content: '▼';
+    font-size: 0.7rem;
+    color: var(--muted);
+    transition: transform 0.2s;
+  }
+
+  .example-step[open] summary::after { transform: rotate(180deg); }
+
+  .example-step .body {
+    padding: 1rem 1.25rem;
+    font-size: 0.9rem;
+  }
+
+  .answer {
+    display: inline-block;
+    background: rgba(86,211,100,0.1);
+    border: 1px solid var(--accent3);
+    color: var(--accent3);
+    font-family: var(--mono);
+    padding: 0.35rem 0.75rem;
+    border-radius: 6px;
+    font-size: 0.85rem;
+    margin-top: 0.5rem;
+    font-weight: bold;
+  }
+
+  /* ── Comparison grid ─────────────────────────────────────────────── */
+  .version-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 1rem;
+    margin: 1.25rem 0;
+  }
+
+  .version-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 1rem;
+  }
+
+  .version-card h4 {
+    font-family: var(--mono);
+    font-size: 0.8rem;
+    color: var(--accent);
+    letter-spacing: 0.05em;
+    margin-bottom: 0.75rem;
+    padding-bottom: 0.5rem;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .version-card ul { list-style: none; font-size: 0.82rem; }
+  .version-card li { padding: 0.2rem 0; color: var(--muted); }
+  .version-card li::before { content: '✓ '; color: var(--accent3); }
+  .version-card li.no::before { content: '✗ '; color: var(--accent2); }
+  .version-card li.no { color: rgba(139, 148, 158, 0.5); }
+
+  /* ── Misc ─────────────────────────────────────────────────────────── */
+  hr { border: none; border-top: 1px solid var(--border); margin: 2.5rem 0; }
+
+  ul, ol { padding-left: 1.5rem; margin: 0.5rem 0 1rem; color: var(--muted); }
+  li { margin: 0.3rem 0; }
+  li strong { color: var(--text); }
+
+  footer {
+    color: var(--muted);
+    font-size: 0.78rem;
+    margin-top: 4rem;
+    padding-top: 1.5rem;
+    border-top: 1px solid var(--border);
+  }
+
+  @media (max-width: 800px) {
+    body { grid-template-columns: 1fr; }
+    nav#sidebar { display: none; }
+    main { padding: 1.5rem; }
+    .version-grid { grid-template-columns: 1fr; }
+    .calc-grid { grid-template-columns: 1fr; }
+  }
+</style>
+</head>
+<body>
+
+<!-- ── Sidebar ──────────────────────────────────────────────────────── -->
+<nav id="sidebar">
+  <div class="logo">CS144 · Stanford</div>
+  <h2>TCP Congestion Control</h2>
+  <ul>
+    <li><a href="#s1"><span class="section-num">01</span> What Is Congestion?</a></li>
+    <li><a href="#s2"><span class="section-num">02</span> Why It Happens</a></li>
+    <li><a href="#s3"><span class="section-num">03</span> Max-Min Fairness</a></li>
+    <li><a href="#s4"><span class="section-num">04</span> Where to Control?</a></li>
+    <li><a href="#s5"><span class="section-num">05</span> AIMD Algorithm</a></li>
+    <li><a href="#s6"><span class="section-num">06</span> Single Flow</a></li>
+    <li><a href="#s7"><span class="section-num">07</span> Multiple Flows</a></li>
+    <li><a href="#s8"><span class="section-num">08</span> TCP History</a></li>
+    <li><a href="#s9"><span class="section-num">09</span> cwnd & Slow Start</a></li>
+    <li><a href="#s10"><span class="section-num">10</span> TCP Tahoe FSM</a></li>
+    <li><a href="#s11"><span class="section-num">11</span> RTT Estimation</a></li>
+    <li><a href="#s12"><span class="section-num">12</span> Self-Clocking</a></li>
+    <li><a href="#s13"><span class="section-num">13</span> TCP Reno</a></li>
+    <li><a href="#s14"><span class="section-num">14</span> Chiu-Jain Plot</a></li>
+    <li><a href="#s15"><span class="section-num">15</span> Worked Example</a></li>
+    <li><a href="#s16"><span class="section-num">16</span> Summary</a></li>
+  </ul>
+</nav>
+
+<!-- ── Main ─────────────────────────────────────────────────────────── -->
+<main>
+
+  <!-- Hero -->
+  <div class="hero">
+    <div class="eyebrow">Stanford CS144 · Unit 4</div>
+    <h1>TCP Congestion Control</h1>
+    <p>From first principles to TCP Reno — a complete walkthrough of how the Internet avoids collapse and converges to fair, efficient sharing.</p>
+    <div class="tags">
+      <span class="tag blue">AIMD</span>
+      <span class="tag green">TCP Tahoe</span>
+      <span class="tag purple">TCP Reno</span>
+      <span class="tag orange">Slow Start</span>
+      <span class="tag">Max-Min Fairness</span>
+      <span class="tag">Self-Clocking</span>
+    </div>
+  </div>
+
+  <!-- ── §1 What is Congestion ─────────────────────────────────────── -->
+  <section id="s1">
+    <h2><span class="num">01</span> What Is Congestion?</h2>
+    <p>Congestion happens when more data arrives at a router than it can forward. The router's queue fills. If the queue overflows, packets are dropped. TCP must detect this and respond.</p>
+
+    <div class="callout info">
+      <strong>Intuition</strong>
+      Think of a highway on-ramp during rush hour. Cars (packets) pile up because the highway (link) can't absorb them all. The on-ramp queue (router buffer) is the only place to put the overflow.
+    </div>
+
+    <h3>Time scales of congestion</h3>
+    <table>
+      <tr><th>Scale</th><th>Example</th><th>Mechanism</th></tr>
+      <tr><td>~100 µs</td><td>Two packets arrive at once</td><td>Micro-burst collision in a single router queue</td></tr>
+      <tr><td>~10 ms</td><td>Multiple flows saturate a link</td><td>Sustained overload, queue grows steadily</td></tr>
+      <tr><td>~hours</td><td>Flash crowd / peak hour</td><td>Too many users simultaneously</td></tr>
+    </table>
+
+<pre>
+              ┌──────────────┐
+In1 (10 Mb/s) ──►│              │
+               │  Router      ├──► Out (10 Mb/s, bottleneck)
+In2 (10 Mb/s) ──►│  + Queue     │
+               └──────────────┘
+
+  In1 + In2 = 20 Mb/s  >  Out = 10 Mb/s
+  → queue grows → buffer fills → PACKET DROP
+</pre>
+
+    <div class="callout warn">
+      <strong>Key insight: congestion is unavoidable — and arguably good</strong>
+      Empty queues mean low delay but wasted capacity. Occupied queues mean efficient usage but higher delay. The goal is to keep queues occupied without overflowing them.
+    </div>
+  </section>
+
+  <!-- ── §2 Why Congestion Happens ────────────────────────────────── -->
+  <section id="s2">
+    <h2><span class="num">02</span> Why Congestion Happens</h2>
+    <p>The Internet uses packet switching precisely because it makes efficient use of links. Efficiency requires that links are sometimes fully utilized — which means queues fill up.</p>
+
+    <h3>Additional observations</h3>
+    <ul>
+      <li>When packets are dropped, <strong>retransmissions add more load</strong> — making congestion worse.</li>
+      <li>Dropped packets <strong>waste all upstream resources</strong> consumed before the drop point.</li>
+      <li>We need a definition of fairness to decide how flows should share a bottleneck.</li>
+    </ul>
+
+    <div class="callout bad">
+      <strong>The vicious cycle of pre-Tahoe TCP</strong>
+      Congestion → drops → retransmissions → more congestion → more drops → collapse.
+      This actually happened in 1986. The Internet became unusable.
+    </div>
+  </section>
+
+  <!-- ── §3 Max-Min Fairness ───────────────────────────────────────── -->
+  <section id="s3">
+    <h2><span class="num">03</span> Fairness and Max-Min Fairness</h2>
+
+    <h3>Why we need a fairness definition</h3>
+    <p>Consider flows A, B, C sharing a network. Two allocations:</p>
+    <table>
+      <tr><th>Allocation</th><th>rA</th><th>rB</th><th>rC</th><th>Total</th><th>Fair?</th></tr>
+      <tr><td>#1</td><td>0.25</td><td>1.75</td><td>0.75</td><td>2.75</td><td>❌ B takes almost everything</td></tr>
+      <tr><td>#2</td><td>0.5</td><td>1.5</td><td>0.5</td><td>2.5</td><td>✓ Better share</td></tr>
+    </table>
+
+    <h3>Max-Min Fairness</h3>
+    <div class="callout good">
+      <strong>Definition</strong>
+      An allocation is max-min fair if you cannot increase the rate of one flow without decreasing the rate of another flow that already has a <em>lower</em> rate.
+    </div>
+
+    <p>On a single link with N flows and capacity C, the max-min fair allocation gives each flow exactly <code>C/N</code>. In a multi-hop network, the calculation is more complex — some flows are constrained by different bottlenecks.</p>
+
+    <h3>Goals for congestion control</h3>
+    <ol>
+      <li><strong>High throughput:</strong> keep links busy and flows fast</li>
+      <li><strong>Max-min fairness:</strong> distribute capacity equitably</li>
+      <li><strong>Fast response:</strong> react quickly to changing conditions</li>
+      <li><strong>Distributed control:</strong> endpoints decide, not a central authority</li>
+    </ol>
+  </section>
+
+  <!-- ── §4 Where to Control ──────────────────────────────────────── -->
+  <section id="s4">
+    <h2><span class="num">04</span> Where to Put Congestion Control?</h2>
+
+    <div class="version-grid" style="grid-template-columns: 1fr 1fr;">
+      <div class="version-card">
+        <h4>In the Network (Routers)</h4>
+        <ul>
+          <li>Per-flow queues at each router</li>
+          <li>Fair Queueing (FQ) scheduler</li>
+          <li>Precise, guaranteed fairness</li>
+          <li class="no">Routers track per-flow state</li>
+          <li class="no">Does not scale to the Internet</li>
+        </ul>
+      </div>
+      <div class="version-card">
+        <h4>At the End Host (TCP)</h4>
+        <ul>
+          <li>Infer congestion from packet loss</li>
+          <li>Adjust sending rate accordingly</li>
+          <li>Routers stay simple (just drop)</li>
+          <li>Scales to billions of flows</li>
+          <li class="no">Relies on correct endpoint behavior</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="callout info">
+      <strong>The Internet's choice</strong>
+      TCP implements end-host-based congestion control. Intelligence lives at the edges; the network core stays simple. This design scales, but depends on endpoints playing by the rules.
+    </div>
+  </section>
+
+  <!-- ── §5 AIMD ──────────────────────────────────────────────────── -->
+  <section id="s5">
+    <h2><span class="num">05</span> AIMD: The Core Algorithm</h2>
+
+    <p><strong>AIMD = Additive Increase, Multiplicative Decrease.</strong> This is TCP's steady-state algorithm for probing available bandwidth.</p>
+
+<pre>
+  If packet received OK:   W ← W + 1/W    (≈ +1 MSS per RTT)
+  If packet is dropped:    W ← W / 2      (halve immediately)
+</pre>
+
+    <h3>The AIMD Sawtooth — Live Simulation</h3>
+
+    <div id="aimd-canvas-wrap">
+      <h4>CWND OVER TIME (click "Drop Packet" to simulate loss)</h4>
+      <canvas id="aimd" width="800" height="200"></canvas>
+      <div class="btn-row">
+        <button class="btn" id="btnPlay">⏸ Pause</button>
+        <button class="btn danger" id="btnDrop">⚡ Drop Packet</button>
+        <button class="btn" id="btnReset">↺ Reset</button>
+      </div>
+    </div>
+
+    <p>The sawtooth is TCP's stable operating point. Senders probe upward with additive increase, then back off sharply on a detected loss. Over many flows, the sawteeth average out to a consistently high link utilization.</p>
+  </section>
+
+  <!-- ── §6 Single Flow ────────────────────────────────────────────── -->
+  <section id="s6">
+    <h2><span class="num">06</span> AIMD with a Single Flow</h2>
+
+    <h3>Sending rate equation</h3>
+    <p>The throughput of a sender with window size W and round-trip time RTT is:</p>
+<pre>
+  R = W / RTT
+</pre>
+
+    <h3>Two operating regimes</h3>
+    <table>
+      <tr><th>Condition</th><th>Behavior</th><th>Problem</th></tr>
+      <tr><td><code>R × RTT &gt; W</code></td><td>Sender is window-limited; waiting for ACKs</td><td>ACKs arrive in bursts — link may idle</td></tr>
+      <tr><td><code>R × RTT = W</code> ✓</td><td>Pipe exactly full; ACKs evenly spaced</td><td>None — this is the optimal state</td></tr>
+    </table>
+
+    <h3>Buffer sizing</h3>
+    <div class="callout info">
+      <strong>Rule of thumb</strong>
+      For a single AIMD flow to keep the link continuously busy, the router buffer must be at least:<br><br>
+      <code>Buffer ≥ RTT × C</code><br><br>
+      where C is the link capacity. Too small a buffer → the link goes idle after a drop.
+    </div>
+
+    <h3>Key observations</h3>
+    <ul>
+      <li>Window expands/contracts to probe how many bytes the pipe can hold.</li>
+      <li>The sawtooth is the stable, self-regulating operating point.</li>
+      <li>Sending rate is effectively <strong>constant</strong> if buffers are sized correctly.</li>
+    </ul>
+  </section>
+
+  <!-- ── §7 Multiple Flows ─────────────────────────────────────────── -->
+  <section id="s7">
+    <h2><span class="num">07</span> Multiple Flows and the Throughput Equation</h2>
+
+    <p>With many flows sharing a bottleneck, the buffer always contains packets from multiple senders. Unlike a single flow, sending rate now varies with window size:</p>
+
+<pre>
+  Single flow:    R = W/RTT(t)  ≈ constant  (RTT also varies with window)
+  Multiple flows: R = W(t)/RTT  ∝ W(t)      (RTT stays roughly constant)
+</pre>
+
+    <h3>TCP Throughput Equation</h3>
+
+    <div class="equation">
+      <div>From geometric analysis of the AIMD sawtooth:</div>
+      <div class="eq-main">R = √(3/2) / (RTT × √p)</div>
+      <div class="eq-legend">
+        R = per-flow throughput &nbsp;|&nbsp; RTT = round-trip time &nbsp;|&nbsp; p = packet drop probability
+      </div>
+    </div>
+
+    <h3>Interpreting the equation</h3>
+    <table>
+      <tr><th>Change</th><th>Effect on throughput</th><th>Implication</th></tr>
+      <tr><td>RTT doubles</td><td>R halves</td><td><strong>Long-RTT flows are penalized</strong> — a fairness problem</td></tr>
+      <tr><td>p → 0</td><td>R → ∞</td><td>Bounded by flow window and link capacity in practice</td></tr>
+      <tr><td>p = 1%</td><td>Very low R</td><td>AIMD is extremely sensitive to loss rate</td></tr>
+    </table>
+
+    <div class="callout warn">
+      <strong>RTT unfairness</strong>
+      Two flows on the same link — one with RTT = 10 ms, one with RTT = 100 ms — will converge to a 10:1 throughput ratio. AIMD does <em>not</em> achieve max-min fairness when RTTs differ. This is a known limitation.
+    </div>
+  </section>
+
+  <!-- ── §8 History ────────────────────────────────────────────────── -->
+  <section id="s8">
+    <h2><span class="num">08</span> TCP History: The Collapse</h2>
+
+    <table>
+      <tr><th>Year</th><th>Event</th></tr>
+      <tr><td>1974</td><td>3-way handshake developed by Vint Cerf et al.</td></tr>
+      <tr><td>1978</td><td>TCP and IP split into separate layers</td></tr>
+      <tr><td>1983</td><td>ARPAnet switches to TCP/IP on January 1</td></tr>
+      <tr><td><strong>1986</strong></td><td><strong>Internet suffers congestion collapse — becomes unusable</strong></td></tr>
+      <tr><td>1987–88</td><td>Van Jacobson diagnoses and fixes TCP → <strong>TCP Tahoe</strong></td></tr>
+      <tr><td>1990</td><td>Fast recovery added → <strong>TCP Reno</strong></td></tr>
+    </table>
+
+    <h3>What was congestion collapse?</h3>
+
+    <p>Pre-Tahoe TCP had <strong>no congestion window</strong>. On connection establishment, the sender immediately transmitted a full window of segments — potentially overwhelming the bottleneck.</p>
+
+    <div class="callout bad">
+      <strong>The collapse mechanism</strong>
+      1. Sender blasts full window → most packets dropped at bottleneck<br>
+      2. TCP retransmits dropped packets → adds <em>more</em> traffic to an already congested network<br>
+      3. New segments are then also dropped → more retransmissions<br>
+      4. The network is 100% busy doing useless work. Applications see near-zero throughput.
+    </div>
+
+    <p>Van Jacobson's insight was that TCP needed to <em>probe</em> the network slowly, not burst into it blindly. His three fixes — congestion window, better RTT estimation, and self-clocking — are still at the core of every TCP implementation today.</p>
+  </section>
+
+  <!-- ── §9 cwnd + Slow Start ──────────────────────────────────────── -->
+  <section id="s9">
+    <h2><span class="num">09</span> Congestion Window and Slow Start</h2>
+
+    <h3>The congestion window (cwnd)</h3>
+    <p>Flow control limits what the <em>receiver</em> can handle. The congestion window limits what the <em>network</em> can handle:</p>
+
+<pre>
+  Sender window = min(flow control window, congestion window)
+</pre>
+
+    <h3>Two states</h3>
+
+    <table>
+      <tr><th>State</th><th>When</th><th>cwnd update per ACK</th><th>Growth rate</th></tr>
+      <tr><td><strong>Slow Start</strong></td><td>Startup, or after timeout</td><td><code>cwnd += MSS</code></td><td>Exponential (doubles per RTT)</td></tr>
+      <tr><td><strong>Congestion Avoidance</strong></td><td>cwnd ≥ ssthresh</td><td><code>cwnd += MSS²/cwnd</code></td><td>Linear (+1 MSS per RTT)</td></tr>
+    </table>
+
+<pre>
+Slow Start trace:
+  RTT 1: cwnd=1, send 1 pkt  → receive 1 ACK  → cwnd=2
+  RTT 2: cwnd=2, send 2 pkts → receive 2 ACKs → cwnd=4
+  RTT 3: cwnd=4, send 4 pkts → receive 4 ACKs → cwnd=8
+  ...  (doubles each RTT until cwnd ≥ ssthresh)
+
+Congestion Avoidance trace (cwnd=8, MSS=1):
+  Each of 8 ACKs adds 1/8 → total +1 per RTT (linear)
+</pre>
+
+    <div class="callout info">
+      <strong>Why "slow" start?</strong>
+      Starting at 1 MSS seems slow — but compared to the old approach of blasting the entire flow window immediately, it's a much gentler probe. The name is relative, not absolute.
+    </div>
+
+    <h3>The ssthresh variable</h3>
+    <p><code>ssthresh</code> (slow start threshold) is the boundary. When a loss occurs: <code>ssthresh = cwnd / 2</code>. TCP remembers where trouble started and becomes conservative near that point on subsequent passes.</p>
+  </section>
+
+  <!-- ── §10 Tahoe FSM ─────────────────────────────────────────────── -->
+  <section id="s10">
+    <h2><span class="num">10</span> TCP Tahoe FSM</h2>
+
+    <h3>Three observable signals</h3>
+    <table>
+      <tr><th>Signal</th><th>Meaning</th><th>TCP action</th></tr>
+      <tr><td>New ACK</td><td>Transfer progressing</td><td>Increase cwnd</td></tr>
+      <tr><td>3 duplicate ACKs</td><td>One segment lost, others arriving</td><td>Fast retransmit + slow start</td></tr>
+      <tr><td>Timeout</td><td>Major network disruption</td><td>Reset cwnd=1, slow start</td></tr>
+    </table>
+
+    <div class="fsm-wrap">
+<pre>
+                      cwnd ≥ ssthresh
+                            │
+         ┌──────────────────▼───────────────────────┐
+         │              Slow Start                  │
+         │   on new ACK:  cwnd += MSS               │
+         └──────────────────┬───────────────────────┘
+                            │ cwnd ≥ ssthresh
+                            ▼
+         ┌─────────────────────────────────────────┐
+         │          Congestion Avoidance            │
+         │   on new ACK:  cwnd += MSS²/cwnd         │
+         └─────────────────────────────────────────┘
+
+  ⚡ On timeout OR triple dup ACK (from either state):
+       ssthresh = cwnd / 2
+       cwnd = 1
+       → enter Slow Start
+       → retransmit missing segment (fast retransmit)
+</pre>
+    </div>
+
+    <h3>Behavior over time</h3>
+<pre>
+cwnd
+│      ssthresh
+│          ↓         ssthresh
+│    /\   /            ↓
+│   /  ──/──────────/────
+│  /         \     /
+│ / [slow]    \   / [slow] [CA]
+│/  [start]  dup [start]
+│            ack  ↑     timeout
+└─────────────────────────────► time
+</pre>
+  </section>
+
+  <!-- ── §11 RTT Estimation ────────────────────────────────────────── -->
+  <section id="s11">
+    <h2><span class="num">11</span> RTT Estimation</h2>
+
+    <h3>Why it matters</h3>
+    <table>
+      <tr><th>RTO too short</th><th>RTO too long</th></tr>
+      <tr><td>False retransmissions → unnecessary slow starts</td><td>Long idle periods before retransmit</td></tr>
+      <tr><td>Congestion window shrinks without real congestion</td><td>Poor utilization on lossy links</td></tr>
+    </table>
+
+    <h3>Pre-Tahoe: EWMA only</h3>
+<pre>
+  r   = α × r + (1-α) × m    (EWMA of RTT samples)
+  RTO = 2 × r
+
+  Problem: assumes variance is a constant fraction of mean.
+  Fails when RTT is high but stable (RTO is wastefully large)
+  or low but variable (RTO triggers false timeouts).
+</pre>
+
+    <h3>TCP Tahoe: EWMA + Variance Tracking</h3>
+<pre>
+  e   = m - r                  (error between measurement and estimate)
+  r   = r + g × e              (update mean, g ≈ 0.125)
+  v   = v + g × (|e| - v)      (update variance estimate)
+  RTO = r + 4 × v              (mean + 4σ ≈ covers most of the distribution)
+
+  If retransmission itself times out: exponentially back off RTO.
+</pre>
+
+    <h3>Interactive RTO Calculator</h3>
+    <div class="calc-grid" id="rto-calc">
+      <div class="calc-field">
+        <label>MEAN RTT (r) — ms</label>
+        <input type="range" id="rMean" min="5" max="300" value="50">
+        <div class="val" id="rMeanVal">50 ms</div>
+      </div>
+      <div class="calc-field">
+        <label>RTT VARIANCE (v) — ms</label>
+        <input type="range" id="rVar" min="0" max="100" value="10">
+        <div class="val" id="rVarVal">10 ms</div>
+      </div>
+      <div class="calc-result">
+        Pre-Tahoe RTO: <span id="rtoOld">—</span> &nbsp;|&nbsp; TCP Tahoe RTO: <span id="rtoNew">—</span>
+      </div>
+    </div>
+
+    <div class="callout good">
+      <strong>Lesson that generalizes</strong>
+      When estimating a retry timer in any networked system, track not just the average delay but also its variance. This principle applies far beyond TCP: HTTP retries, RPC timeouts, distributed system heartbeats.
+    </div>
+  </section>
+
+  <!-- ── §12 Self-Clocking ─────────────────────────────────────────── -->
+  <section id="s12">
+    <h2><span class="num">12</span> Self-Clocking</h2>
+
+    <p>Self-clocking is an emergent behavior that arises when TCP sends ACKs as quickly as possible.</p>
+
+<pre>
+Sender              Wide link       Bottleneck (slow)    Wide link         Receiver
+  │ ───pkt1─────────────────────►│                                            │
+  │ ───pkt2─────────────────────►│ (pkt1 queued)                              │
+  │ ───pkt3─────────────────────►│ (pkt2 queued)                              │
+  │                               │──►pkt1 (slow)──────────────────────────►│
+  │◄── ACK1 ─────────────────────────────────────────────────────────────────│
+  │ ─ send pkt4                   │──►pkt2 (slow)──────────────────────────►│
+  │◄── ACK2 ─────────────────────────────────────────────────────────────────│
+  │ ─ send pkt5                   │──►pkt3 (slow)──────────────────────────►│
+  ...
+
+ACKs arrive spaced at the bottleneck rate → sender sends at the bottleneck rate.
+</pre>
+
+    <div class="callout good">
+      <strong>Why self-clocking is powerful</strong>
+      No explicit rate negotiation is needed. The bottleneck automatically paces ACKs, which pace the sender. TCP only puts a new packet into the network when a packet has left — keeping outstanding data stable and preventing congestion from growing.
+    </div>
+
+    <div class="callout warn">
+      <strong>Consequence: send ACKs immediately</strong>
+      Delayed ACKs (common in some implementations) break self-clocking and degrade throughput. The ACK is a critical timing signal, not just a delivery confirmation.
+    </div>
+  </section>
+
+  <!-- ── §13 TCP Reno ──────────────────────────────────────────────── -->
+  <section id="s13">
+    <h2><span class="num">13</span> TCP Reno: Fast Retransmit and Fast Recovery</h2>
+
+    <p>TCP Tahoe's weakness: a triple dup ACK drops <code>cwnd</code> all the way to 1 and enters slow start. This is too aggressive when only <em>one</em> packet was lost and the rest of the network is fine.</p>
+
+    <h3>Fast Retransmit (in both Tahoe and Reno)</h3>
+    <p>If the sender receives <strong>3 duplicate ACKs</strong>, retransmit the missing segment <em>immediately</em> — without waiting for a timeout.</p>
+
+    <div class="callout info">
+      <strong>Why 3 dup ACKs signal a loss</strong>
+      The receiver is continuing to receive subsequent segments and is acknowledging them. That means the network isn't broken — just one segment is missing. This is very different from a timeout.
+    </div>
+
+    <h3>Fast Recovery (TCP Reno only)</h3>
+    <table>
+      <tr><th>Event</th><th>TCP Tahoe</th><th>TCP Reno</th></tr>
+      <tr><td>Triple dup ACK</td><td><code>cwnd = 1</code>, slow start</td><td><code>cwnd /= 2</code>, stay in CA</td></tr>
+      <tr><td>Timeout</td><td><code>cwnd = 1</code>, slow start</td><td><code>cwnd = 1</code>, slow start</td></tr>
+    </table>
+
+    <p>In steady state with no timeouts, TCP Reno is <em>true AIMD</em>: halve on loss, add on success.</p>
+
+    <h3>Congestion Window Inflation</h3>
+    <p>While in fast recovery, for each duplicate ACK received:</p>
+<pre>
+  cwnd += 1 MSS
+</pre>
+    <p>Each duplicate ACK proves another segment left the network. TCP can safely inject a new segment in its place. Net effect after receiving all the duplicate ACKs:</p>
+<pre>
+  Start of fast recovery:   cwnd = c/2
+  After c duplicate ACKs:   cwnd = c/2 + c = 3c/2
+  Sender can transmit:      c/2 new segments during the recovery RTT
+
+  On new ACK (retransmit confirmed): deflate cwnd = c/2 (correct value)
+</pre>
+
+    <h3>TCP Reno FSM</h3>
+<pre>
+                         ┌─────────────────────┐
+                         │    Fast Recovery     │
+                    ┌───►│  dup ack: cwnd += 1  │◄──── triple dup ack
+                    │    │                      │      ssthresh = cwnd/2
+                    │    │                      │      cwnd = ssthresh+3
+                    │    └──────────┬───────────┘
+                    │               │ new ack: cwnd = ssthresh
+                    │               │
+         ┌──────────▼───────────────▼──────────────────────────────┐
+         │              Congestion Avoidance                        │◄──┐
+         │   ack: cwnd += MSS²/cwnd                                │   │
+         └──────────────────────────────────────────────────────────┘   │ cwnd≥ssthresh
+                    │ triple dup ack       timeout                       │
+                    │                   cwnd=1, ssthresh=cwnd/2    ┌────┴──────────┐
+                    │                         │                    │  Slow Start   │
+                    └─────────────────────────┴───────────────────►│  cwnd += MSS  │
+                                                                    └───────────────┘
+</pre>
+  </section>
+
+  <!-- ── §14 Chiu-Jain ─────────────────────────────────────────────── -->
+  <section id="s14">
+    <h2><span class="num">14</span> Why AIMD Converges to Fairness: The Chiu-Jain Plot</h2>
+
+    <p>Consider two flows A and B sharing a bottleneck of capacity C. Plot their rates as a point (rA, rB).</p>
+
+<pre>
+  rB ▲
+     │                  / ← Fair: rA = rB
+     │                 /
+     │    overload    /
+     │   ◄──────────X──────── Efficient: rA + rB = C
+     │              │  underload
+     │              │
+     └──────────────────────► rA
+
+  Ideal operating point: X (intersection — fair AND efficient)
+</pre>
+
+    <h3>How AIMD moves the point</h3>
+    <ul>
+      <li><strong>Additive Increase:</strong> both flows increase equally → diagonal move (+1, +1) → moves toward the efficient line</li>
+      <li><strong>Multiplicative Decrease:</strong> both halve → move along line from point toward origin → changes the ratio of rA:rB</li>
+    </ul>
+
+<pre>
+  rB
+  ▲              / Fair
+  │      t2     /   t4
+  │       ●    /    ●
+  │      ↗    /   ↗       (AI = diagonal up-right)
+  │  t1 ●    /  t3●
+  │    \ │  / ↘ /         (MD = toward origin)
+  │     \│ /   X ← optimal
+  └──────────────────────► rA
+</pre>
+
+    <div class="callout good">
+      <strong>AIMD converges to fairness</strong>
+      Regardless of starting point, AIMD oscillates around the fair+efficient point. No central coordinator needed. The geometry of additive increase and multiplicative decrease guarantees convergence.
+    </div>
+  </section>
+
+  <!-- ── §15 Worked Example ────────────────────────────────────────── -->
+  <section id="s15">
+    <h2><span class="num">15</span> Worked Example: AIMD Sawtooth Calculations</h2>
+
+    <p><strong>Scenario:</strong> Alice streams HD video at 10 Mb/s. All packets are 250 bytes (2,000 bits). Minimum ping = 5 ms. Buffer perfectly sized to never go empty. Click each question to reveal the answer.</p>
+
+    <details class="example-step">
+      <summary><span>Q1</span> What is the minimum (trough) AIMD window?</summary>
+      <div class="body">
+        <p>The minimum RTT of 5 ms occurs when the buffer is empty but the bottleneck link is full.</p>
+        <pre>Bytes in flight = RTT × rate = 5 ms × 10 Mb/s = 50,000 bits = 6,250 bytes</pre>
+        <span class="answer">Answer: 6,250 bytes</span>
+      </div>
+    </details>
+
+    <details class="example-step">
+      <summary><span>Q2</span> What is the maximum (peak) AIMD window?</summary>
+      <div class="body">
+        <p>When both buffer and link are full, RTT doubles to 10 ms.</p>
+        <pre>Bytes in flight = 10 ms × 10 Mb/s = 100,000 bits = 12,500 bytes
+(6,250 bytes on link + 6,250 bytes queued in buffer)</pre>
+        <span class="answer">Answer: 12,500 bytes</span>
+      </div>
+    </details>
+
+    <details class="example-step">
+      <summary><span>Q3</span> How big is the router buffer?</summary>
+      <div class="body">
+        <p>Buffer holds one minimum-RTT worth of data at the link rate:</p>
+        <pre>5 ms × 10 Mb/s = 50,000 bits = 6,250 bytes</pre>
+        <span class="answer">Answer: 6,250 bytes</span>
+      </div>
+    </details>
+
+    <details class="example-step">
+      <summary><span>Q4</span> After a drop, how long to recover to the maximum window?</summary>
+      <div class="body">
+        <p>Each packet is 2,000 bits → window grows by 2,000 bits per RTT.</p>
+        <pre>Distance to climb = 12,500 - 6,250 = 6,250 bytes = 50,000 bits
+RTTs needed       = 50,000 / 2,000 = 25 RTTs
+Average RTT       = (5 + 10) / 2  = 7.5 ms
+Time              = 25 × 7.5 ms   = 187.5 ms</pre>
+        <span class="answer">Answer: 187.5 ms</span>
+      </div>
+    </details>
+
+    <details class="example-step">
+      <summary><span>Q5</span> With Australia server (RTT = 250 ms), how big should the buffer be?</summary>
+      <div class="body">
+        <pre>Buffer = min RTT × rate = 250 ms × 10 Mb/s = 2,500,000 bits ≈ 298 KB</pre>
+        <p>Note: 50× larger RTT requires 50× larger buffer. This illustrates how buffer requirements scale with RTT.</p>
+        <span class="answer">Answer: ~298 KB</span>
+      </div>
+    </details>
+
+    <details class="example-step">
+      <summary><span>Q6</span> With Australia server, how long to recover after a drop?</summary>
+      <div class="body">
+        <pre>Packets to fill buffer = 2,500,000 / 2,000 = 1,250 RTTs
+Average RTT            = (250 + 500) / 2    = 375 ms
+Time                   = 1,250 × 375 ms     = 468,750 ms ≈ 8 minutes</pre>
+        <p>This dramatically illustrates how AIMD penalizes high-RTT connections. A transatlantic flow loses nearly 8 minutes of recovery time per drop.</p>
+        <span class="answer">Answer: ~468 seconds (~8 minutes)</span>
+      </div>
+    </details>
+  </section>
+
+  <!-- ── §16 Summary ───────────────────────────────────────────────── -->
+  <section id="s16">
+    <h2><span class="num">16</span> Summary</h2>
+
+    <div class="version-grid">
+      <div class="version-card">
+        <h4>Pre-Tahoe (1986)</h4>
+        <ul>
+          <li class="no">No congestion window</li>
+          <li class="no">Blasts full window on connect</li>
+          <li class="no">Poor RTT estimation</li>
+          <li class="no">No self-clocking</li>
+          <li class="no">Caused congestion collapse</li>
+        </ul>
+      </div>
+      <div class="version-card">
+        <h4>TCP Tahoe (1988)</h4>
+        <ul>
+          <li>Congestion window (cwnd)</li>
+          <li>Slow start</li>
+          <li>Congestion avoidance</li>
+          <li>ssthresh</li>
+          <li>RTT estimation + variance</li>
+          <li>Self-clocking</li>
+          <li>Fast retransmit</li>
+          <li class="no">Fast recovery</li>
+          <li class="no">Window inflation</li>
+        </ul>
+      </div>
+      <div class="version-card">
+        <h4>TCP Reno (1990)</h4>
+        <ul>
+          <li>Everything in Tahoe</li>
+          <li>Fast recovery</li>
+          <li>Window inflation</li>
+          <li>True AIMD in steady state</li>
+          <li>Stays in CA on dup ACK</li>
+        </ul>
+      </div>
+    </div>
+
+    <h3>Key equations</h3>
+    <table>
+      <tr><th>Quantity</th><th>Formula</th><th>Notes</th></tr>
+      <tr><td>Throughput</td><td><code>R = √(3/2) / (RTT × √p)</code></td><td>Inversely proportional to RTT and √p</td></tr>
+      <tr><td>Buffer size</td><td><code>B = RTT × C</code></td><td>Needed to keep link busy during AIMD</td></tr>
+      <tr><td>Sender window</td><td><code>W = min(cwnd, rwnd)</code></td><td>Congestion and flow control combined</td></tr>
+      <tr><td>RTO (Tahoe)</td><td><code>RTO = r + 4v</code></td><td>Mean + 4× variance</td></tr>
+    </table>
+
+    <h3>Key principles to remember</h3>
+    <ul>
+      <li><strong>Congestion is unavoidable</strong> — manage it, don't try to eliminate it.</li>
+      <li><strong>AIMD self-regulates</strong> to fairness through geometry, not negotiation.</li>
+      <li><strong>RTT penalization</strong> is a fundamental AIMD limitation.</li>
+      <li><strong>ssthresh</strong> is TCP's memory of where congestion occurred.</li>
+      <li><strong>Self-clocking</strong> paces the sender to match the bottleneck — for free.</li>
+      <li><strong>Fast recovery</strong> keeps TCP in congestion avoidance, maintaining true AIMD.</li>
+    </ul>
+  </section>
+
+  <footer>
+    Based on Stanford CS144 Unit 4 lecture materials by Nick McKeown and Phil Levis. &nbsp;|&nbsp; Tutorial format for educational use.
+  </footer>
+
+</main>
+
+<script>
+// ── AIMD Canvas Simulation ─────────────────────────────────────────────
+const canvas = document.getElementById('aimd');
+const ctx    = canvas.getContext('2d');
+const W = canvas.width, H = canvas.height;
+
+let cwnd = 4, ssthresh = 24, t = 0, history = [], running = true;
+const MSS = 1, MAX_CWND = 32;
+
+function step() {
+  // Additive increase (simplified: +MSS per RTT, here per tick for visualization)
+  cwnd = Math.min(cwnd + MSS / cwnd, MAX_CWND);
+  if (cwnd >= MAX_CWND) { cwnd = MAX_CWND / 2; ssthresh = cwnd; } // simulate auto-drop at max
+  t++;
+  history.push({ t, cwnd, ssthresh });
+  if (history.length > 200) history.shift();
+}
+
+function draw() {
+  ctx.clearRect(0, 0, W, H);
+
+  const pad = { left: 40, right: 10, top: 10, bottom: 30 };
+  const plotW = W - pad.left - pad.right;
+  const plotH = H - pad.top - pad.bottom;
+
+  // Grid
+  ctx.strokeStyle = '#21262d';
+  ctx.lineWidth = 1;
+  for (let v = 0; v <= MAX_CWND; v += 8) {
+    const y = pad.top + plotH - (v / MAX_CWND) * plotH;
+    ctx.beginPath(); ctx.moveTo(pad.left, y); ctx.lineTo(W - pad.right, y); ctx.stroke();
+    ctx.fillStyle = '#484f58';
+    ctx.font = '10px JetBrains Mono, monospace';
+    ctx.fillText(v, 4, y + 4);
+  }
+
+  if (history.length < 2) return;
+
+  const n = history.length;
+  const xOf = i => pad.left + (i / (n - 1)) * plotW;
+  const yOf = v => pad.top + plotH - (v / MAX_CWND) * plotH;
+
+  // ssthresh line
+  const lastSS = history[n - 1].ssthresh;
+  ctx.strokeStyle = '#f78166';
+  ctx.lineWidth = 1;
+  ctx.setLineDash([4, 4]);
+  ctx.beginPath();
+  ctx.moveTo(pad.left, yOf(lastSS));
+  ctx.lineTo(W - pad.right, yOf(lastSS));
+  ctx.stroke();
+  ctx.setLineDash([]);
+  ctx.fillStyle = '#f78166';
+  ctx.font = '10px JetBrains Mono, monospace';
+  ctx.fillText('ssthresh', W - 65, yOf(lastSS) - 4);
+
+  // cwnd line
+  ctx.strokeStyle = '#58a6ff';
+  ctx.lineWidth = 2;
+  ctx.beginPath();
+  history.forEach((pt, i) => {
+    const x = xOf(i), y = yOf(pt.cwnd);
+    if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+  });
+  ctx.stroke();
+
+  // Current value label
+  const last = history[n - 1];
+  ctx.fillStyle = '#58a6ff';
+  ctx.font = 'bold 11px JetBrains Mono, monospace';
+  ctx.fillText(`cwnd=${last.cwnd.toFixed(1)}`, pad.left + 8, pad.top + 18);
+
+  // Axis label
+  ctx.fillStyle = '#484f58';
+  ctx.font = '10px JetBrains Mono, monospace';
+  ctx.fillText('time →', W - 55, H - 8);
+}
+
+let raf;
+function loop() {
+  if (running) step();
+  draw();
+  raf = requestAnimationFrame(loop);
+}
+loop();
+
+document.getElementById('btnPlay').addEventListener('click', function() {
+  running = !running;
+  this.textContent = running ? '⏸ Pause' : '▶ Play';
+});
+
+document.getElementById('btnDrop').addEventListener('click', () => {
+  ssthresh = Math.max(cwnd / 2, 2);
+  cwnd = 1;
+  history.push({ t: t++, cwnd, ssthresh });
+  if (history.length > 200) history.shift();
+});
+
+document.getElementById('btnReset').addEventListener('click', () => {
+  cwnd = 4; ssthresh = 24; t = 0; history = [];
+});
+
+// ── RTO Calculator ────────────────────────────────────────────────────
+function updateRTO() {
+  const r = +document.getElementById('rMean').value;
+  const v = +document.getElementById('rVar').value;
+  document.getElementById('rMeanVal').textContent = r + ' ms';
+  document.getElementById('rVarVal').textContent  = v + ' ms';
+  document.getElementById('rtoOld').textContent  = (2 * r) + ' ms';
+  document.getElementById('rtoNew').textContent  = (r + 4 * v) + ' ms';
+}
+document.getElementById('rMean').addEventListener('input', updateRTO);
+document.getElementById('rVar').addEventListener('input',  updateRTO);
+updateRTO();
+
+// ── Sidebar active section tracking ───────────────────────────────────
+const sections = document.querySelectorAll('section');
+const navLinks = document.querySelectorAll('#sidebar a');
+
+const observer = new IntersectionObserver(entries => {
+  entries.forEach(e => {
+    if (e.isIntersecting) {
+      navLinks.forEach(a => a.classList.remove('active'));
+      const link = document.querySelector(`#sidebar a[href="#${e.target.id}"]`);
+      if (link) link.classList.add('active');
+    }
+  });
+}, { threshold: 0.25 });
+
+sections.forEach(s => observer.observe(s));
+</script>
+</body>
+</html>
