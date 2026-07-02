@@ -190,5 +190,5 @@ After producing the HTML, convert it to a clean Markdown (.md) file:
 
 
 ## Source material
-[all pdfs in this project]
+[all pdfs/markdown slides in this project]
 ```

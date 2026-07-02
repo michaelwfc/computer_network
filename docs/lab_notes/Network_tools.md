@@ -136,6 +136,8 @@ You’ll have to hit for bytes to be transfered.
 
 [www.wireshark.org](https://www.wireshark.org/download.html)
 
+
+## Test TCP-handshakes with wireshark
 1. Request web page from www.cs.brown.edu
    check the IP address
 
@@ -154,6 +156,17 @@ You’ll have to hit for bytes to be transfered.
 
 [ssl-handshakes](https://www.ruanyifeng.com/blog/2014/09/illustration-ssl.html)
 
+## Test DNS with wireshark
+
+## Test DHCP with wireshark
+
+
+
+
+
+
+
+------------
 
 
 # ping
@@ -174,3 +187,7 @@ $ ping www.tsinghua.edu.cn
     最短 = 44ms，最长 = 45ms，平均 = 44ms
 
 ```
+
+
+
+# dig : use dig to test DNS

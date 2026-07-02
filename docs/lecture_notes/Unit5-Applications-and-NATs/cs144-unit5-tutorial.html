@@ -1,0 +1,1372 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CS144 Unit 5 · Application Layer Protocols</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;1,9..40,300;1,9..40,400&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  /* ── Design tokens ─────────────────────────────────────── */
+  :root {
+    --accent:       #1e8a6e;
+    --accent-dim:   #d6ede8;
+    --accent-dark:  #155f4b;
+    --ink:          #1a1a1a;
+    --ink-mid:      #444444;
+    --ink-soft:     #6b7280;
+    --surface:      #f9f8f5;
+    --surface-alt:  #f0efec;
+    --white:        #ffffff;
+    --border:       #dddbd6;
+    --nav-h:        56px;
+    --font-display: 'DM Serif Display', Georgia, serif;
+    --font-body:    'DM Sans', system-ui, sans-serif;
+    --font-code:    'JetBrains Mono', 'Courier New', monospace;
+    --r:            4px;
+    --max-w:        820px;
+    --section-gap:  5rem;
+  }
+
+  /* ── Reset ─────────────────────────────────────────────── */
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  html { scroll-behavior: smooth; }
+  body {
+    background: var(--surface);
+    color: var(--ink);
+    font-family: var(--font-body);
+    font-size: 17px;
+    line-height: 1.75;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  /* ── Nav ─────────────────────────────────────────────── */
+  nav {
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    background: rgba(249,248,245,0.92);
+    backdrop-filter: blur(8px);
+    border-bottom: 1px solid var(--border);
+    height: var(--nav-h);
+    display: flex;
+    align-items: center;
+    padding: 0 1.5rem;
+    gap: 0;
+  }
+  .nav-brand {
+    font-family: var(--font-display);
+    font-size: 1.05rem;
+    color: var(--accent);
+    white-space: nowrap;
+    margin-right: 2rem;
+    text-decoration: none;
+    flex-shrink: 0;
+  }
+  .nav-links {
+    display: flex;
+    gap: 0;
+    overflow-x: auto;
+    scrollbar-width: none;
+    list-style: none;
+    flex: 1;
+  }
+  .nav-links::-webkit-scrollbar { display: none; }
+  .nav-links a {
+    display: block;
+    padding: 0 0.85rem;
+    height: var(--nav-h);
+    line-height: var(--nav-h);
+    font-size: 0.8rem;
+    font-weight: 500;
+    color: var(--ink-mid);
+    text-decoration: none;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    white-space: nowrap;
+    transition: color 0.15s, border-bottom 0.15s;
+    border-bottom: 2px solid transparent;
+  }
+  .nav-links a:hover,
+  .nav-links a.active {
+    color: var(--accent);
+    border-bottom-color: var(--accent);
+  }
+
+  /* ── Hero ─────────────────────────────────────────────── */
+  .hero {
+    background: var(--white);
+    border-bottom: 1px solid var(--border);
+    padding: 5rem 1.5rem 4rem;
+    text-align: center;
+  }
+  .hero-eyebrow {
+    display: inline-block;
+    font-size: 0.72rem;
+    font-weight: 600;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--accent);
+    background: var(--accent-dim);
+    padding: 0.25rem 0.75rem;
+    border-radius: 999px;
+    margin-bottom: 1.5rem;
+  }
+  .hero h1 {
+    font-family: var(--font-display);
+    font-size: clamp(2rem, 5vw, 3.2rem);
+    line-height: 1.15;
+    color: var(--ink);
+    max-width: 700px;
+    margin: 0 auto 1.5rem;
+  }
+  .hero-intro {
+    max-width: 620px;
+    margin: 0 auto;
+    color: var(--ink-mid);
+    font-size: 1.05rem;
+    line-height: 1.8;
+  }
+  .hero-toc {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.6rem;
+    justify-content: center;
+    margin-top: 2.5rem;
+  }
+  .hero-toc a {
+    font-size: 0.82rem;
+    font-weight: 500;
+    color: var(--accent-dark);
+    background: var(--accent-dim);
+    padding: 0.35rem 0.85rem;
+    border-radius: var(--r);
+    text-decoration: none;
+    transition: background 0.15s;
+  }
+  .hero-toc a:hover { background: #b8dfd7; }
+
+  /* ── Layout ─────────────────────────────────────────────── */
+  .content {
+    max-width: var(--max-w);
+    margin: 0 auto;
+    padding: 0 1.5rem;
+  }
+
+  section {
+    padding-top: calc(var(--nav-h) + 3rem);
+    margin-bottom: var(--section-gap);
+    scroll-margin-top: var(--nav-h);
+  }
+
+  .eyebrow {
+    font-size: 0.7rem;
+    font-weight: 600;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--accent);
+    margin-bottom: 0.5rem;
+  }
+
+  h2 {
+    font-family: var(--font-display);
+    font-size: clamp(1.6rem, 3.5vw, 2.2rem);
+    line-height: 1.2;
+    color: var(--ink);
+    margin-bottom: 1.5rem;
+  }
+
+  h3 {
+    font-family: var(--font-display);
+    font-size: 1.25rem;
+    font-style: italic;
+    color: var(--ink);
+    margin: 2.25rem 0 0.75rem;
+  }
+
+  p { margin-bottom: 1.2rem; color: var(--ink-mid); }
+  p strong { color: var(--ink); font-weight: 600; }
+  p em { font-style: italic; }
+
+  a { color: var(--accent); text-decoration: underline; }
+
+  hr.divider {
+    border: none;
+    border-top: 1px solid var(--border);
+    margin: 2.5rem 0;
+  }
+
+  /* ── Key Takeaway ─────────────────────────────────────── */
+  .takeaway {
+    border-left: 3px solid var(--accent);
+    background: var(--accent-dim);
+    padding: 1rem 1.25rem;
+    margin: 2rem 0;
+    border-radius: 0 var(--r) var(--r) 0;
+  }
+  .takeaway-label {
+    font-size: 0.68rem;
+    font-weight: 700;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--accent-dark);
+    margin-bottom: 0.3rem;
+  }
+  .takeaway p {
+    margin: 0;
+    color: var(--accent-dark);
+    font-size: 0.95rem;
+  }
+
+  /* ── Code blocks ─────────────────────────────────────── */
+  .code-block {
+    margin: 1.75rem 0;
+  }
+  .code-label {
+    display: inline-block;
+    font-size: 0.7rem;
+    font-weight: 600;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--ink-soft);
+    background: var(--surface-alt);
+    border: 1px solid var(--border);
+    border-bottom: none;
+    padding: 0.3rem 0.75rem;
+    border-radius: var(--r) var(--r) 0 0;
+  }
+  pre {
+    background: #1c1f26;
+    color: #d4d8e2;
+    padding: 1.25rem 1.4rem;
+    overflow-x: auto;
+    font-family: var(--font-code);
+    font-size: 0.82rem;
+    line-height: 1.65;
+    border-radius: 0 var(--r) var(--r) var(--r);
+    margin: 0;
+  }
+  code { font-family: var(--font-code); font-size: 0.87em; }
+  p code, li code {
+    background: var(--surface-alt);
+    border: 1px solid var(--border);
+    padding: 0.1em 0.35em;
+    border-radius: var(--r);
+    color: var(--accent-dark);
+  }
+
+  /* Syntax highlighting */
+  .kw  { color: #81a1c1; font-weight: 500; }
+  .fn  { color: #88c0d0; }
+  .str { color: #a3be8c; }
+  .cmt { color: #616e88; font-style: italic; }
+  .num { color: #d08770; }
+
+  .code-note {
+    font-style: italic;
+    font-size: 0.88rem;
+    color: var(--ink-soft);
+    margin-top: 0.6rem;
+  }
+
+  /* ── Diagrams ─────────────────────────────────────────── */
+  .diagram {
+    background: var(--white);
+    border: 1px solid var(--border);
+    border-radius: var(--r);
+    padding: 1.5rem 1.5rem 1.25rem;
+    margin: 2rem 0;
+    overflow-x: auto;
+  }
+  .diagram-label {
+    font-size: 0.68rem;
+    font-weight: 700;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--ink-soft);
+    margin-bottom: 0.75rem;
+  }
+  .diagram pre {
+    background: transparent;
+    color: var(--ink);
+    padding: 0;
+    font-size: 0.8rem;
+    line-height: 1.55;
+    border-radius: 0;
+  }
+
+  /* ── Tables ─────────────────────────────────────────────── */
+  .table-wrap { overflow-x: auto; margin: 1.75rem 0; }
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.88rem;
+  }
+  thead tr { background: var(--accent); color: var(--white); }
+  thead th { padding: 0.6rem 0.85rem; text-align: left; font-weight: 600; letter-spacing: 0.03em; }
+  tbody tr:nth-child(even) { background: var(--surface-alt); }
+  tbody td { padding: 0.55rem 0.85rem; color: var(--ink-mid); border-bottom: 1px solid var(--border); }
+  tbody tr:last-child td { border-bottom: none; }
+
+  /* ── Callout (general) ─────────────────────────────────── */
+  .callout {
+    border-left: 3px solid var(--border);
+    background: var(--white);
+    border-radius: 0 var(--r) var(--r) 0;
+    padding: 1rem 1.25rem;
+    margin: 1.75rem 0;
+  }
+  .callout p { margin: 0; font-size: 0.92rem; }
+
+  /* ── Step list ─────────────────────────────────────────── */
+  .steps { list-style: none; margin: 1.25rem 0; }
+  .steps li {
+    display: flex;
+    gap: 1rem;
+    align-items: flex-start;
+    padding: 0.75rem 0;
+    border-bottom: 1px solid var(--border);
+    color: var(--ink-mid);
+    font-size: 0.95rem;
+  }
+  .steps li:last-child { border-bottom: none; }
+  .step-num {
+    flex-shrink: 0;
+    width: 1.6rem;
+    height: 1.6rem;
+    border-radius: 50%;
+    background: var(--accent);
+    color: var(--white);
+    font-size: 0.7rem;
+    font-weight: 700;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-top: 0.1rem;
+  }
+
+  /* ── Summary ─────────────────────────────────────────────── */
+  #summary {
+    background: var(--white);
+    border: 1px solid var(--border);
+    border-radius: var(--r);
+    padding: 2.5rem 2rem;
+    margin-top: 4rem;
+  }
+  #summary h2 { margin-bottom: 1rem; }
+  #summary ol { padding-left: 1.5rem; }
+  #summary li {
+    margin-bottom: 0.85rem;
+    color: var(--ink-mid);
+    font-size: 0.97rem;
+  }
+  #summary li strong { color: var(--ink); }
+
+  /* ── Footer ─────────────────────────────────────────────── */
+  footer {
+    text-align: center;
+    padding: 3rem 1.5rem;
+    color: var(--ink-soft);
+    font-size: 0.8rem;
+    border-top: 1px solid var(--border);
+    margin-top: 4rem;
+  }
+
+  /* ── Responsive ─────────────────────────────────────────── */
+  @media (max-width: 600px) {
+    :root { --section-gap: 3rem; }
+    .hero { padding: 3rem 1rem 2.5rem; }
+    .hero h1 { font-size: 1.8rem; }
+    pre { font-size: 0.75rem; }
+    .nav-brand { display: none; }
+    #summary { padding: 1.75rem 1.25rem; }
+  }
+
+  /* ── Scroll spy ─────────────────────────────────────────── */
+  .reveal {
+    opacity: 0;
+    transform: translateY(18px);
+    transition: opacity 0.45s ease, transform 0.45s ease;
+  }
+  .reveal.visible {
+    opacity: 1;
+    transform: none;
+  }
+
+  /* ── NAT type badges ─────────────────────────────────────── */
+  .nat-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 1rem;
+    margin: 1.75rem 0;
+  }
+  .nat-card {
+    background: var(--white);
+    border: 1px solid var(--border);
+    border-top: 3px solid var(--accent);
+    border-radius: 0 0 var(--r) var(--r);
+    padding: 1rem 1.1rem;
+  }
+  .nat-card h4 {
+    font-family: var(--font-display);
+    font-size: 1rem;
+    margin-bottom: 0.4rem;
+    color: var(--ink);
+  }
+  .nat-card p { font-size: 0.86rem; margin: 0; }
+
+  /* BitTorrent piece strip */
+  .piece-strip {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 3px;
+    margin: 1.25rem 0;
+  }
+  .piece {
+    width: 20px;
+    height: 20px;
+    border-radius: 3px;
+    background: var(--border);
+    transition: background 0.3s;
+    cursor: default;
+  }
+  .piece.have { background: var(--accent); }
+  .piece.rare { background: #f59e0b; }
+
+</style>
+</head>
+<body>
+
+<!-- ═══════════════════════════════════════════════════════ NAV -->
+<nav>
+  <a class="nav-brand" href="#top">CS144 · Unit 5</a>
+  <ul class="nav-links">
+    <li><a href="#http">HTTP</a></li>
+    <li><a href="#keepalive">Keep-Alive</a></li>
+    <li><a href="#bittorrent">BitTorrent</a></li>
+    <li><a href="#dhcp">DHCP</a></li>
+    <li><a href="#dns">DNS</a></li>
+    <li><a href="#nat">NAT</a></li>
+    <li><a href="#summary">Summary</a></li>
+  </ul>
+</nav>
+
+<!-- ═══════════════════════════════════════════════════════ HERO -->
+<header class="hero" id="top">
+  <div class="hero-eyebrow">Stanford CS144 · Unit 5</div>
+  <h1>Application Layer Protocols</h1>
+  <p class="hero-intro">
+    You know how to write code. But when your browser loads a web page, downloads a torrent, or
+    assigns your laptop an IP address, what actually happens on the wire? This tutorial walks through
+    six foundational protocols — HTTP, BitTorrent, DHCP, DNS, and NAT — from first principles.
+    No prior networking knowledge required.
+  </p>
+  <div class="hero-toc">
+    <a href="#http">HTTP &amp; Speed</a>
+    <a href="#keepalive">Keep-Alive</a>
+    <a href="#bittorrent">BitTorrent</a>
+    <a href="#dhcp">DHCP</a>
+    <a href="#dns">DNS</a>
+    <a href="#nat">NAT</a>
+  </div>
+</header>
+
+<!-- ═══════════════════════════════════════════════════════ CONTENT -->
+<main class="content">
+
+<!-- ─────────────────────── §1 HTTP ────────────────────────── -->
+<section id="http" class="reveal">
+  <div class="eyebrow">Section 01</div>
+  <h2>HyperText Transfer Protocol (HTTP)</h2>
+
+  <p>
+    Every time you visit a URL, your browser uses <strong>HTTP — the HyperText Transfer Protocol</strong>
+    — to ask a server for a document. HTTP is the cornerstone of the web and today powers video
+    streaming, API calls, and single-page applications. Let's understand it from the ground up.
+  </p>
+
+  <h3>What is HyperText?</h3>
+  <p>
+    <strong>HyperText</strong> is a document format expressed in plain ASCII text where
+    special tags (wrapped in <code>&lt;angle brackets&gt;</code>) carry formatting instructions.
+    Think of it as a letter where you write <code>&lt;h2&gt;Introduction&lt;/h2&gt;</code> and
+    your browser knows to render the word "Introduction" as a large heading.
+  </p>
+  <p>
+    The killer feature of HyperText is <strong>embedding</strong>: a document can reference other
+    documents. An <code>&lt;img src="photo.jpg"&gt;</code> tag does not store the image bytes
+    inside the page — it tells the browser "go fetch this separate file and display it here."
+    This means loading a single page can <em>trigger a cascade of additional requests</em>.
+    Opening the New York Times homepage, for instance, results in roughly 20 separate resource
+    downloads in the background.
+  </p>
+
+  <h3>The HTTP Request–Response Model</h3>
+  <p>
+    HTTP uses a <strong>client–server</strong> architecture. The client (your browser) opens a
+    <strong>TCP connection</strong> to a server and sends a command. The most common command is
+    <code>GET</code>, which asks for a resource at a given URL. The server reads the request,
+    processes it, and writes back a response — then the cycle repeats.
+  </p>
+  <p>
+    Both the request and the response are human-readable ASCII. You can literally type an HTTP
+    request by hand using the <code>telnet</code> tool — something no other widely-used protocol
+    makes quite this easy.
+  </p>
+
+  <h3>Request Format</h3>
+  <div class="diagram">
+    <div class="diagram-label">HTTP/1.x Request Structure</div>
+    <pre>
+GET /fullduplex/index.html HTTP/1.1\r\n     ← request line
+Host: sing.stanford.edu\r\n                 ← header
+Accept: text/html\r\n                       ← header
+\r\n                                         ← blank line (mandatory)
+                                             ← body (empty for GET)</pre>
+  </div>
+  <p>
+    The first line contains three fields separated by spaces: the <strong>method</strong>
+    (<code>GET</code>, <code>POST</code>, <code>PUT</code>, …), the <strong>URL path</strong>,
+    and the <strong>protocol version</strong>. Each line ends with a carriage-return + newline
+    (<code>\r\n</code>). A mandatory blank line separates the headers from the optional body
+    (used by methods like <code>POST</code> that send data to the server).
+  </p>
+
+  <h3>Response Format</h3>
+  <div class="diagram">
+    <div class="diagram-label">HTTP/1.x Response Structure</div>
+    <pre>
+HTTP/1.1 200 OK\r\n                         ← status line
+Content-Type: text/html; charset=utf-8\r\n  ← header
+Content-Length: 4823\r\n                    ← header
+\r\n                                         ← blank line
+&lt;!DOCTYPE html&gt;...                         ← body (the actual document)</pre>
+  </div>
+  <p>
+    A response starts with a <strong>status code</strong>: <code>200 OK</code> (success),
+    <code>304 Not Modified</code> (use your cached copy), <code>404 Not Found</code>,
+    <code>500 Internal Server Error</code>, etc. These three-digit codes let clients
+    programmatically react without parsing prose.
+  </p>
+
+  <h3>HTTP/1.0 and Its Speed Problem</h3>
+  <p>
+    In HTTP/1.0 the rule is simple: <strong>one request per TCP connection</strong>.
+    After the server sends the response, it closes the connection. If your page needs
+    ten images, you open ten connections — each paying the full cost of a TCP handshake.
+  </p>
+  <p>
+    Let's measure exactly how expensive that is. Assume:
+  </p>
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr><th>Parameter</th><th>Value</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>One-way latency</td><td>50 ms</td></tr>
+        <tr><td>HTTP request size</td><td>1 full segment (10 ms packetization delay)</td></tr>
+        <tr><td>HTTP response size</td><td>2 full segments (20 ms packetization delay)</td></tr>
+        <tr><td>SYN / ACK packets</td><td>0 ms packetization delay (tiny)</td></tr>
+        <tr><td>Max parallel connections</td><td>2</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <h3>Case 1: Single Page Load</h3>
+  <div class="diagram">
+    <div class="diagram-label">HTTP/1.0 — Single Page Timeline</div>
+    <pre>
+Client                                    Server
+  │                                         │
+  │─────────── SYN ──────────────────────►  │  t = 0ms
+  │                                         │
+  │◄──────────── SYN/ACK ───────────────── │  t = 50ms
+  │                                         │
+  │─── ACK + GET /index.html ────────────►  │  t = 50+10 = 60ms (10ms pkt delay)
+  │                                         │
+  │◄──────── 200 OK (2 segments) ─────────  │  t = 60+50+20 = 130ms → arrives 230ms
+  │                                         │
+Total: 50 + 50 + 60 + 70 = 230 ms</pre>
+  </div>
+
+  <h3>Case 2: Page + 2 Images</h3>
+  <p>
+    Step 1 (the page itself) costs 230 ms just as above. Step 2 sends two parallel image
+    requests on two separate TCP connections. Even though the connections share the same
+    physical link — meaning their segment transmissions queue up behind each other — the
+    important insight is that <strong>packetization delays partially mask each other</strong>:
+    while response 1a goes out, request 2 is arriving, so response 2a queues immediately
+    after response 1b.
+  </p>
+  <div class="diagram">
+    <div class="diagram-label">HTTP/1.0 — Two Parallel Image Requests (shared link)</div>
+    <pre>
+SYN  SYN/ACK  ACK
+  │             │
+  │ ──request1──►│              t=160ms: server starts response 1
+  │  ──request2──►│             t=165ms: server has both reqs queued
+  │               │──resp 1a──► t=170ms
+  │               │──resp 1b──► t=180ms
+  │               │──resp 2a──► t=190ms
+  │               │──resp 2b──► t=200ms
+
+  Parallel setup: 100ms
+  Parallel request/response: ~150ms
+  Total step 2: 100 + 150 = 250ms
+  Grand total: 230 + 250 = 480ms</pre>
+  </div>
+  <p>
+    Notice: even loading just 2 images <em>more than doubles</em> the page load time —
+    largely because we paid the 100 ms TCP handshake cost <em>again</em> just to start
+    those image requests.
+  </p>
+
+  <div class="takeaway">
+    <div class="takeaway-label">Key Takeaway</div>
+    <p>
+      HTTP/1.0's one-request-per-connection model forces a full TCP handshake (100 ms at
+      50 ms RTT) before every burst of resources. This overhead compounds badly as pages
+      embed more and more assets. Every repeated setup also restarts TCP's congestion window
+      from scratch, preventing the network from warming up.
+    </p>
+  </div>
+</section>
+
+<!-- ─────────────────────── §2 Keep-Alive ────────────────────────── -->
+<section id="keepalive" class="reveal">
+  <div class="eyebrow">Section 02</div>
+  <h2>HTTP/1.1 Keep-Alive &amp; Pipelining</h2>
+
+  <p>
+    HTTP/1.1 introduced one of the most impactful optimizations in the history of the web:
+    <strong>persistent connections</strong>, controlled by the <code>Connection: keep-alive</code>
+    header. Instead of tearing down the TCP connection after each response, the server keeps
+    it open so the client can reuse it for subsequent requests.
+  </p>
+
+  <h3>The Keep-Alive Handshake</h3>
+  <p>
+    The negotiation works through two headers:
+  </p>
+  <ul class="steps">
+    <li>
+      <span class="step-num">1</span>
+      <span>The client includes <code>Connection: keep-alive</code> in its request header,
+      hinting "please leave this connection open after you respond."</span>
+    </li>
+    <li>
+      <span class="step-num">2</span>
+      <span>The server responds with <code>Connection: keep-alive</code> (or
+      <code>Connection: close</code> if it refuses). It may also send a
+      <code>Keep-Alive: timeout=60</code> header indicating how long it will maintain the idle
+      connection.</span>
+    </li>
+    <li>
+      <span class="step-num">3</span>
+      <span>The client sends further requests on the <em>same TCP connection</em>, skipping
+      the handshake entirely.</span>
+    </li>
+  </ul>
+
+  <h3>Concrete Speed Comparison</h3>
+  <p>
+    Let's run the numbers with more realistic assumptions: 50 ms latency, 1 ms packetization
+    delay (a fast link), and a page that loads 11 images.
+  </p>
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr><th>Phase</th><th>HTTP/1.0</th><th>HTTP/1.1</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>TCP handshake(s)</td><td>100ms × 7 rounds = 700ms</td><td>100ms × 1 = 100ms</td></tr>
+        <tr><td>Page request/response</td><td>103ms</td><td>103ms</td></tr>
+        <tr><td>11 image requests</td><td>6 × 203ms = 1218ms</td><td>~123ms (pipelined)</td></tr>
+        <tr><td><strong>Total</strong></td><td><strong>1,421 ms</strong></td><td><strong>326 ms</strong></td></tr>
+      </tbody>
+    </table>
+  </div>
+  <p>
+    HTTP/1.1 is <strong>4× faster</strong> in this scenario. The dramatic gain comes from
+    two sources. First, we pay the TCP handshake only once. Second, we can send all 11 image
+    requests back-to-back on the open connection without waiting for each to fully complete
+    before sending the next — a technique called <strong>request pipelining</strong>.
+  </p>
+
+  <div class="diagram">
+    <div class="diagram-label">HTTP/1.1 — Pipelined Requests on One Connection</div>
+    <pre>
+Client                                    Server
+  │─── TCP handshake (100ms) ───────────── │
+  │─── GET /page ───────────────────────►  │
+  │◄─── 200 OK /page ───────────────────── │
+  │─── GET /img1 ───────────────────────►  │   ← no new handshake!
+  │─── GET /img2 ───────────────────────►  │   ← pipelined immediately
+  │─── GET /img3 ──  ...                   │
+  │◄─── img1 response ──────────────────── │
+  │◄─── img2 response ──────────────────── │
+  │◄─── img3 response ──────────────────── │</pre>
+  </div>
+
+  <h3>Why Persistent Connections Also Help Congestion Control</h3>
+  <p>
+    TCP's congestion control algorithm (AIMD / slow start) begins each new connection with a
+    tiny window. The window must be earned by sending packets without drops. HTTP/1.0 resets
+    this learning with every new connection. HTTP/1.1 lets the window <em>carry over</em> across
+    multiple requests on the same connection, so later requests in a session enjoy a warmed-up,
+    larger congestion window and therefore higher throughput.
+  </p>
+
+  <h3>SPDY and HTTP/2</h3>
+  <p>
+    HTTP/1.1's pipelining has a subtle problem: responses must be delivered in the same order
+    as requests. If a slow-to-generate page is requested first, images must wait — a phenomenon
+    called <strong>head-of-line blocking</strong>. Google's SPDY protocol (later standardized
+    as HTTP/2) solved this with:
+  </p>
+  <ul class="steps">
+    <li><span class="step-num">→</span><span><strong>Multiplexed streams</strong>: multiple
+    logical request/response pairs interleaved on one connection, so a slow resource doesn't
+    block fast ones.</span></li>
+    <li><span class="step-num">→</span><span><strong>Header compression</strong>: browsers
+    send largely identical headers (User-Agent, Accept, cookies) on every request; SPDY compresses
+    these, saving meaningful bytes on mobile.</span></li>
+    <li><span class="step-num">→</span><span><strong>Server push</strong>: a server can
+    proactively send resources it knows the client will need, before the client even asks.</span></li>
+  </ul>
+
+  <div class="takeaway">
+    <div class="takeaway-label">Key Takeaway</div>
+    <p>
+      Keep-Alive eliminates per-resource TCP setup cost and allows pipelining. On a page with
+      many assets, this single change produces 4× speed improvements. HTTP/2 goes further by
+      eliminating head-of-line blocking and adding header compression — both building on the same
+      insight: share one long-lived, well-warmed TCP connection rather than opening many short ones.
+    </p>
+  </div>
+</section>
+
+<!-- ─────────────────────── §3 BitTorrent ────────────────────────── -->
+<section id="bittorrent" class="reveal">
+  <div class="eyebrow">Section 03</div>
+  <h2>BitTorrent: Peer-to-Peer File Sharing</h2>
+
+  <p>
+    HTTP is excellent for fetching documents from a server — but if millions of people want
+    the same large file simultaneously, a single server becomes a bottleneck. BitTorrent's
+    solution: <strong>turn every downloader into an uploader</strong>, distributing both the
+    storage and the bandwidth across a self-organizing network of peers.
+  </p>
+
+  <h3>Swarms and Pieces</h3>
+  <p>
+    A BitTorrent <strong>swarm</strong> is the collection of all clients currently downloading
+    or seeding a particular file. The file is broken into fixed-size <strong>pieces</strong>
+    (typically 256 KB–1 MB). Why pieces instead of one big stream?
+  </p>
+  <ul class="steps">
+    <li><span class="step-num">1</span><span><strong>Parallelism:</strong> you can download
+    piece 1 from Alice, piece 2 from Bob, and piece 3 from Carol simultaneously.</span></li>
+    <li><span class="step-num">2</span><span><strong>Incremental sharing:</strong> as soon as
+    you finish a piece, you can start uploading it to others — even before the full file is done.</span></li>
+    <li><span class="step-num">3</span><span><strong>Integrity checking:</strong> each piece
+    has a SHA-1 cryptographic hash in the <code>.torrent</code> file, so you can verify every
+    piece independently after download.</span></li>
+  </ul>
+
+  <p>
+    Pieces are further subdivided into smaller <strong>subpieces</strong>, allowing simultaneous
+    download of different parts of the same piece from different peers, reducing latency to
+    obtain any one piece.
+  </p>
+
+  <!-- Interactive piece strip -->
+  <div style="margin: 2rem 0;">
+    <div class="diagram-label" style="margin-bottom:0.5rem;">Live Demo: Piece Availability Map (click to toggle)</div>
+    <div class="piece-strip" id="pieceStrip"></div>
+    <p style="font-size:0.8rem; color:var(--ink-soft); margin-top:0.5rem;">
+      <span style="display:inline-block;width:14px;height:14px;background:var(--accent);border-radius:2px;vertical-align:middle;margin-right:4px;"></span>You have it &nbsp;
+      <span style="display:inline-block;width:14px;height:14px;background:#f59e0b;border-radius:2px;vertical-align:middle;margin-right:4px;"></span>Rare piece (≤2 peers) &nbsp;
+      <span style="display:inline-block;width:14px;height:14px;background:var(--border);border-radius:2px;vertical-align:middle;margin-right:4px;"></span>Not yet downloaded
+    </p>
+  </div>
+
+  <h3>Finding Peers: Trackers and DHT</h3>
+  <p>
+    To join a swarm, a client needs to know who else is in it. Historically this was done
+    through a <strong>tracker</strong> — a central server listed in the <code>.torrent</code>
+    file. A client announces itself to the tracker and gets back a list of peer IP:port pairs.
+  </p>
+  <p>
+    After trackers attracted legal attention, BitTorrent migrated to <strong>trackerless
+    torrents</strong> using a <strong>Distributed Hash Table (DHT)</strong>. A DHT maps a
+    file's info-hash to the set of peers sharing it, but the mapping is stored collectively
+    across all participating nodes — no single server holds the full picture. Think of it as
+    a distributed phone book: any node can look up any entry by asking its neighbors, who
+    ask their neighbors, until the answer is found.
+  </p>
+
+  <h3>What to Download: Rarest First</h3>
+  <p>
+    Peers continuously exchange <strong>bitfields</strong> — bitmaps indicating which pieces
+    each client currently holds. A smart client downloads the <strong>rarest piece first</strong>:
+    the piece held by the fewest peers in the swarm.
+  </p>
+  <p>
+    Why? If only one peer has piece #47 and that peer disappears, nobody can ever complete the
+    file. By prioritizing rare pieces, the swarm ensures that pieces spread widely before
+    common pieces are fully replicated, maintaining overall availability.
+  </p>
+  <p>
+    <em>Exception:</em> when a client only needs its last few pieces, it requests each from
+    <em>multiple</em> peers simultaneously (called the <strong>endgame strategy</strong>) to
+    avoid getting stuck waiting for one slow peer to deliver a final piece.
+  </p>
+
+  <h3>Whom to Upload To: Tit-for-Tat</h3>
+  <p>
+    If you uploaded to every peer equally, each of your ~100 TCP connections would be painfully
+    slow. Instead, BitTorrent uses a <strong>choking</strong> algorithm:
+  </p>
+  <ul class="steps">
+    <li><span class="step-num">1</span><span>Measure the download rate you're receiving from
+    each peer over the last 20 seconds.</span></li>
+    <li><span class="step-num">2</span><span>Pick the <em>P</em> best (often P=4) — these are
+    <strong>unchoked</strong> and receive your upload bandwidth.</span></li>
+    <li><span class="step-num">3</span><span>Every ~30 seconds, randomly unchoke one additional
+    peer — an <strong>optimistic unchoke</strong> — to discover potentially better partners.</span></li>
+  </ul>
+  <p>
+    This is a real-world implementation of the game-theory principle of <strong>Tit-for-Tat</strong>:
+    cooperate with cooperators, and defect against defectors. Peers who upload get upload; peers
+    who only leech get choked.
+  </p>
+
+  <h3>BitTyrant: Gaming the System</h3>
+  <p>
+    A 2007 paper introduced <strong>BitTyrant</strong>, a modified client that exploits the
+    standard TFT algorithm: instead of giving each unchoked peer an equal share of upload bandwidth,
+    BitTyrant gives each peer <em>just enough</em> to remain in their top-P list — freeing the
+    leftover bandwidth to bribe additional peers into unchocking it. The result: a 70% median
+    improvement in download speed for BitTyrant users. The paper also showed that if <em>everyone</em>
+    used BitTyrant, performance improved slightly overall — but the biggest gains go to the selfish
+    user when others are cooperative.
+  </p>
+
+  <div class="takeaway">
+    <div class="takeaway-label">Key Takeaway</div>
+    <p>
+      BitTorrent's three key algorithms — rarest-first piece selection, tit-for-tat upload
+      scheduling, and optimistic unchoking — together create a self-sustaining ecosystem where
+      contributing is rewarded, availability is maximized, and the load distributes itself across
+      the swarm rather than concentrating on any one server.
+    </p>
+  </div>
+</section>
+
+<!-- ─────────────────────── §4 DHCP ────────────────────────── -->
+<section id="dhcp" class="reveal">
+  <div class="eyebrow">Section 04</div>
+  <h2>DHCP: Getting an IP Address Automatically</h2>
+
+  <p>
+    Before your laptop can send a single packet, it needs four pieces of configuration:
+    an <strong>IP address</strong>, a <strong>subnet mask</strong>, a <strong>default gateway</strong>
+    (the router), and a <strong>DNS server</strong> address. In the early days of the internet,
+    a network administrator would hand these to you on a slip of paper. Today, you get them
+    automatically in milliseconds — thanks to <strong>DHCP, the Dynamic Host Configuration
+    Protocol</strong> (RFC 2131).
+  </p>
+
+  <h3>Why Dynamic Configuration?</h3>
+  <p>
+    Static assignment (typing in numbers manually) has three serious problems:
+  </p>
+  <ul class="steps">
+    <li><span class="step-num">✗</span><span><strong>Mobility:</strong> if you move your laptop
+    to a different subnet, your old statically-configured address is invalid.</span></li>
+    <li><span class="step-num">✗</span><span><strong>Scarcity:</strong> IP addresses are finite.
+    You don't want to permanently reserve one for a device that's only connected 8 hours a day.
+    </span></li>
+    <li><span class="step-num">✗</span><span><strong>Garbage collection:</strong> there's no
+    automatic reclamation; unused addresses accumulate and block new devices.</span></li>
+  </ul>
+  <p>
+    DHCP solves all three: addresses are temporary <strong>leases</strong>, automatically
+    returned when they expire or the device releases them.
+  </p>
+
+  <h3>The DORA Exchange</h3>
+  <p>
+    The DHCP protocol follows a four-message pattern nicknamed <strong>DORA</strong>. Here's
+    the problem it must solve first: the client has no IP address yet, so it can't send a
+    unicast packet to anyone. DHCP's elegant solution — use <strong>UDP broadcast</strong>
+    to destination <code>255.255.255.255</code>, which reaches every device on the local
+    network segment.
+  </p>
+
+  <div class="diagram">
+    <div class="diagram-label">DHCP DORA Sequence</div>
+    <pre>
+Client (no IP)          DHCP Server A          DHCP Server B
+    │                        │                       │
+    │─── DISCOVER ──────────►│──────────────────────►│   broadcast: "anyone there?"
+    │                        │                       │
+    │◄─── OFFER (10.0.0.5) ──│                       │   "I can give you 10.0.0.5"
+    │◄─── OFFER (10.0.0.7) ──│───────────────────────│   "I offer 10.0.0.7"
+    │                        │                       │
+    │─── REQUEST (10.0.0.5) ►│──────────────────────►│   broadcast: "I'll take 10.0.0.5"
+    │                        │                       │   (Server B withdraws its offer)
+    │◄─── ACK ───────────────│                       │   "Confirmed, lease = 24h"
+    │                        │                       │
+    │     ... uses 10.0.0.5 for 24h ...
+    │
+    │─── RELEASE ────────────►│                      │   "I'm done with this address"</pre>
+  </div>
+
+  <p>
+    After receiving the ACK, the client has a fully configured IP address for the duration
+    of the lease. Before the lease expires, the client sends a renewal REQUEST. If the server
+    doesn't hear from the client and the lease expires, the address is returned to the pool.
+  </p>
+
+  <h3>Technical Details</h3>
+  <p>
+    DHCP runs over UDP, using port <strong>67</strong> on the server side and port
+    <strong>68</strong> on the client side. Because broadcast packets don't cross router
+    boundaries by default, networks use a <strong>DHCP relay agent</strong> — a small
+    forwarding process running on the router that tunnels DHCP messages to a centralized
+    DHCP server on a different subnet.
+  </p>
+
+  <div class="takeaway">
+    <div class="takeaway-label">Key Takeaway</div>
+    <p>
+      DHCP elegantly solves the bootstrap problem (getting network config when you have no
+      network config yet) by using UDP broadcast. Leases make address allocation both automatic
+      and self-healing: devices that leave simply stop renewing, and addresses flow back to the
+      pool without administrator intervention.
+    </p>
+  </div>
+</section>
+
+<!-- ─────────────────────── §5 DNS ────────────────────────── -->
+<section id="dns" class="reveal">
+  <div class="eyebrow">Section 05</div>
+  <h2>DNS: The Internet's Distributed Phone Book</h2>
+
+  <p>
+    Your browser needs a numeric IP address to send packets, but humans prefer names like
+    <code>cs144.scs.stanford.edu</code>. The <strong>Domain Name System (DNS)</strong> is
+    a globally distributed, hierarchical database that maps human-readable names to IP
+    addresses (and much more).
+  </p>
+
+  <h3>Why Not Just a File?</h3>
+  <p>
+    In the early ARPANET days, a single file called <code>HOSTS.TXT</code> was maintained
+    by the Network Information Center and periodically downloaded by every host. This worked
+    for a few hundred machines. With billions of hostnames today, a single file would be
+    gigabytes large, update constantly, and require every host to re-download it — an
+    O(n²) network cost that collapses under its own weight.
+  </p>
+  <p>
+    DNS's design exploits two key properties of name resolution:
+  </p>
+  <ul class="steps">
+    <li><span class="step-num">1</span><span><strong>Read-mostly:</strong> names are looked up
+    far more often than they change, enabling aggressive caching.</span></li>
+    <li><span class="step-num">2</span><span><strong>Loose consistency acceptable:</strong>
+    a name pointing to a slightly stale IP for a few minutes is usually fine (unlike a bank
+    balance). This lets cached answers be reused without global coordination.</span></li>
+  </ul>
+
+  <h3>The Hierarchical Namespace</h3>
+  <div class="diagram">
+    <div class="diagram-label">DNS Name Tree</div>
+    <pre>
+                          . (root)
+                 ┌────────┼────────┐
+                edu      com      org     us    fr
+              ┌──┴──┐    ├──┐
+          stanford  berkeley  google  cisco
+           ┌──┴──┐
+          cs    www
+          │
+         www</pre>
+  </div>
+  <p>
+    Each <strong>zone</strong> is a subtree delegated to a separate authority.
+    Stanford University controls the <code>stanford.edu</code> zone and can add, remove,
+    or change any name under it without asking anyone. The root zone delegates
+    <code>.edu</code> to Educause, which delegates <code>stanford.edu</code> to Stanford.
+    This hierarchical delegation is what makes DNS <em>decentralized</em> — no single entity
+    controls all names.
+  </p>
+
+  <h3>Resource Records (RRs)</h3>
+  <p>
+    Every piece of information in DNS is stored as a <strong>Resource Record</strong> with
+    the format:
+  </p>
+  <div class="code-block">
+    <div class="code-label">DNS Resource Record format</div>
+    <pre><span class="cmt"># name   [TTL]  [class]  type    rdata</span>
+www.stanford.edu.  3600   IN       A       171.64.64.119
+scs.stanford.edu.  3600   IN       NS      ns1.scs.stanford.edu.
+cs144.scs.stanford.edu. 3600 IN   CNAME   some-host.stanford.edu.</pre>
+  </div>
+  <p class="code-note">
+    The TTL (Time to Live) tells resolvers how long to cache this record. A TTL of 3600
+    means: cache this answer for one hour, then ask again.
+  </p>
+
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr><th>Record Type</th><th>Maps</th><th>Example Use</th></tr>
+      </thead>
+      <tbody>
+        <tr><td><code>A</code></td><td>name → IPv4 address</td><td>www.stanford.edu → 171.64.64.119</td></tr>
+        <tr><td><code>AAAA</code></td><td>name → IPv6 address</td><td>IPv6 hosts</td></tr>
+        <tr><td><code>NS</code></td><td>zone → authoritative name server</td><td>stanford.edu → argus.stanford.edu</td></tr>
+        <tr><td><code>CNAME</code></td><td>alias → canonical name</td><td>www.stanford.edu → fastly-cdn.example.com</td></tr>
+        <tr><td><code>MX</code></td><td>domain → mail server</td><td>stanford.edu → smtp.stanford.edu</td></tr>
+        <tr><td><code>TXT</code></td><td>name → arbitrary text</td><td>SPF records, domain verification</td></tr>
+        <tr><td><code>PTR</code></td><td>IP address → name</td><td>Reverse DNS lookups</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <h3>How a Resolution Works: Walking the Tree</h3>
+  <p>
+    When your computer looks up <code>www.scs.stanford.edu</code> and has no cached answer,
+    a <strong>recursive resolver</strong> (usually provided by your ISP or set up via DHCP)
+    performs a tree traversal on your behalf:
+  </p>
+  <ul class="steps">
+    <li><span class="step-num">1</span><span>Ask a <strong>root server</strong>
+    (one of 13 named <code>a</code>–<code>m.root-servers.net</code>, each heavily replicated
+    via anycast): "Who knows about <code>.edu</code>?" → gets NS records for the edu TLD
+    servers.</span></li>
+    <li><span class="step-num">2</span><span>Ask the <strong>.edu TLD server</strong>:
+    "Who knows about <code>stanford.edu</code>?" → gets NS records for Stanford's name servers
+    plus <em>glue records</em> (A records for the name server hostnames themselves, preventing
+    a chicken-and-egg problem).</span></li>
+    <li><span class="step-num">3</span><span>Ask <strong>Stanford's name server</strong>
+    (<code>argus.stanford.edu</code>): "Who knows about <code>scs.stanford.edu</code>?" →
+    gets NS records for the SCS zone.</span></li>
+    <li><span class="step-num">4</span><span>Ask <strong>the SCS name server</strong>:
+    "What is <code>www.scs.stanford.edu</code>?" → gets the A record with the IP address.
+    </span></li>
+  </ul>
+  <p>
+    The recursive resolver caches every answer along the way according to its TTL. The next
+    person who asks for any <code>*.scs.stanford.edu</code> name benefits from the cached
+    NS records, saving two round trips.
+  </p>
+
+  <h3>Glue Records: Breaking the Cycle</h3>
+  <p>
+    There's a subtle circular dependency: to find <code>www.stanford.edu</code> you need
+    the IP of <code>argus.stanford.edu</code> (Stanford's name server), but to find
+    <em>that</em> you'd need to ask Stanford's name server — a chicken-and-egg problem.
+    DNS breaks this cycle with <strong>glue records</strong>: the parent zone (<code>.edu</code>)
+    stores not just the NS record for <code>stanford.edu</code> but also the A record for
+    <code>argus.stanford.edu</code>, allowing bootstrapping without circular dependency.
+  </p>
+
+  <h3>Name Compression</h3>
+  <p>
+    DNS packets are limited to 512 bytes over UDP. Long names like
+    <code>www.scs.stanford.edu</code> appear repeatedly in a response (in the question,
+    answer, and NS sections). DNS uses <strong>pointer compression</strong>: any label
+    whose leading byte has its top two bits set (<code>0xC0–0xFF</code>) is interpreted
+    as a 14-bit offset into the packet, pointing to where the full name was spelled out
+    earlier. This compresses repeated domain names to just 2 bytes.
+  </p>
+
+  <div class="takeaway">
+    <div class="takeaway-label">Key Takeaway</div>
+    <p>
+      DNS is a read-mostly, loosely-consistent, hierarchical distributed database. Its three
+      structural pillars — delegation (zones), caching (TTLs), and glue records — together
+      allow a single authoritative answer to scale to billions of lookups per second
+      globally, without any central coordination.
+    </p>
+  </div>
+</section>
+
+<!-- ─────────────────────── §6 NAT ────────────────────────── -->
+<section id="nat" class="reveal">
+  <div class="eyebrow">Section 06</div>
+  <h2>NAT: Network Address Translation</h2>
+
+  <p>
+    The original vision of the internet: every device gets a globally unique IP address, and
+    any device can communicate with any other device directly — the <strong>end-to-end
+    principle</strong>. Reality: IPv4 has only ~4 billion addresses, and we ran out. The
+    workaround that became ubiquitous is <strong>NAT — Network Address Translation</strong>.
+  </p>
+
+  <h3>The Core Idea</h3>
+  <p>
+    A NAT box sits between a private network (your home or office) and the internet. Devices
+    on the private network use <strong>private addresses</strong> (e.g., <code>10.x.x.x</code>
+    or <code>192.168.x.x</code>) that are not globally routable. The NAT has one (or a few)
+    real public IP addresses.
+  </p>
+  <p>
+    When a private device (say <code>10.0.0.101:4512</code>) sends a packet to the internet,
+    the NAT:
+  </p>
+  <ul class="steps">
+    <li><span class="step-num">1</span><span>Rewrites the source IP and port to its own public
+    IP and a freshly allocated port: <code>128.34.22.8:6641</code>.</span></li>
+    <li><span class="step-num">2</span><span>Stores a <strong>mapping</strong>:
+    <code>(128.34.22.8, 6641) ↔ (10.0.0.101, 4512)</code>.</span></li>
+    <li><span class="step-num">3</span><span>When the reply arrives at port 6641, reverse-translates
+    and forwards to <code>10.0.0.101:4512</code>.</span></li>
+  </ul>
+
+  <div class="diagram">
+    <div class="diagram-label">NAT Address/Port Translation</div>
+    <pre>
+Private Side                     NAT Box                     Public Internet
+                              (128.34.22.8)
+                           ┌──────────────────┐
+10.0.0.101:4512  ─────────►│ src: 128.34.22.8:6641 ──────►  18.181.0.31:22
+                           │                  │
+                           │ Mapping table:   │
+                           │ 6641 ↔ 10.0.0.101:4512        │
+                           └──────────────────┘
+                           
+18.181.0.31:22   ──────────► dst: 128.34.22.8:6641
+                                      │
+                                      ▼
+                              dst: 10.0.0.101:4512  ──────► device</pre>
+  </div>
+
+  <h3>NAT Behavioral Variants</h3>
+  <p>
+    The different types of NAT differ in <em>which</em> incoming packets they allow through
+    an existing mapping:
+  </p>
+
+  <div class="nat-grid">
+    <div class="nat-card">
+      <h4>Full Cone NAT</h4>
+      <p>Once a mapping exists, <em>any</em> external host can send packets to the mapped
+      port — even ones the internal host never contacted. Most permissive.</p>
+    </div>
+    <div class="nat-card">
+      <h4>Restricted Cone NAT</h4>
+      <p>Only external hosts that the internal host has previously sent a packet <em>to</em>
+      (by IP address) can send back through the mapping.</p>
+    </div>
+    <div class="nat-card">
+      <h4>Port-Restricted Cone NAT</h4>
+      <p>Like restricted, but must also match the <em>specific port</em> the internal host
+      previously contacted.</p>
+    </div>
+    <div class="nat-card">
+      <h4>Symmetric NAT</h4>
+      <p>Creates a <em>new</em> mapping for each unique destination. Packets from
+      <code>server-A:80</code> and <code>server-B:80</code> get different mapped ports.
+      Hardest to traverse.</p>
+    </div>
+  </div>
+
+  <h3>The Problem: Incoming Connections</h3>
+  <p>
+    NAT works beautifully for <em>outbound</em> connections — your laptop opens a TCP
+    connection to Google, and the NAT creates a mapping. But what about <em>inbound</em>
+    connections? If you're running a server on <code>10.0.0.101:80</code>, nobody on the
+    internet knows how to reach it — your public IP has no established mapping for port 80.
+  </p>
+  <p>
+    This breaks the end-to-end principle. Pre-Skype VoIP applications like Speak Freely
+    famously failed behind NATs because neither peer could initiate a connection to the other.
+  </p>
+
+  <h3>NAT Traversal Techniques</h3>
+  <ul class="steps">
+    <li><span class="step-num">A</span><span><strong>Static port mapping:</strong> manually
+    configure the NAT to forward port 80 to an internal host. Used for home servers and game
+    consoles.</span></li>
+    <li><span class="step-num">B</span><span><strong>Connection reversal:</strong> both peers
+    are behind NATs. A mutually-accessible rendezvous server asks the peer that <em>can</em>
+    accept connections to initiate — reversing who "connects" to whom.</span></li>
+    <li><span class="step-num">C</span><span><strong>Relays:</strong> all traffic flows through
+    a public relay server. Always works, but wastes server bandwidth and adds latency. Used as
+    fallback in WebRTC (TURN servers).</span></li>
+    <li><span class="step-num">D</span><span><strong>NAT hole-punching:</strong> both peers
+    simultaneously send packets to each other's public IP:port, causing both NATs to create
+    mappings. If timed correctly, the subsequent packets traverse both NATs. Used by WebRTC,
+    WireGuard, and online games.</span></li>
+  </ul>
+
+  <h3>Hairpinning</h3>
+  <p>
+    What if device A (<code>10.0.0.101</code>) wants to reach device B (<code>10.0.0.99</code>)
+    using B's <em>external</em> (public) address? A non-hairpinning NAT would drop this traffic;
+    a well-implemented NAT (per RFC 4787) <strong>hairpins</strong> — it translates the destination
+    back to B's internal address, allowing devices on the same LAN to communicate via their public
+    addresses. Required for mDNS-based applications and certain WebRTC scenarios.
+  </p>
+
+  <h3>The NAT Debate</h3>
+  <p>
+    NAT is genuinely controversial among networking engineers:
+  </p>
+  <div class="diagram">
+    <div class="diagram-label">NAT Trade-offs</div>
+    <pre>
+Advantages                              Disadvantages
+──────────────────────────────────────  ──────────────────────────────────────
+Conserves IPv4 address space            Breaks end-to-end connectivity
+Implicit firewall (no unsolicited       Applications must implement traversal
+  inbound traffic reaches devices)        hacks (STUN, TURN, UPnP)
+Hides internal network topology         Prevents new transport protocols
+Simple to deploy                        Complicates VoIP, gaming, IoT
+</pre>
+  </div>
+  <p>
+    The practical verdict: <strong>NATs are here to stay</strong>, even as IPv6 eliminates the
+    address scarcity that originally motivated them. Too much infrastructure depends on NAT
+    behavior for it to disappear. IPv6 deployment is slow, and many operators have discovered
+    they actually <em>like</em> the implicit firewall semantics of NAT.
+  </p>
+
+  <div class="takeaway">
+    <div class="takeaway-label">Key Takeaway</div>
+    <p>
+      NAT extends the life of IPv4 by multiplexing many private addresses behind one public
+      IP using port numbers as a secondary demultiplexer. It introduces fundamental friction
+      for any protocol that requires inbound connections, driving an entire industry of
+      workarounds (STUN, TURN, ICE, UPnP, hole-punching). Understanding NAT behavior is
+      essential for anyone building networked applications.
+    </p>
+  </div>
+</section>
+
+<!-- ─────────────────────── §7 Summary ────────────────────────── -->
+<section id="summary" class="reveal">
+  <div class="eyebrow">Summary</div>
+  <h2>The Five Things to Remember</h2>
+
+  <div id="summary">
+    <ol>
+      <li>
+        <strong>HTTP is a text-based request–response protocol over TCP.</strong>
+        HTTP/1.0's one-connection-per-request model pays a full TCP handshake cost for every
+        resource, causing dramatic slowdowns on pages with many assets. HTTP/1.1's keep-alive
+        eliminates redundant handshakes and enables pipelining, achieving ~4× speed improvement
+        on realistic workloads. HTTP/2 adds multiplexed streams to eliminate head-of-line blocking.
+      </li>
+      <li>
+        <strong>BitTorrent turns every downloader into an uploader.</strong>
+        Files are split into pieces, each hash-verified. Rarest-first selection preserves swarm
+        availability; tit-for-tat choking rewards contributors; optimistic unchoking discovers
+        better peers. The endgame strategy prevents stalls at the tail of a download.
+      </li>
+      <li>
+        <strong>DHCP solves the bootstrap problem via UDP broadcast.</strong>
+        A device with no IP address broadcasts a DISCOVER message, receives OFFERs from servers,
+        selects one with REQUEST, and gets a time-limited ACK. Leases make address reclamation
+        automatic.
+      </li>
+      <li>
+        <strong>DNS is a hierarchically-delegated, read-mostly, cached distributed database.</strong>
+        Resolution walks the tree from root → TLD → authoritative zone, with caching at each step
+        according to TTLs. Glue records break the circular dependency between zone delegation and
+        name resolution.
+      </li>
+      <li>
+        <strong>NAT extends IPv4 by rewriting source IPs and ports at a gateway.</strong>
+        It works transparently for outbound connections but fundamentally breaks the ability of
+        external hosts to initiate connections to private devices — motivating a family of
+        traversal techniques (hole-punching, relays, STUN/TURN) that underlie nearly every
+        modern real-time communication system.
+      </li>
+    </ol>
+  </div>
+</section>
+
+</main>
+
+<footer>
+  Stanford CS144 · Introduction to Computer Networking &nbsp;·&nbsp;
+  Unit 5: Application Layer Protocols &nbsp;·&nbsp;
+  Tutorial compiled from lecture materials by Nick McKeown &amp; Phil Levis
+</footer>
+
+<!-- ═══════════════════════════════════════════════════════ JS -->
+<script>
+// ── Scroll spy ───────────────────────────────────────────
+(function () {
+  const navLinks = document.querySelectorAll('.nav-links a');
+  const sections = document.querySelectorAll('section[id]');
+
+  function updateActive() {
+    let current = '';
+    sections.forEach(sec => {
+      const top = sec.getBoundingClientRect().top;
+      if (top <= 80) current = sec.id;
+    });
+    navLinks.forEach(a => {
+      a.classList.toggle('active', a.getAttribute('href') === '#' + current);
+    });
+  }
+
+  window.addEventListener('scroll', updateActive, { passive: true });
+  updateActive();
+})();
+
+// ── Reveal on scroll ──────────────────────────────────────
+(function () {
+  const reveals = document.querySelectorAll('.reveal');
+  const observer = new IntersectionObserver(entries => {
+    entries.forEach(e => { if (e.isIntersecting) e.target.classList.add('visible'); });
+  }, { threshold: 0.07 });
+  reveals.forEach(el => observer.observe(el));
+})();
+
+// ── BitTorrent piece strip demo ───────────────────────────
+(function () {
+  const strip = document.getElementById('pieceStrip');
+  if (!strip) return;
+  const N = 48;
+  const haveSet  = new Set([2,3,7,11,14,15,20,25,31,38,42,43,44,45]);
+  const rareSet  = new Set([1,9,22,37]);
+  const pieces = [];
+
+  for (let i = 0; i < N; i++) {
+    const div = document.createElement('div');
+    div.className = 'piece' +
+      (haveSet.has(i) ? ' have' : rareSet.has(i) ? ' rare' : '');
+    div.title = `Piece ${i}`;
+    div.addEventListener('click', () => {
+      div.classList.toggle('have');
+      div.classList.remove('rare');
+    });
+    strip.appendChild(div);
+    pieces.push(div);
+  }
+
+  // Animate a download simulation every 4s
+  let idx = 0;
+  const candidates = [];
+  for (let i = 0; i < N; i++) {
+    if (!haveSet.has(i) && !rareSet.has(i)) candidates.push(i);
+  }
+  setInterval(() => {
+    if (idx < candidates.length) {
+      pieces[candidates[idx]].classList.add('have');
+      idx++;
+    }
+  }, 180);
+})();
+</script>
+</body>
+</html>
