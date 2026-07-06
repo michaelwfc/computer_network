@@ -137,7 +137,7 @@ convert_pdf() {
     basename_noext="$(basename "$pdf" .pdf)"
 
     local raw_text
-    raw_text="$(pdftotext -nopgbrk -enc UTF-8 "$pdf" - 2>/dev/null)" || return 1
+    raw_text="$(pdftotext -layout -nopgbrk -enc UTF-8 "$pdf" - 2>/dev/null)" || return 1
     [[ -n "$raw_text" ]] || return 1
 
     {

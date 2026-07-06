@@ -142,6 +142,13 @@ The audience is developers who are comfortable writing code (Python, JavaScript 
 - Fully responsive down to mobile (max-width: 600px)
 - No frameworks, no external CSS libraries — pure HTML/CSS/JS only
 
+## HTML Formatting
+
+The HTML should use normal `<p>` elements containing complete paragraphs.
+
+Do not artificially insert `<br>` elements except where they are semantically required (for example, addresses or poetry).
+
+
 ---
 
 ## DESIGN REQUIREMENTS
@@ -175,7 +182,7 @@ The audience is developers who are comfortable writing code (Python, JavaScript 
 After producing the HTML, convert it to a clean Markdown (.md) file:
 
 - Use ATX-style headings (# ## ###)
-- Preserve all section structure, eyebrow labels, and prose paragraphs
+- Preserve all section structure and prose paragraphs exactly. Each paragraph should be emitted as one continuous Markdown paragraph, without inserting hard line breaks between sentences. The only line breaks permitted are those required by Markdown syntax (headings, lists, blockquotes, tables, code fences, and blank lines separating paragraphs)
 - Render Key Takeaway blocks as Markdown blockquotes:
     > **Key Takeaway:** ...
 - Render code examples with triple-backtick fences and a language identifier:
@@ -188,6 +195,85 @@ After producing the HTML, convert it to a clean Markdown (.md) file:
 - Complex HTML tables (e.g. TCP header layouts): convert to standard Markdown pipe tables where possible; if a table cannot be faithfully represented in Markdown, replace it with a [Table: ...] description
 - Output as a single .md file with no residual HTML tags
 
+---
+
+## Paragraph Formatting
+
+* Write in complete paragraphs.
+* **Do NOT insert a newline after every sentence.**
+* A paragraph should remain a single continuous block of text.
+* Only start a new line when beginning:
+
+  * a new paragraph
+  * a heading
+  * a list
+  * a table
+  * a code block
+  * a blockquote
+  * a diagram description
+
+
+## Paragraph Length
+
+Prefer paragraphs of **3–8 sentences** when explaining a concept.
+
+Only split into multiple paragraphs when:
+
+* introducing a new idea,
+* changing topics,
+* presenting an example,
+* transitioning to a new explanation.
+
+Do **not** split paragraphs merely because a sentence is long.
+
+---
+
+## Lists
+
+Use bullet lists only when the source material naturally contains enumerations, comparisons, steps, or grouped items.
+
+Avoid converting ordinary prose into bullet lists.
+
+---
+
+### Markdown Formatting
+
+The Markdown output should resemble a professionally edited book chapter.
+
+Specifically:
+
+* one blank line between paragraphs
+* one blank line before and after headings
+* one blank line before and after code blocks
+* one blank line before and after blockquotes
+* **no hard line wrapping at 80 or 100 characters**
+* **each paragraph should occupy a single logical line**
+* avoid unnecessary whitespace
+
+---
+
+
+
+
+## Highest Priority Formatting Rule
+Never hard-wrap prose. A paragraph must remain a single continuous block of text. Do not place each sentence on its own line. This requirement overrides any default formatting conventions.
+
+---
+
+### Overall Writing Style
+
+The final document should feel like a polished technical tutorial written by a professional author.
+
+Avoid the appearance of:
+
+* presentation slides
+* lecture notes
+* outlines
+* one-sentence paragraphs
+* excessive vertical whitespace
+* unnecessary line breaks
+
+The output should be publication quality.
 
 ## Source material
 [all pdfs/markdown slides in this project]

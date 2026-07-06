@@ -1,3 +1,49 @@
+"""
+My recommendation
+
+If your goal is high-quality Markdown conversion for lecture slides (especially Stanford CS144 PDFs), I would redesign the algorithm as follows:
+
+Sort blocks by (y, x).
+Merge adjacent text blocks that belong to the same paragraph based on geometry.
+Merge wrapped lines inside a paragraph using indentation and vertical spacing rather than preserving every PDF line break.
+Convert headings based on font size.
+Convert bullets based on bullet glyphs and indentation.
+Discard obvious diagram labels (isolated short tokens like R7, A, B, S1, etc.) unless they are part of a table.
+Output one Markdown paragraph per logical paragraph, not per PDF line.
+
+This geometry-based approach produces significantly cleaner Markdown than line-by-line conversion and is the strategy used by many high-quality PDF-to-Markdown tools.
+
+PDF
+ │
+ ▼
+Extract all spans (font, position, size)
+ │
+ ▼
+Sort by (y, x)
+ │
+ ▼
+Merge spans → visual lines
+ │
+ ▼
+Merge visual lines → paragraphs
+ │
+ ▼
+Detect headings
+ │
+ ▼
+Detect bullet lists
+ │
+ ▼
+Remove repeated footer/page number
+ │
+ ▼
+Remove isolated diagram labels
+ │
+ ▼
+Generate Markdown
+
+"""
+
 # pip install pymupdf
 import fitz  # pymupdf
 import re
