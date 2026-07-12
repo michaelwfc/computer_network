@@ -1,5 +1,16 @@
 #!/usr/bin/env bash
 # ─────────────────────────────────────────────────────────────────────────────
+# install pdftotext
+# Ubuntu: sudo apt update && sudo apt install -y poppler-utils
+# pdftotext --version
+# Windows:
+# Option 1 — winget (built into Windows 10/11, recommended)
+# powershellwinget install oschwartz10612.Poppler
+# pdftotext -v
+# pdftotext version 25.07.0
+# Copyright 2005-2025 The Poppler Developers - http://poppler.freedesktop.org
+# Copyright 1996-2011, 2022 Glyph & Cog, LLC
+
 # pdftotext_for_slide.sh
 # Convert PDF slides to clean Markdown using pdftotext.
 #
