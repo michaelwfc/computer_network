@@ -1086,7 +1086,7 @@ Create `.vscode/tasks.json`:
 ---
 
 
-#### step 5: Build object to Debug mode
+### step 5: Build object to Debug mode
 
 ```bash
 cd ~/computer_network/sponge/build
@@ -1133,4 +1133,4 @@ cmake .. -DCMAKE_BUILD_TYPE=Debug
 make -j8
 ```
 
-#### step 6: Debug in VS Code
+### step 6: Debug in VS Code
